@@ -478,6 +478,14 @@ h2 {
   font-weight: 600;
 }
 
+.board h3:not(:first-child) {
+  margin-top: 2rem;
+}
+
+.menu-head-follow {
+  margin-top: 3.2rem;
+}
+
 .menu-item {
   display: flex;
   align-items: baseline;

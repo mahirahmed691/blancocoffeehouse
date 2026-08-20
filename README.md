@@ -30,7 +30,10 @@ Then visit `http://localhost:8000`.
 - Domain: blancocoffeehouse.com (canonical `https://blancocoffeehouse.com`)
 - Instagram: https://www.instagram.com/blancocoffeehouse
 - Logo: lowercase “b.” mark, espresso brown on cream
-- Menu items and prices: from the printed Blanco Coffee House drinks menu (integers, shown with the site’s existing £)
+- Menu items and prices: from the printed Blanco Coffee House boards (integers, shown with the site’s existing £)
+  - Drinks: coffee, tea, chocolate, iced, matcha, smoothies, and soft drinks
+  - Desserts: milkshakes, ice cream scoops, sundaes, and loaded cups
+  - Printed photos were provided for both boards. The drinks photo was transcribed onto the site; the dessert photo was not found on disk in this environment, so loaded-cup **names** follow the printed list and descriptions were omitted (they did not match the sundae copy).
 
 **Still placeholder** — do not treat as live business data:
 
