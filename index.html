@@ -8,7 +8,42 @@
       name="description"
       content="Blanco Coffee House — a neighbourhood coffee house in Hazel Grove. Open every day, 11am–8pm."
     />
+    <link rel="canonical" href="https://blancocoffeehouse.com" />
     <link rel="icon" href="assets/logo.png" type="image/png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "CafeOrCoffeeShop",
+        "name": "Blanco Coffee House",
+        "url": "https://blancocoffeehouse.com",
+        "logo": "https://blancocoffeehouse.com/assets/logo.png",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "4 Fiveways Parade",
+          "addressLocality": "Hazel Grove",
+          "addressRegion": "Stockport",
+          "postalCode": "SK7 6DG",
+          "addressCountry": "GB"
+        },
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday"
+            ],
+            "opens": "11:00",
+            "closes": "20:00"
+          }
+        ],
+        "sameAs": ["https://www.instagram.com/blancocoffeehouse"]
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -230,19 +265,22 @@
               <address>
                 4 Fiveways Parade<br />
                 Hazel Grove<br />
-                Stockport<br />
+                Stockport, England<br />
                 SK7 6DG
               </address>
             </div>
             <div class="visit-card">
               <h3>Hours</h3>
-              <p>Open every day<br /><strong>11am–8pm</strong></p>
+              <p>Monday–Sunday<br /><strong>11am–8pm</strong></p>
             </div>
             <div class="visit-card">
               <h3>Contact</h3>
               <p>
                 <a href="mailto:hello@blancocoffeehouse.com"
                   >hello@blancocoffeehouse.com</a
+                ><br />
+                <a href="https://www.instagram.com/blancocoffeehouse"
+                  >Instagram</a
                 >
               </p>
             </div>
@@ -267,11 +305,17 @@
           Blanco Coffee House
         </div>
         <div class="footer-meta">
-          <div>Open every day, 11am–8pm</div>
+          <div>Monday–Sunday, 11am–8pm</div>
+          <div>
+            4 Fiveways Parade, Hazel Grove, Stockport, SK7 6DG
+          </div>
           <div>
             <a href="mailto:hello@blancocoffeehouse.com"
               >hello@blancocoffeehouse.com</a
             >
+          </div>
+          <div>
+            <a href="https://www.instagram.com/blancocoffeehouse">Instagram</a>
           </div>
         </div>
       </div>

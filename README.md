@@ -20,26 +20,47 @@ python3 -m http.server
 
 Then visit `http://localhost:8000`.
 
+## Confirmed vs placeholder
+
+**Confirmed** (on the page and in JSON-LD):
+
+- Name: Blanco Coffee House
+- Address: 4 Fiveways Parade, Hazel Grove, Stockport, England, SK7 6DG
+- Hours: Monday–Sunday, 11am–8pm
+- Domain: blancocoffeehouse.com (canonical `https://blancocoffeehouse.com`)
+- Instagram: https://www.instagram.com/blancocoffeehouse
+- Logo: lowercase “b.” mark, espresso brown on cream
+
+**Still placeholder** — do not treat as live business data:
+
+- Phone number (omitted until a real number exists)
+- Contact email (`hello@blancocoffeehouse.com` is a placeholder)
+- About / story copy
+- Shop photograph
+- Menu items and prices (placeholder board until a photographed menu is swapped in)
+
+## JSON-LD
+
+`index.html` includes a `CafeOrCoffeeShop` JSON-LD block (`<script type="application/ld+json">`) with name, URL, PostalAddress, opening hours (all 7 days, 11:00–20:00), Instagram `sameAs`, and logo.
+
+Omitted on purpose: `telephone`, `image`, `geo` (the Maps embed is query-based, not lat/lng), `aggregateRating`, and `priceRange`.
+
 ## Logo
 
-The logo lives at `assets/logo.png` (a PNG of the “b.” mark). It is referenced from the HTML, not inlined as a data URI.
-
-## What’s real vs placeholder
-
-**Hours are real:** 11am–8pm every day.
-
-These still need real copy and data before launch:
-
-- About paragraph
-- Shop photograph
-- Menu items and prices
-- Contact email (`hello@blancocoffeehouse.com` is a placeholder)
+The logo is a PNG file at `assets/logo.png` (the “b.” mark). It is referenced from the HTML, not inlined as a data URI. Favicon, nav, footer, and JSON-LD all point at this file.
 
 ## Project layout
 
 ```
-index.html      # markup (nav, hero, about, menu, visit, footer)
+index.html      # markup (nav, hero, about, menu, visit, footer) + JSON-LD
 styles.css      # design system and layout
 script.js       # mobile nav (hamburger under 760px)
 assets/logo.png # “b.” logo mark
 ```
+
+## Hosting
+
+- GitHub: [mahirahmed691/blancocoffeehouse](https://github.com/mahirahmed691/blancocoffeehouse)
+- Vercel: https://blancocoffeehouse.vercel.app
+- Vercel deployment: https://blancocoffeehouse-4mehvw42w-mahirahmed691-1029s-projects.vercel.app
+- Custom domain `blancocoffeehouse.com` is **not attached yet**. The site uses that URL as canonical / JSON-LD `url` so it is ready when DNS is pointed.
