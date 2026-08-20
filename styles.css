@@ -234,12 +234,12 @@ a {
 }
 
 .logo img {
-  width: 42px;
-  height: 42px;
-  object-fit: cover;
-  border-radius: 50%;
+  width: 72px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
   border: 1px solid rgba(59, 42, 34, 0.12);
-  background: var(--paper);
+  background: var(--espresso);
 }
 
 .nav-links {
@@ -606,10 +606,10 @@ h2 {
 }
 
 .footer-brand img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
+  width: 60px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: contain;
 }
 
 .footer-meta {
