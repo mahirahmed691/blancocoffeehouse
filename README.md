@@ -33,14 +33,13 @@ Then visit `http://localhost:8000`.
 - Menu items and prices: from the printed Blanco Coffee House boards (integers, shown with the site’s existing £)
   - Drinks: coffee, tea, chocolate, iced, matcha, smoothies, and soft drinks
   - Desserts: milkshakes, ice cream scoops, sundaes, and loaded cups
-  - Printed photos were provided for both boards. The drinks photo was transcribed onto the site; the dessert photo was not found on disk in this environment, so loaded-cup **names** follow the printed list and descriptions were omitted (they did not match the sundae copy).
 
 **Still placeholder** — do not treat as live business data:
 
 - Phone number (omitted until a real number exists)
 - Contact email (`hello@blancocoffeehouse.com` is a placeholder)
-- About / story copy
-- Shop photograph
+- About / story copy (kept short on purpose)
+- Shop photograph / café video (the `.MOV` was not present on disk in this environment)
 
 ## JSON-LD
 
@@ -50,20 +49,23 @@ Omitted on purpose: `telephone`, `image`, `geo` (the Maps embed is query-based, 
 
 ## Logo
 
-The logo is a PNG file at `assets/logo.png` (the “b.” mark). It is referenced from the HTML, not inlined as a data URI. Favicon, nav, footer, and JSON-LD all point at this file.
+- `assets/logo.png` — cream **b.** mark (favicon, apple-touch, JSON-LD, hero panel)
+- `assets/logo-wordmark.png` — espresso **blanco. / COFFEEHOUSE** (header and footer)
+
+Both files are sized for the page (not the original 1024px masters).
 
 ## Project layout
 
 ```
-index.html      # markup (nav, hero, about, menu, visit, footer) + JSON-LD
-styles.css      # design system and layout
-script.js       # mobile nav (hamburger under 760px)
-assets/logo.png # “b.” logo mark
+index.html              # markup (nav, hero, about, two menu boards, visit, footer) + JSON-LD
+styles.css              # design system and layout
+script.js               # mobile nav (hamburger under 760px) + header scroll state
+assets/logo.png         # “b.” logo mark
+assets/logo-wordmark.png
 ```
 
 ## Hosting
 
 - GitHub: [mahirahmed691/blancocoffeehouse](https://github.com/mahirahmed691/blancocoffeehouse)
 - Vercel: https://blancocoffeehouse.vercel.app
-- Vercel deployment: https://blancocoffeehouse-4mehvw42w-mahirahmed691-1029s-projects.vercel.app
 - Custom domain `blancocoffeehouse.com` is **not attached yet**. The site uses that URL as canonical / JSON-LD `url` so it is ready when DNS is pointed.
