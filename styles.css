@@ -521,10 +521,17 @@ h2 {
   background: #2a1e19;
 }
 
-.media-frame-photo a {
+.media-frame-photo .gallery-open {
   display: block;
   width: 100%;
   height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  appearance: none;
+  font: inherit;
+  color: inherit;
 }
 
 .media-frame-photo img {
@@ -541,69 +548,18 @@ h2 {
   z-index: 2;
   padding: 2.4rem 1rem 0.85rem;
   background: linear-gradient(transparent, rgba(42, 30, 25, 0.72));
+  pointer-events: none;
 }
 
-.ig-follow {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.32rem;
+.ig-cta {
+  gap: 0.55rem;
   margin-top: 1.65rem;
-  padding: 1.15rem 1.2rem 1.2rem;
-  max-width: 22.5rem;
-  text-decoration: none;
-  background: var(--cream);
-  border: 1px solid var(--line);
 }
 
-.ig-follow-kicker {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--moss);
-}
-
-.ig-follow-kicker .mark {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 1.05rem;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--espresso);
-  line-height: 1;
-}
-
-.ig-handle {
-  font-family: var(--serif);
-  font-size: 1.35rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.ig-follow-copy {
-  color: var(--mocha);
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.ig-follow-cta {
-  margin-top: 0.5rem;
-  font-size: 0.76rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--espresso);
-  border-bottom: 1px solid rgba(59, 42, 34, 0.28);
-  padding-bottom: 0.1rem;
-}
-
-.ig-follow:hover .ig-follow-cta {
-  color: var(--moss);
-  border-bottom-color: var(--moss);
+.ig-cta .ig-logo {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
 }
 
 .photo-gallery {
@@ -615,12 +571,18 @@ h2 {
   padding: 0;
 }
 
-.photo-gallery a {
+.photo-gallery .gallery-open {
   display: block;
+  width: 100%;
   aspect-ratio: 4 / 5;
   overflow: hidden;
+  padding: 0;
   border: 1px solid var(--line);
   background: #2a1e19;
+  cursor: zoom-in;
+  appearance: none;
+  font: inherit;
+  color: inherit;
 }
 
 .photo-gallery img {
@@ -630,8 +592,104 @@ h2 {
   transition: transform 0.55s var(--ease);
 }
 
-.photo-gallery a:hover img {
+.photo-gallery .gallery-open:hover img {
   transform: scale(1.04);
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: grid;
+  place-items: center;
+  padding: 3.5rem var(--pad) var(--pad);
+}
+
+.lightbox[hidden] {
+  display: none;
+}
+
+.lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 30, 25, 0.88);
+}
+
+.lightbox-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  width: min(960px, 100%);
+}
+
+.lightbox-figure {
+  margin: 0;
+  min-width: 0;
+}
+
+.lightbox-image {
+  width: 100%;
+  max-height: min(78vh, 860px);
+  height: auto;
+  object-fit: contain;
+  background: #2a1e19;
+  border: 1px solid rgba(239, 230, 217, 0.18);
+}
+
+.lightbox-caption {
+  margin: 0.7rem 0 0;
+  color: var(--cream);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.lightbox-close,
+.lightbox-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(239, 230, 217, 0.22);
+  background: var(--espresso);
+  color: var(--cream);
+  cursor: pointer;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: -2.6rem;
+  right: 0;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.lightbox-nav {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  font-family: var(--serif);
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.lightbox-nav[hidden] {
+  display: none;
+}
+
+.lightbox-close:hover,
+.lightbox-nav:hover {
+  background: #2e211b;
+}
+
+body.lightbox-open {
+  overflow: hidden;
 }
 
 /* Menu */
@@ -952,6 +1010,34 @@ h2 {
 
   .photo-gallery {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .lightbox-stage {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 0.55rem;
+  }
+
+  .lightbox-figure {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .lightbox-prev {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .lightbox-next {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+
+  .lightbox-close {
+    top: 0.75rem;
+    right: 0.75rem;
   }
 
   .steam-big {
