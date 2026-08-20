@@ -503,6 +503,12 @@ h2 {
   font-weight: 500;
 }
 
+.menu-item-desc {
+  margin: -0.4rem 0 0.95rem;
+  color: var(--mocha);
+  font-size: 0.92rem;
+}
+
 .note {
   margin: 1.8rem 0 0;
   color: var(--mocha);
@@ -611,6 +617,15 @@ h2 {
   margin: 1.4rem 0 0;
   font-size: 0.8rem;
   color: rgba(239, 230, 217, 0.55);
+}
+
+.fineprint a {
+  color: inherit;
+  text-underline-offset: 0.15em;
+}
+
+.fineprint a:hover {
+  color: var(--cream);
 }
 
 @media (max-width: 760px) {

@@ -30,6 +30,7 @@ Then visit `http://localhost:8000`.
 - Domain: blancocoffeehouse.com (canonical `https://blancocoffeehouse.com`)
 - Instagram: https://www.instagram.com/blancocoffeehouse
 - Logo: lowercase “b.” mark, espresso brown on cream
+- Menu items and prices: from the printed Blanco Coffee House drinks menu (integers, shown with the site’s existing £)
 
 **Still placeholder** — do not treat as live business data:
 
@@ -37,7 +38,6 @@ Then visit `http://localhost:8000`.
 - Contact email (`hello@blancocoffeehouse.com` is a placeholder)
 - About / story copy
 - Shop photograph
-- Menu items and prices (placeholder board until a photographed menu is swapped in)
 
 ## JSON-LD
 
