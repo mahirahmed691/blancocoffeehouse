@@ -28,7 +28,7 @@ Then visit `http://localhost:8000`.
 - Address: 4 Fiveways Parade, Hazel Grove, Stockport, England, SK7 6DG
 - Hours: Monday–Sunday, 11am–8pm
 - Domain: blancocoffeehouse.com (canonical `https://blancocoffeehouse.com`)
-- Instagram: https://www.instagram.com/blancocoffeehouse
+- Instagram: https://www.instagram.com/blancocoffeehouse/
 - Logo: lowercase “b.” mark, espresso brown on cream
 - Menu items and prices: from the printed Blanco Coffee House boards (integers, shown with the site’s existing £)
   - Drinks: coffee, tea, chocolate, iced, matcha, smoothies, and soft drinks
@@ -39,13 +39,14 @@ Then visit `http://localhost:8000`.
 - Phone number (omitted until a real number exists)
 - Contact email (`hello@blancocoffeehouse.com` is a placeholder)
 - About / story copy (kept short on purpose)
-- Shop photograph / café video (the `.MOV` was not present on disk in this environment)
+
+Shop photographs on the about section are from the public [@blancocoffeehouse](https://www.instagram.com/blancocoffeehouse/) profile (saved locally under `assets/photos/`, not hotlinked). Instagram login-walled the official profile page; media was retrieved via a public viewer. Reels were available but not added — one opening clip listed different hours than the confirmed 11am–8pm board.
 
 ## JSON-LD
 
 `index.html` includes a `CafeOrCoffeeShop` JSON-LD block (`<script type="application/ld+json">`) with name, URL, PostalAddress, opening hours (all 7 days, 11:00–20:00), Instagram `sameAs`, and logo.
 
-Omitted on purpose: `telephone`, `image`, `geo` (the Maps embed is query-based, not lat/lng), `aggregateRating`, and `priceRange`.
+Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/lng), `aggregateRating`, and `priceRange`. `image` is set to the shop photographs under `assets/photos/`.
 
 ## Logo
 
@@ -62,6 +63,7 @@ styles.css              # design system and layout
 script.js               # mobile nav (hamburger under 760px) + header scroll state
 assets/logo.png         # “b.” logo mark
 assets/logo-wordmark.png
+assets/photos/          # shop photographs saved from Instagram
 ```
 
 ## Hosting
