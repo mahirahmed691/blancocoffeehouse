@@ -1,7 +1,28 @@
 (function () {
   var header = document.querySelector(".site-header");
   var toggle = document.querySelector(".nav-toggle");
-  var links = document.querySelector(".nav-links");
+  var trigger = document.querySelector(".mega-trigger");
+  var panel = document.getElementById("mega-panel");
+  var closeTimer = 0;
+
+  function desktopMega() {
+    return window.matchMedia("(min-width: 901px) and (hover: hover)").matches;
+  }
+
+  function setOpen(open) {
+    if (!panel) return;
+    panel.hidden = !open;
+    if (header) header.classList.toggle("is-mega-open", open);
+    if (trigger) trigger.setAttribute("aria-expanded", open ? "true" : "false");
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    }
+  }
+
+  function isOpen() {
+    return panel && !panel.hidden;
+  }
 
   if (header) {
     var onScroll = function () {
@@ -11,20 +32,38 @@
     window.addEventListener("scroll", onScroll, { passive: true });
   }
 
-  if (!toggle || !links) return;
+  if (!panel) return;
 
-  function setOpen(open) {
-    links.classList.toggle("is-open", open);
-    toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+  if (trigger) {
+    trigger.addEventListener("click", function () {
+      setOpen(!isOpen());
+    });
+    trigger.addEventListener("pointerenter", function () {
+      if (!desktopMega()) return;
+      window.clearTimeout(closeTimer);
+      setOpen(true);
+    });
   }
 
-  toggle.addEventListener("click", function () {
-    setOpen(!links.classList.contains("is-open"));
+  header.addEventListener("pointerleave", function () {
+    if (!desktopMega()) return;
+    closeTimer = window.setTimeout(function () {
+      setOpen(false);
+    }, 140);
   });
 
-  links.querySelectorAll("a, button").forEach(function (anchor) {
-    anchor.addEventListener("click", function () {
+  header.addEventListener("pointerenter", function () {
+    window.clearTimeout(closeTimer);
+  });
+
+  if (toggle) {
+    toggle.addEventListener("click", function () {
+      setOpen(!isOpen());
+    });
+  }
+
+  panel.querySelectorAll("a").forEach(function (link) {
+    link.addEventListener("click", function () {
       setOpen(false);
     });
   });
@@ -33,8 +72,15 @@
     if (event.key === "Escape") setOpen(false);
   });
 
+  document.addEventListener("pointerdown", function (event) {
+    if (!isOpen()) return;
+    if (header.contains(event.target)) return;
+    setOpen(false);
+  });
+
   window.addEventListener("resize", function () {
-    if (window.innerWidth > 760) setOpen(false);
+    if (desktopMega()) return;
+    if (window.innerWidth > 900) setOpen(false);
   });
 })();
 

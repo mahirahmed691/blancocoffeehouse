@@ -251,6 +251,146 @@ a {
   min-height: 80px;
 }
 
+.nav-cta {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin-left: auto;
+}
+
+.nav-account-link {
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mega-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: 0.35rem;
+  border: 0;
+  background: none;
+  padding: 0.35rem 0;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: inherit;
+  cursor: pointer;
+}
+
+.mega-trigger:hover,
+.mega-trigger[aria-expanded="true"] {
+  color: var(--muted);
+}
+
+.mega-chevron {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.25s var(--ease);
+}
+
+.mega-trigger[aria-expanded="true"] .mega-chevron {
+  transform: rotate(225deg) translateY(-1px);
+}
+
+.mega-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 79;
+  background: color-mix(in srgb, var(--beige) 97%, transparent);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 28px 60px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.mega-panel[hidden] {
+  display: none;
+}
+
+.mega-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1.15fr;
+  gap: clamp(1.4rem, 3vw, 2.4rem);
+  padding: 1.7rem 0 2rem;
+  align-items: start;
+}
+
+.mega-col .eyebrow {
+  margin-bottom: 0.85rem;
+}
+
+.mega-col a {
+  display: block;
+  padding: 0.28rem 0;
+  text-decoration: none;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.28rem, 1.7vw, 1.55rem);
+  letter-spacing: -0.03em;
+  text-transform: none;
+  line-height: 1.2;
+}
+
+.mega-col a:hover {
+  color: var(--hover);
+}
+
+.mega-feature {
+  padding: 0.15rem 0 0;
+}
+
+.mega-feature-photo {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+
+.mega-feature-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mega-hours,
+.mega-address {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mega-address {
+  margin-top: 0.25rem;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.mega-feature .btn {
+  margin-top: 1rem;
+}
+
+.mega-cta {
+  display: none;
+}
+
+.site-header.is-mega-open {
+  border-bottom-color: var(--line);
+}
+
 .logo {
   display: flex;
   align-items: center;
@@ -334,7 +474,8 @@ body:not(.clerk-ready) .clerk-signed-in {
   display: none !important;
 }
 
-#clerk-user-button {
+#clerk-user-button,
+.nav-cta .clerk-user-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1641,40 +1782,50 @@ body.lightbox-open {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .nav-toggle {
     display: flex;
   }
 
-  .nav-links {
+  .mega-trigger,
+  .nav-cta {
     display: none;
+  }
+
+  .mega-panel {
     position: absolute;
-    top: 80px;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    padding: 0.6rem var(--pad) 1rem;
-    background: var(--beige);
-    border-bottom: 1px solid var(--line);
+    max-height: calc(100dvh - 80px);
+    overflow: auto;
   }
 
-  .nav-links.is-open {
+  .mega-inner {
+    grid-template-columns: 1fr 1fr;
+    padding-bottom: 1.4rem;
+  }
+
+  .mega-feature {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: 1rem 1.2rem;
+    align-items: center;
+  }
+
+  .mega-feature-photo {
+    aspect-ratio: 1;
+  }
+
+  .mega-cta {
     display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    grid-column: 1 / -1;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--line);
   }
 
-  .nav-links a,
-  .nav-links button {
-    padding: 0.75rem 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--brown) 8%, transparent);
-  }
-
-  .nav-links .btn,
-  .nav-account-chip,
-  #clerk-user-button {
-    margin-top: 0.7rem;
-    width: 100%;
+  .mega-cta .btn {
+    width: auto;
   }
 
   .hero-inner,
