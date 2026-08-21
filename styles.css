@@ -110,13 +110,16 @@ a {
 
 .eyebrow .mark,
 .board-kicker .mark {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 1.08rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  max-width: none;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+  background: var(--beige);
   letter-spacing: 0;
-  text-transform: none;
-  color: var(--brown);
-  line-height: 1;
 }
 
 /* Steam */
@@ -259,7 +262,10 @@ a {
 .logo-badge {
   width: 3.55rem;
   height: 3.55rem;
+  max-width: none;
+  aspect-ratio: 1;
   object-fit: cover;
+  object-position: center;
   border-radius: 50%;
   background: var(--beige);
   box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--brown) 16%, transparent);
@@ -447,8 +453,11 @@ body:not(.clerk-ready) .clerk-signed-in {
   margin: 0;
   width: 6.75rem;
   height: 6.75rem;
+  max-width: none;
+  aspect-ratio: 1;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center;
   background: var(--beige);
   border: 5px solid var(--beige);
   box-shadow: 0 16px 36px color-mix(in srgb, var(--ink) 35%, transparent);
@@ -802,7 +811,7 @@ h2 {
 }
 
 .eyebrow-on-dark .mark {
-  color: var(--beige);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--beige) 32%, transparent);
 }
 
 .prose-on-dark {
@@ -1115,16 +1124,16 @@ body.lightbox-open {
 }
 
 .board::after {
-  content: "b.";
+  content: "";
   position: absolute;
-  right: 0.7rem;
-  bottom: -0.35rem;
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 4.5rem;
-  color: var(--brown);
-  opacity: 0.045;
-  line-height: 1;
+  right: 0.55rem;
+  bottom: 0.4rem;
+  width: 3.6rem;
+  height: 3.6rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: url("assets/logo.png") center / cover no-repeat;
+  opacity: 0.08;
   pointer-events: none;
 }
 
@@ -1482,7 +1491,10 @@ body.lightbox-open {
 .footer-brand .logo-badge {
   width: 3.85rem;
   height: 3.85rem;
+  max-width: none;
+  aspect-ratio: 1;
   object-fit: cover;
+  object-position: center;
   border-radius: 50%;
   background: var(--beige);
   box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--beige) 28%, transparent);

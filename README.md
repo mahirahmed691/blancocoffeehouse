@@ -29,7 +29,7 @@ Then visit `http://localhost:8000`.
 - Hours: Monday–Sunday, 11am–8pm
 - Domain: blancocoffeehouse.com (canonical `https://blancocoffeehouse.com`)
 - Instagram: https://www.instagram.com/blancocoffeehouse/
-- Logo: lowercase “b.” mark, espresso brown on cream
+- Logo: cream **b.** mark (`assets/logo.png`), espresso brown on cream
 - Menu items and prices: from the printed Blanco Coffee House boards (integers, shown with the site’s existing £)
   - Drinks: coffee, tea, chocolate, iced, matcha, smoothies, and soft drinks
   - Desserts: milkshakes, ice cream scoops, sundaes, and loaded cups
@@ -50,11 +50,9 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 
 ## Logo
 
-- `assets/logo.png` — cream **b.** mark with circular period. Primary brand image, shown as a circular badge in the header, hero, and footer. Also used for apple-touch and JSON-LD.
-- `assets/favicon.png` — the same mark, circular-cropped with a transparent outside, for the browser tab icon.
+- `assets/logo.png` — canonical cream **b.** mark (the official circular icon, with period). Used as a circular badge in the header, hero seal, footer, section eyebrows, favicon, apple-touch icon, and JSON-LD.
+- `assets/favicon.png` — a circular crop of the same mark with a transparent outside (kept on file; the live `<link rel="icon">` points at `logo.png`).
 - `assets/logo-wordmark.png` — espresso **blanco. / COFFEEHOUSE** lockup (kept on file, not used as the nav/hero/footer brand image).
-
-`logo.png` is sized for the page (not the original 1024px master).
 
 ## Project layout
 
