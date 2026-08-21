@@ -2,6 +2,9 @@
    Env: CLERK_SECRET_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ADMIN_EMAILS
    Optional: SUPABASE_ANON_KEY is not used here. */
 
+var crypto = require("crypto");
+var jwksCache = { keys: null, at: 0 };
+
 function json(res, status, body) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -58,40 +61,106 @@ function isAdmin(user) {
   });
 }
 
-async function clerkUser(sessionId, token, secret) {
-  var verify = await fetch(
-    "https://api.clerk.com/v1/sessions/" + encodeURIComponent(sessionId) + "/verify",
-    {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + secret,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ token: token })
-    }
-  );
-  if (!verify.ok) {
-    var detail = await verify.text();
-    var err = new Error("Clerk session could not be verified");
-    err.status = 401;
-    err.detail = detail;
-    throw err;
+function authError(message, status) {
+  var err = new Error(message);
+  err.status = status || 401;
+  return err;
+}
+
+function decodeJwtPart(part) {
+  return JSON.parse(Buffer.from(part, "base64url").toString("utf8"));
+}
+
+function allowedParty(azp) {
+  if (!azp) return true;
+  var origin = String(azp).replace(/\/$/, "").toLowerCase();
+  if (
+    origin === "https://blancocoffeehouse.com" ||
+    origin === "https://www.blancocoffeehouse.com" ||
+    origin === "https://blancocoffeehouse.vercel.app" ||
+    origin === "http://localhost" ||
+    origin.indexOf("http://localhost:") === 0 ||
+    origin.indexOf("http://127.0.0.1") === 0
+  ) {
+    return true;
   }
-  var session = await verify.json();
-  var userId = session.user_id || (session.user && session.user.id);
-  if (!userId) {
-    var err2 = new Error("Clerk session had no user");
-    err2.status = 401;
-    throw err2;
+  if (/^https:\/\/blancocoffeehouse-[a-z0-9-]+\.vercel\.app$/.test(origin)) return true;
+  return false;
+}
+
+async function clerkJwks(secret) {
+  if (jwksCache.keys && Date.now() - jwksCache.at < 60 * 60 * 1000) {
+    return jwksCache.keys;
+  }
+  var res = await fetch("https://api.clerk.com/v1/jwks", {
+    headers: { Authorization: "Bearer " + secret }
+  });
+  if (!res.ok) {
+    throw authError("House desk Clerk key does not match this sign-in.", 503);
+  }
+  var data = await res.json();
+  jwksCache = { keys: data.keys || [], at: Date.now() };
+  return jwksCache.keys;
+}
+
+function verifyJwtSig(alg, data, key, sig) {
+  if (alg === "RS256") return crypto.verify("RSA-SHA256", data, key, sig);
+  if (alg === "ES256") {
+    return crypto.verify("SHA256", data, { key: key, dsaEncoding: "ieee-p1363" }, sig);
+  }
+  return false;
+}
+
+async function verifySessionJwt(token, secret) {
+  var parts = String(token || "").split(".");
+  if (parts.length !== 3) throw authError("Sign in again to use the house desk.");
+  var header;
+  var payload;
+  try {
+    header = decodeJwtPart(parts[0]);
+    payload = decodeJwtPart(parts[1]);
+  } catch (err) {
+    throw authError("Sign in again to use the house desk.");
+  }
+  if (header.alg !== "RS256" && header.alg !== "ES256") {
+    throw authError("Sign in again to use the house desk.");
+  }
+  var now = Math.floor(Date.now() / 1000);
+  if (payload.nbf && now < payload.nbf - 5) throw authError("Sign in again to use the house desk.");
+  if (payload.exp && now > payload.exp + 5) throw authError("Sign in again to use the house desk.");
+  if (!payload.sub) throw authError("Sign in again to use the house desk.");
+  if (!allowedParty(payload.azp)) throw authError("Sign in again to use the house desk.");
+
+  var keys = await clerkJwks(secret);
+  var jwk =
+    keys.filter(function (k) {
+      return k.kid === header.kid;
+    })[0] || keys[0];
+  if (!jwk) throw authError("Sign in again to use the house desk.");
+
+  var keyObject = crypto.createPublicKey({ key: jwk, format: "jwk" });
+  var ok = verifyJwtSig(
+    header.alg,
+    Buffer.from(parts[0] + "." + parts[1]),
+    keyObject,
+    Buffer.from(parts[2], "base64url")
+  );
+  if (!ok) throw authError("Sign in again to use the house desk.");
+  return payload;
+}
+
+async function clerkUser(sessionId, token, secret) {
+  var claims = await verifySessionJwt(token, secret);
+  var userId = claims.sub;
+  if (sessionId && claims.sid && sessionId !== claims.sid) {
+    throw authError("Sign in again to use the house desk.");
   }
   var userRes = await fetch(
     "https://api.clerk.com/v1/users/" + encodeURIComponent(userId),
     { headers: { Authorization: "Bearer " + secret } }
   );
   if (!userRes.ok) {
-    var err3 = new Error("Clerk user could not be loaded");
-    err3.status = 401;
-    throw err3;
+    throw authError("Clerk user could not be loaded");
   }
   return userRes.json();
 }

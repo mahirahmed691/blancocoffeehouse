@@ -11,6 +11,9 @@
   var saveBtn = document.getElementById("admin-save");
   var undoBtn = document.getElementById("admin-undo");
   var pickEl = document.getElementById("admin-pick");
+  var pickBtn = document.getElementById("admin-pick-btn");
+  var pickList = document.getElementById("admin-pick-list");
+  var pickCurrent = document.getElementById("admin-pick-current");
   var metaEl = document.getElementById("admin-meta");
   var nameEl = document.querySelector("[data-admin-name]");
 
@@ -145,6 +148,10 @@
   async function clerkHeaders() {
     if (!window.Clerk || !Clerk.session) throw new Error("Sign in to use the house desk.");
     var token = await Clerk.session.getToken();
+    if (!token && typeof Clerk.session.getToken === "function") {
+      token = await Clerk.session.getToken({ skipCache: true });
+    }
+    if (!token) throw new Error("Sign in again to use the house desk.");
     return {
       Authorization: "Bearer " + token,
       "X-Clerk-Session": Clerk.session.id,
@@ -199,32 +206,84 @@
     return "£" + n.toFixed(2);
   }
 
+  function pickLabel(item) {
+    if (!item) return "Whole board";
+    var label = item.name || "Untitled";
+    var price = formatPickPrice(item.price_gbp);
+    if (price) label += " · " + price;
+    if (item.sold_out) label += " · sold out";
+    return label;
+  }
+
+  function isPickOpen() {
+    return pickList && !pickList.hidden;
+  }
+
+  function setPickOpen(open) {
+    if (!pickEl || !pickBtn || !pickList) return;
+    pickList.hidden = !open;
+    pickBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    pickEl.classList.toggle("is-open", open);
+  }
+
+  function choosePick(key) {
+    pickedKey = key || "";
+    var item = pickedKey ? findItem(pickedKey) : null;
+    setPickOpen(false);
+    if (item) switchBoard(item.board);
+    render();
+    if (item) {
+      setStatus("Editing " + (item.name || "that line") + ".");
+      window.setTimeout(focusPicked, 60);
+    } else {
+      setStatus("The whole board.");
+    }
+  }
+
   function refreshPick() {
-    if (!pickEl) return;
-    if (document.activeElement === pickEl) return;
-    var html = '<option value="">Whole board</option>';
+    if (!pickList || !pickCurrent) return;
+    var selected = pickedKey ? findItem(pickedKey) : null;
+    if (!selected) pickedKey = "";
+    pickCurrent.textContent = pickLabel(selected);
+
+    var html =
+      '<button type="button" class="admin-pick-option' +
+      (!pickedKey ? " is-active" : "") +
+      '" role="option" data-pick="" aria-selected="' +
+      (!pickedKey ? "true" : "false") +
+      '">Whole board</button>';
     ["drinks", "sweets"].forEach(function (board) {
-      group(board).forEach(function (section) {
+      var sections = group(board);
+      if (!sections.length) return;
+      html +=
+        '<p class="admin-pick-group">' +
+        escapeHtml(board === "sweets" ? "Sweets" : "Drinks") +
+        "</p>";
+      sections.forEach(function (section) {
         html +=
-          '<optgroup label="' +
-          escapeHtml((board === "sweets" ? "Sweets" : "Drinks") + " · " + section.title) +
-          '">';
+          '<p class="admin-pick-section">' +
+          escapeHtml(section.title) +
+          "</p>";
         section.items.forEach(function (item) {
-          var label = (item.name || "Untitled") + " · " + formatPickPrice(item.price_gbp);
-          if (item.sold_out) label += " · sold out";
+          var active = item._key === pickedKey;
           html +=
-            '<option value="' +
+            '<button type="button" class="admin-pick-option' +
+            (active ? " is-active" : "") +
+            (item.sold_out ? " is-sold" : "") +
+            '" role="option" data-pick="' +
             escapeHtml(item._key) +
-            '">' +
-            escapeHtml(label) +
-            "</option>";
+            '" aria-selected="' +
+            (active ? "true" : "false") +
+            '"><span class="admin-pick-name">' +
+            escapeHtml(item.name || "Untitled") +
+            '</span><span class="admin-pick-meta">' +
+            escapeHtml(formatPickPrice(item.price_gbp)) +
+            (item.sold_out ? " · sold out" : "") +
+            "</span></button>";
         });
-        html += "</optgroup>";
       });
     });
-    pickEl.innerHTML = html;
-    pickEl.value = pickedKey && findItem(pickedKey) ? pickedKey : "";
-    if (!findItem(pickedKey)) pickedKey = "";
+    pickList.innerHTML = html;
   }
 
   function switchBoard(board) {
@@ -439,7 +498,7 @@
   }
 
   form.addEventListener("input", function (event) {
-    if (event.target.id === "admin-pick") return;
+    if (event.target.closest("#admin-pick")) return;
     var card = event.target.closest(".admin-item");
     if (card) readItemCard(card);
     if (event.target.id === "hours-opens" || event.target.id === "hours-closes") {
@@ -449,7 +508,7 @@
   });
 
   form.addEventListener("change", function (event) {
-    if (event.target.id === "admin-pick") return;
+    if (event.target.closest("#admin-pick")) return;
     if (event.target.getAttribute("data-field") === "name") refreshPick();
     if (event.target.id === "hours-opens" || event.target.id === "hours-closes") {
       syncHoursRange();
@@ -527,25 +586,34 @@
     });
   }
 
-  if (pickEl) {
-    pickEl.addEventListener("change", function () {
-      pickedKey = pickEl.value;
-      var item = pickedKey ? findItem(pickedKey) : null;
-      if (item) switchBoard(item.board);
-      render();
-      if (item) {
-        setStatus("Editing " + (item.name || "that line") + ".");
-        window.setTimeout(focusPicked, 60);
-      } else {
-        setStatus("The whole board.");
-      }
+  if (pickBtn) {
+    pickBtn.addEventListener("click", function () {
+      setPickOpen(!isPickOpen());
     });
   }
+
+  if (pickList) {
+    pickList.addEventListener("click", function (event) {
+      var option = event.target.closest("[data-pick]");
+      if (!option) return;
+      choosePick(option.getAttribute("data-pick") || "");
+    });
+  }
+
+  document.addEventListener("pointerdown", function (event) {
+    if (!isPickOpen()) return;
+    if (pickEl && pickEl.contains(event.target)) return;
+    setPickOpen(false);
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") setPickOpen(false);
+  });
 
   document.querySelectorAll("[data-admin-board]").forEach(function (tab) {
     tab.addEventListener("click", function () {
       pickedKey = "";
-      if (pickEl) pickEl.value = "";
+      setPickOpen(false);
       switchBoard(tab.getAttribute("data-admin-board"));
       render();
     });
