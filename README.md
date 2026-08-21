@@ -61,12 +61,14 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 ```
 index.html              # markup (nav, hero, about, two menu boards, visit, footer) + JSON-LD
 styles.css              # design system and layout
-script.js               # mobile nav (hamburger under 760px) + header scroll state
+script.js               # nav, lightbox, member login, interactive menu
 assets/logo.png         # cream “b.” mark (circular badge on the page)
 assets/favicon.png      # circular crop of the mark
 assets/logo-wordmark.png
 assets/photos/          # shop photographs saved from Instagram
 ```
+
+Member **Log in / Create account** is browser-local (email + salted hash in `localStorage`). It is not a server account. Plug in a real auth backend when one exists.
 
 ## Hosting
 
