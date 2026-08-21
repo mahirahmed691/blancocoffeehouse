@@ -1865,9 +1865,59 @@ body.lightbox-open {
   letter-spacing: -0.03em;
 }
 
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  margin: 0 0 1.15rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.auth-tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  margin-bottom: -1px;
+  padding: 0.55rem 0.15rem 0.7rem;
+  margin-right: 1.35rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.auth-tab:hover,
+.auth-tab.is-active {
+  color: var(--brown);
+}
+
+.auth-tab.is-active {
+  border-bottom-color: var(--brown);
+}
+
+.clerk-loading {
+  margin: 1.4rem 0 0;
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--muted);
+}
+
 .clerk-mount {
   min-height: 16rem;
-  margin-top: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.clerk-mount iframe,
+.clerk-mount .cl-rootBox,
+.clerk-mount .cl-cardBox {
+  width: 100%;
+}
+
+.clerk-mount[data-clerk-loading] {
+  min-height: 8rem;
 }
 
 .account-auth-fallback {

@@ -62,6 +62,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="prefetch" href="account.html" />
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
@@ -97,9 +98,6 @@
           <li><a href="#reviews">Reviews</a></li>
           <li class="clerk-signed-out">
             <a class="btn" href="account.html">Sign in</a>
-          </li>
-          <li class="clerk-signed-out">
-            <a class="nav-account-chip" href="account.html#sign-up">Sign up</a>
           </li>
           <li class="clerk-signed-in" hidden>
             <a href="account.html">Account</a>
@@ -747,7 +745,7 @@
             </p>
             <div class="app-actions clerk-signed-out">
               <a class="btn btn-on-dark" href="account.html">Sign in</a>
-              <a class="btn btn-ghost-on-dark" href="account.html#sign-up">Sign up</a>
+              <a class="btn btn-ghost-on-dark" href="account.html#sign-up">Create an account</a>
             </div>
             <div class="app-actions clerk-signed-in" hidden>
               <a class="btn btn-on-dark" href="account.html">Your account</a>
@@ -788,9 +786,8 @@
             <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> google</p>
             <h2 class="campaign-title">from the house.</h2>
             <p class="prose">
-              The house is on Google as a coffee shop on Fiveways Parade. If
-              blanco was your way today, a short note there helps the people
-              looking for it.
+              If blanco was your way today, a few words on Google help the next
+              person find the house. Only if you like.
             </p>
             <p class="google-presence">
               <span class="google-kicker">Google</span>
@@ -917,8 +914,13 @@
           <div>Monday–Sunday, 11am–8pm</div>
           <div>4 Fiveways Parade, Hazel Grove, Stockport, SK7 6DG</div>
           <div>
-            <a href="mailto:hello@blancocoffeehouse.com"
-              >hello@blancocoffeehouse.com</a
+            <a href="index.html#reviews">Reviews</a>
+            ·
+            <a
+              href="https://www.instagram.com/blancocoffeehouse/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Instagram</a
             >
           </div>
         </div>
@@ -972,8 +974,8 @@
       </div>
     </div>
 
-    <script src="clerk-config.js?v=3"></script>
+    <script src="clerk-config.js?v=4"></script>
     <script src="script.js"></script>
-    <script src="clerk-auth.js?v=3"></script>
+    <script src="clerk-auth.js?v=4"></script>
   </body>
 </html>
