@@ -1,10 +1,11 @@
 :root {
-  --cream: #efe6d9;
-  --paper: #faf6ef;
-  --espresso: #3b2a22;
-  --mocha: #6e4e3d;
-  --moss: #59684a;
-  --line: rgba(59, 42, 34, 0.1);
+  --brown: #503931;
+  --beige: #e9e1d8;
+  --paper: #efe9e2;
+  --muted: #76635b;
+  --hover: #3d2b25;
+  --ink: #2a1e1a;
+  --line: color-mix(in srgb, var(--brown) 12%, transparent);
   --serif: "Fraunces", "Times New Roman", serif;
   --sans: "Work Sans", system-ui, sans-serif;
   --max: 1280px;
@@ -32,14 +33,14 @@ body {
   font-family: var(--sans);
   font-size: 1.0625rem;
   line-height: 1.62;
-  color: var(--espresso);
-  background: var(--cream);
+  color: var(--brown);
+  background: var(--beige);
   min-width: 320px;
   font-synthesis: none;
 }
 
 ::selection {
-  background: var(--moss);
+  background: var(--brown);
   color: var(--paper);
 }
 
@@ -55,7 +56,7 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--moss);
+  outline: 2px solid var(--brown);
   outline-offset: 3px;
 }
 
@@ -102,7 +103,7 @@ a {
   font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--moss);
+  color: var(--muted);
 }
 
 .eyebrow .mark,
@@ -112,7 +113,7 @@ a {
   font-size: 1.08rem;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--espresso);
+  color: var(--brown);
   line-height: 1;
 }
 
@@ -128,7 +129,7 @@ a {
 .steam-big span {
   display: block;
   width: 7px;
-  border: 1.25px solid rgba(59, 42, 34, 0.22);
+  border: 1.25px solid color-mix(in srgb, var(--brown) 22%, transparent);
   border-bottom: 0;
   border-radius: 12px 12px 4px 4px;
   transform-origin: 50% 100%;
@@ -188,8 +189,8 @@ a {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
-  border: 12px solid rgba(110, 78, 61, 0.1);
-  box-shadow: inset 0 0 0 6px rgba(239, 230, 217, 0.28);
+  border: 12px solid color-mix(in srgb, var(--muted) 22%, transparent);
+  box-shadow: inset 0 0 0 6px color-mix(in srgb, var(--beige) 28%, transparent);
 }
 
 .ring-a {
@@ -226,7 +227,7 @@ a {
   position: sticky;
   top: 0;
   z-index: 80;
-  background: color-mix(in srgb, var(--cream) 92%, transparent);
+  background: color-mix(in srgb, var(--beige) 92%, transparent);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid transparent;
   transition: border-color 0.35s var(--ease), background 0.35s var(--ease);
@@ -234,7 +235,7 @@ a {
 
 .site-header.is-scrolled {
   border-bottom-color: var(--line);
-  background: color-mix(in srgb, var(--cream) 96%, transparent);
+  background: color-mix(in srgb, var(--beige) 96%, transparent);
 }
 
 .nav {
@@ -258,8 +259,8 @@ a {
   height: 3.55rem;
   object-fit: cover;
   border-radius: 50%;
-  background: var(--cream);
-  box-shadow: 0 0 0 1.5px rgba(59, 42, 34, 0.16);
+  background: var(--beige);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--brown) 16%, transparent);
 }
 
 .nav-links {
@@ -280,7 +281,7 @@ a {
 }
 
 .nav-links a:hover {
-  color: var(--moss);
+  color: var(--muted);
 }
 
 .nav-links .btn {
@@ -292,7 +293,7 @@ a {
   display: none;
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(59, 42, 34, 0.16);
+  border: 1px solid color-mix(in srgb, var(--brown) 16%, transparent);
   background: var(--paper);
   border-radius: 8px;
   padding: 0;
@@ -307,7 +308,7 @@ a {
   display: block;
   width: 18px;
   height: 1.5px;
-  background: var(--espresso);
+  background: var(--brown);
   transition: transform 0.28s var(--ease), opacity 0.28s var(--ease);
 }
 
@@ -329,9 +330,9 @@ a {
   font-weight: 500;
   font-size: 0.92rem;
   letter-spacing: 0.04em;
-  background: var(--espresso);
-  color: var(--cream);
-  border: 1px solid var(--espresso);
+  background: var(--brown);
+  color: var(--beige);
+  border: 1px solid var(--brown);
   transition:
     background 0.28s var(--ease),
     color 0.28s var(--ease),
@@ -339,16 +340,16 @@ a {
 }
 
 .btn:hover {
-  background: #2e211b;
+  background: var(--hover);
 }
 
 .btn-ghost {
   background: transparent;
-  color: var(--espresso);
+  color: var(--brown);
 }
 
 .btn-ghost:hover {
-  background: rgba(59, 42, 34, 0.05);
+  background: color-mix(in srgb, var(--brown) 5%, transparent);
 }
 
 /* Hero */
@@ -367,7 +368,7 @@ a {
   font-weight: 600;
   font-size: clamp(14rem, 44vw, 28rem);
   line-height: 0.75;
-  color: var(--espresso);
+  color: var(--brown);
   opacity: 0.035;
   pointer-events: none;
   user-select: none;
@@ -403,12 +404,12 @@ a {
   font-style: italic;
   letter-spacing: -0.02em;
   margin-top: 0.14em;
-  color: var(--mocha);
+  color: var(--muted);
 }
 
 .lede {
   margin: 0 0 1.85rem;
-  color: var(--mocha);
+  color: var(--muted);
   font-size: clamp(1.12rem, 1.7vw, 1.34rem);
   line-height: 1.55;
   max-width: 34rem;
@@ -428,13 +429,13 @@ a {
   margin: 0;
   padding-top: 1.2rem;
   border-top: 1px solid var(--line);
-  color: var(--mocha);
+  color: var(--muted);
   font-size: 0.92rem;
   letter-spacing: 0.04em;
 }
 
 .hours-chip strong {
-  color: var(--espresso);
+  color: var(--brown);
   font-weight: 600;
 }
 
@@ -463,7 +464,7 @@ a {
   min-height: 0;
   aspect-ratio: 4 / 5;
   border: 8px solid var(--paper);
-  box-shadow: 0 22px 48px rgba(59, 42, 34, 0.16);
+  box-shadow: 0 22px 48px color-mix(in srgb, var(--brown) 16%, transparent);
   animation: hero-rise 1.12s var(--ease) 0.22s both;
 }
 
@@ -477,9 +478,9 @@ a {
   height: 10.25rem;
   border-radius: 50%;
   object-fit: cover;
-  background: var(--cream);
+  background: var(--beige);
   border: 6px solid var(--paper);
-  box-shadow: 0 16px 36px rgba(59, 42, 34, 0.18);
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--brown) 18%, transparent);
   pointer-events: none;
   animation: hero-rise 1.18s var(--ease) 0.32s both;
 }
@@ -536,7 +537,7 @@ h2 {
 }
 
 .prose {
-  color: var(--mocha);
+  color: var(--muted);
   margin: 0;
   max-width: 38em;
   font-size: 1.14rem;
@@ -549,9 +550,9 @@ h2 {
   min-height: 420px;
   aspect-ratio: 4 / 5;
   background:
-    radial-gradient(circle at 30% 20%, rgba(250, 246, 239, 0.28), transparent 45%),
-    linear-gradient(160deg, #7d6a55 0%, var(--espresso) 55%, #4a3a2c 100%);
-  border: 1px solid rgba(59, 42, 34, 0.12);
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--beige) 28%, transparent), transparent 45%),
+    linear-gradient(160deg, var(--muted) 0%, var(--brown) 55%, var(--hover) 100%);
+  border: 1px solid color-mix(in srgb, var(--brown) 12%, transparent);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -562,7 +563,7 @@ h2 {
   font-family: var(--serif);
   font-style: italic;
   font-size: 11rem;
-  color: #faf6ef;
+  color: var(--beige);
   opacity: 0.07;
   line-height: 1;
 }
@@ -571,7 +572,7 @@ h2 {
   position: relative;
   z-index: 1;
   margin: 0;
-  color: var(--cream);
+  color: var(--beige);
   font-size: 0.72rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -579,7 +580,7 @@ h2 {
 
 .media-frame-photo {
   display: block;
-  background: #2a1e19;
+  background: var(--ink);
 }
 
 .media-frame-photo .gallery-open {
@@ -608,7 +609,7 @@ h2 {
   bottom: 0;
   z-index: 2;
   padding: 2.4rem 1rem 0.85rem;
-  background: linear-gradient(transparent, rgba(42, 30, 25, 0.72));
+  background: linear-gradient(transparent, color-mix(in srgb, var(--ink) 72%, transparent));
   pointer-events: none;
 }
 
@@ -639,7 +640,7 @@ h2 {
   overflow: hidden;
   padding: 0;
   border: 1px solid var(--line);
-  background: #2a1e19;
+  background: var(--ink);
   cursor: zoom-in;
   appearance: none;
   font: inherit;
@@ -673,7 +674,7 @@ h2 {
 .lightbox-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(42, 30, 25, 0.88);
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
 }
 
 .lightbox-stage {
@@ -696,13 +697,13 @@ h2 {
   max-height: min(78vh, 860px);
   height: auto;
   object-fit: contain;
-  background: #2a1e19;
-  border: 1px solid rgba(239, 230, 217, 0.18);
+  background: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--beige) 18%, transparent);
 }
 
 .lightbox-caption {
   margin: 0.7rem 0 0;
-  color: var(--cream);
+  color: var(--beige);
   font-size: 0.82rem;
   letter-spacing: 0.02em;
   text-align: center;
@@ -714,9 +715,9 @@ h2 {
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid rgba(239, 230, 217, 0.22);
-  background: var(--espresso);
-  color: var(--cream);
+  border: 1px solid color-mix(in srgb, var(--beige) 22%, transparent);
+  background: var(--brown);
+  color: var(--beige);
   cursor: pointer;
 }
 
@@ -746,7 +747,7 @@ h2 {
 
 .lightbox-close:hover,
 .lightbox-nav:hover {
-  background: #2e211b;
+  background: var(--hover);
 }
 
 body.lightbox-open {
@@ -770,7 +771,7 @@ body.lightbox-open {
   position: relative;
   min-width: 0;
   background: var(--paper);
-  border: 1px solid rgba(59, 42, 34, 0.1);
+  border: 1px solid var(--line);
   padding: clamp(1.6rem, 2.8vw, 2.35rem) clamp(1.35rem, 2.4vw, 2.1rem) 1.85rem;
 }
 
@@ -782,7 +783,7 @@ body.lightbox-open {
   font-family: var(--serif);
   font-style: italic;
   font-size: 4.5rem;
-  color: var(--espresso);
+  color: var(--brown);
   opacity: 0.045;
   line-height: 1;
   pointer-events: none;
@@ -800,7 +801,7 @@ body.lightbox-open {
   font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--moss);
+  color: var(--muted);
 }
 
 .board h3 {
@@ -840,20 +841,20 @@ body.lightbox-open {
   flex: 1 1 auto;
   min-width: 1.1rem;
   height: 0;
-  border-bottom: 1.5px dotted rgba(59, 42, 34, 0.22);
+  border-bottom: 1.5px dotted color-mix(in srgb, var(--brown) 22%, transparent);
   transform: translateY(-0.28em);
 }
 
 .menu-item .price {
   font-variant-numeric: tabular-nums;
-  color: var(--mocha);
+  color: var(--muted);
   font-weight: 500;
   font-size: 0.92rem;
 }
 
 .menu-item-desc {
   margin: -0.12rem 0 0.7rem;
-  color: var(--mocha);
+  color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.5;
   max-width: 36em;
@@ -861,7 +862,7 @@ body.lightbox-open {
 
 .note {
   margin: 1.6rem 0 0;
-  color: var(--mocha);
+  color: var(--muted);
   font-size: 0.84rem;
 }
 
@@ -899,17 +900,17 @@ body.lightbox-open {
 .visit-card address {
   margin: 0;
   font-style: normal;
-  color: var(--mocha);
+  color: var(--muted);
   font-size: 1.05rem;
   line-height: 1.55;
 }
 
 .visit-card a:hover {
-  color: var(--moss);
+  color: var(--brown);
 }
 
 .visit-card strong {
-  color: var(--espresso);
+  color: var(--brown);
   font-weight: 600;
 }
 
@@ -919,7 +920,7 @@ body.lightbox-open {
   flex-direction: column;
   min-height: 100%;
   border: 1px solid var(--line);
-  background: #ddd4c6;
+  background: color-mix(in srgb, var(--beige) 82%, var(--brown));
   overflow: hidden;
 }
 
@@ -934,19 +935,19 @@ body.lightbox-open {
 .map-frame figcaption {
   margin: 0;
   padding: 0.7rem 1rem;
-  background: var(--cream);
+  background: var(--beige);
   border-top: 1px solid var(--line);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--mocha);
+  color: var(--muted);
 }
 
 /* Footer — perforated receipt edge */
 .site-footer {
   position: relative;
-  background: var(--espresso);
-  color: var(--cream);
+  background: var(--brown);
+  color: var(--beige);
   margin-top: 2.75rem;
   padding: 3.5rem 0 2.25rem;
 }
@@ -959,7 +960,7 @@ body.lightbox-open {
   top: -8px;
   height: 16px;
   background:
-    radial-gradient(circle at 8px 8px, var(--cream) 6px, transparent 6.5px) 0 0 / 16px 16px;
+    radial-gradient(circle at 8px 8px, var(--beige) 6px, transparent 6.5px) 0 0 / 16px 16px;
 }
 
 .footer-inner {
@@ -985,29 +986,29 @@ body.lightbox-open {
   height: 3.85rem;
   object-fit: cover;
   border-radius: 50%;
-  background: var(--cream);
-  box-shadow: 0 0 0 1.5px rgba(239, 230, 217, 0.28);
+  background: var(--beige);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--beige) 28%, transparent);
 }
 
 .footer-meta {
-  color: rgba(239, 230, 217, 0.72);
+  color: color-mix(in srgb, var(--beige) 72%, transparent);
   font-size: 0.92rem;
   line-height: 1.75;
 }
 
 .footer-meta a {
-  color: var(--cream);
+  color: var(--beige);
   text-underline-offset: 0.18em;
 }
 
 .footer-meta a:hover {
-  color: #fff;
+  color: color-mix(in srgb, var(--beige) 45%, white);
 }
 
 .fineprint {
   margin: 1.5rem 0 0;
   font-size: 0.76rem;
-  color: rgba(239, 230, 217, 0.5);
+  color: color-mix(in srgb, var(--beige) 50%, transparent);
 }
 
 .fineprint a {
@@ -1016,7 +1017,7 @@ body.lightbox-open {
 }
 
 .fineprint a:hover {
-  color: var(--cream);
+  color: var(--beige);
 }
 
 @media (max-width: 760px) {
@@ -1034,7 +1035,7 @@ body.lightbox-open {
     align-items: stretch;
     gap: 0;
     padding: 0.6rem var(--pad) 1rem;
-    background: var(--cream);
+    background: var(--beige);
     border-bottom: 1px solid var(--line);
   }
 
@@ -1044,7 +1045,7 @@ body.lightbox-open {
 
   .nav-links a {
     padding: 0.75rem 0;
-    border-bottom: 1px solid rgba(59, 42, 34, 0.08);
+    border-bottom: 1px solid color-mix(in srgb, var(--brown) 8%, transparent);
   }
 
   .nav-links .btn {
