@@ -1441,6 +1441,111 @@ body.lightbox-open {
   color: var(--muted);
 }
 
+/* Google reviews */
+.reviews-layout {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+}
+
+.reviews-copy .prose {
+  max-width: 34em;
+}
+
+.google-presence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.7rem 1.2rem;
+  margin: 1.7rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.google-kicker {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.google-presence a {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  text-underline-offset: 0.2em;
+}
+
+.google-presence a:hover {
+  color: var(--hover);
+}
+
+.reviews-note {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: clamp(1.55rem, 3vw, 2.2rem) clamp(1.4rem, 2.6vw, 2rem);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--beige) 70%, transparent);
+}
+
+.reviews-note .closing-line {
+  margin-top: 0;
+}
+
+.reviews-note .prose {
+  margin-top: 0.85rem;
+}
+
+.reviews-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.45rem;
+}
+
+.share-fallback {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.35rem;
+  margin: 1.15rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.share-fallback[hidden] {
+  display: none;
+}
+
+.share-fallback a,
+.share-fallback button {
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 0 0 0.08em;
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px solid var(--brass);
+}
+
+.share-fallback a:hover,
+.share-fallback button:hover {
+  color: var(--brown);
+  border-bottom-color: var(--brown);
+}
+
+.share-status {
+  min-height: 1.2em;
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 /* Footer — perforated receipt edge */
 .site-footer {
   position: relative;
@@ -1576,6 +1681,7 @@ body.lightbox-open {
   .split,
   .boards,
   .visit-grid,
+  .reviews-layout,
   .ways-grid,
   .app-grid {
     grid-template-columns: 1fr;
