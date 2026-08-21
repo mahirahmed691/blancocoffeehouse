@@ -8,6 +8,9 @@
   }
   var accountUrl = new URL("account.html", window.location.href).href;
   var homeUrl = new URL("index.html", window.location.href).href;
+  var adminUrl = new URL("admin.html", window.location.href).href;
+  var onAdminPage = /admin\.html(?:$|\?|#)/.test(location.pathname + location.search);
+  var afterAuthUrl = onAdminPage ? adminUrl : accountUrl;
   var appearance = {
     variables: {
       colorPrimary: "#503931",
@@ -63,6 +66,38 @@
   function showSetupNote() {
     var note = document.getElementById("clerk-setup-note");
     if (note) note.hidden = false;
+  }
+
+  function isHouseAdmin() {
+    var user = window.Clerk && Clerk.user;
+    if (!user) return false;
+    var meta = user.publicMetadata || user.public_metadata || {};
+    if (String(meta.role || "").toLowerCase() === "admin") return true;
+    var emailObj = user.primaryEmailAddress || (user.emailAddresses && user.emailAddresses[0]);
+    var email = String((emailObj && emailObj.emailAddress) || "").trim().toLowerCase();
+    var allowed = String(window.HOUSE_ADMIN_EMAILS || "")
+      .split(/[,;\s]+/)
+      .map(function (e) {
+        return e.trim().toLowerCase();
+      })
+      .filter(Boolean);
+    return !!email && allowed.indexOf(email) !== -1;
+  }
+
+  window.blancoIsAdmin = isHouseAdmin;
+
+  function setAdminUi() {
+    var admin = isSignedIn() && isHouseAdmin();
+    document.body.classList.toggle("is-house-admin", admin);
+    document.querySelectorAll("[data-house-desk]").forEach(function (el) {
+      el.hidden = !admin;
+    });
+    var denied = document.getElementById("admin-denied");
+    var desk = document.getElementById("admin-desk");
+    if (!denied && !desk) return;
+    var inSession = isSignedIn();
+    if (denied) denied.hidden = !(inSession && !admin);
+    if (desk) desk.hidden = !(inSession && admin);
   }
 
   function fillProfile() {
@@ -183,9 +218,9 @@
     setMountLoading(mount, true);
     var opts = {
       appearance: appearance,
-      forceRedirectUrl: accountUrl,
-      signInForceRedirectUrl: accountUrl,
-      signUpForceRedirectUrl: accountUrl
+      forceRedirectUrl: afterAuthUrl,
+      signInForceRedirectUrl: afterAuthUrl,
+      signUpForceRedirectUrl: afterAuthUrl
     };
     if (mode === "sign-up") {
       Clerk.mountSignUp(mount, opts);
@@ -197,7 +232,7 @@
   }
 
   function switchAuthMode(mode) {
-    var next = mode === "sign-up" ? "#sign-up" : "#account-auth";
+    var next = mode === "sign-up" ? "#sign-up" : onAdminPage ? "#admin-auth" : "#account-auth";
     if (location.hash !== next) {
       history.replaceState(null, "", next);
     }
@@ -209,6 +244,7 @@
     setSignedIn(inSession);
     setReady();
     if (inSession) fillProfile();
+    setAdminUi();
     mountUserButtons();
     mountAuthForm(false);
   }
@@ -263,8 +299,8 @@
 
   var loadOpts = {
     appearance: appearance,
-    signInForceRedirectUrl: accountUrl,
-    signUpForceRedirectUrl: accountUrl,
+    signInForceRedirectUrl: afterAuthUrl,
+    signUpForceRedirectUrl: afterAuthUrl,
     afterSignOutUrl: homeUrl
   };
 

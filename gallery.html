@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>the house, in pictures. — Blanco Coffee House</title>
+    <meta
+      name="description"
+      content="Photographs from Blanco Coffee House on Fiveways Parade — the cup, the case, and the room. Open every day, 11am–8pm."
+    />
+    <meta name="theme-color" content="#E9E1D8" />
+    <link rel="canonical" href="https://blancocoffeehouse.com/gallery.html" />
+    <link rel="icon" href="assets/logo.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Nunito:wght@500;600;700;800&family=Work+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="prefetch" href="index.html" />
+  </head>
+  <body class="gallery-page">
+    <div class="grain" aria-hidden="true"></div>
+    <a class="skip" href="#gallery-main">Skip to gallery</a>
+
+    <header class="site-header">
+      <nav class="nav wrap" aria-label="Primary">
+        <a class="logo" href="index.html">
+          <img
+            class="logo-badge"
+            src="assets/logo.png"
+            alt="blanco."
+            width="512"
+            height="512"
+            decoding="async"
+          />
+        </a>
+        <button
+          class="mega-trigger"
+          type="button"
+          aria-expanded="false"
+          aria-controls="mega-panel"
+        >
+          The house
+          <span class="mega-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="nav-search">
+          <label class="visually-hidden" for="house-search">Search the house</label>
+          <input
+            id="house-search"
+            type="search"
+            name="q"
+            placeholder="Search the board…"
+            autocomplete="off"
+            spellcheck="false"
+            enterkeyhint="search"
+          />
+          <ul
+            class="search-results"
+            id="house-search-results"
+            hidden
+            role="listbox"
+            aria-label="Search results"
+          ></ul>
+        </div>
+        <div class="nav-cta">
+          <a class="btn clerk-signed-out" href="account.html">Sign in</a>
+          <a class="nav-account-link clerk-signed-in" href="account.html" hidden>Account</a>
+          <div class="clerk-signed-in" id="clerk-user-button" hidden></div>
+        </div>
+        <button
+          class="nav-toggle"
+          type="button"
+          aria-label="Open menu"
+          aria-expanded="false"
+          aria-controls="mega-panel"
+        >
+          <span></span>
+          <span></span>
+        </button>
+      </nav>
+      <div class="mega-panel" id="mega-panel" hidden>
+        <div class="wrap mega-inner">
+          <section class="mega-col">
+            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> the board</p>
+            <a href="index.html#menu">The full menu</a>
+            <a href="index.html#cup">In the cup</a>
+            <a href="index.html#drinks-board-title">Drinks</a>
+            <a href="index.html#sweets-board-title">Sweets</a>
+            <a href="index.html#app">Rewards</a>
+          </section>
+          <section class="mega-col">
+            <p class="eyebrow">your way</p>
+            <a href="index.html#ways">Sit in</a>
+            <a href="index.html#ways">Pick up</a>
+            <a href="index.html#ways">Delivery</a>
+            <a href="gallery.html" aria-current="page">The gallery</a>
+            <a href="index.html#wear">Apparel</a>
+          </section>
+          <section class="mega-col">
+            <p class="eyebrow">visit</p>
+            <a href="index.html#visit">Fiveways Parade</a>
+            <a href="index.html#reviews">Google reviews</a>
+            <a
+              href="https://www.instagram.com/blancocoffeehouse/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Instagram</a
+            >
+            <a href="account.html">Your account</a>
+          </section>
+          <aside class="mega-feature">
+            <a class="mega-feature-photo" href="index.html#visit">
+              <img
+                src="assets/photos/lights.jpg"
+                alt="Inside Blanco Coffee House."
+                width="1350"
+                height="1800"
+                decoding="async"
+              />
+            </a>
+            <p class="mega-hours" data-hours-line>Open every day · 11am–8pm</p>
+            <p class="mega-address">4 Fiveways Parade, Hazel Grove, SK7 6DG</p>
+            <a class="btn" href="index.html#visit">Find us</a>
+          </aside>
+          <div class="mega-cta">
+            <a class="btn clerk-signed-out" href="account.html">Sign in</a>
+            <a class="btn btn-ghost clerk-signed-in" href="account.html" hidden>Account</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="gallery-main">
+      <section class="band band-paper gallery-hero">
+        <div class="wrap gallery-intro">
+          <div>
+            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> in-store</p>
+            <h1 class="campaign-title">the house, in pictures.</h1>
+            <p class="prose">
+              Photographs from Fiveways Parade — the cup, the case, and the
+              room. Open any picture. Follow blanco on Instagram for more.
+            </p>
+            <div class="gallery-toolbar">
+              <div class="gallery-tabs" role="tablist" aria-label="Gallery">
+                <button
+                  type="button"
+                  class="gallery-tab is-active"
+                  role="tab"
+                  id="gallery-tab-all"
+                  aria-selected="true"
+                  data-gallery-filter="all"
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  class="gallery-tab"
+                  role="tab"
+                  id="gallery-tab-cup"
+                  aria-selected="false"
+                  tabindex="-1"
+                  data-gallery-filter="cup"
+                >
+                  In the cup
+                </button>
+                <button
+                  type="button"
+                  class="gallery-tab"
+                  role="tab"
+                  id="gallery-tab-sweets"
+                  aria-selected="false"
+                  tabindex="-1"
+                  data-gallery-filter="sweets"
+                >
+                  Sweets
+                </button>
+                <button
+                  type="button"
+                  class="gallery-tab"
+                  role="tab"
+                  id="gallery-tab-house"
+                  aria-selected="false"
+                  tabindex="-1"
+                  data-gallery-filter="house"
+                >
+                  The house
+                </button>
+              </div>
+              <a
+                class="btn ig-cta"
+                href="https://www.instagram.com/blancocoffeehouse/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <svg
+                  class="ig-logo"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664 4.771 4.919 4.919 1.266.057 1.645.069 4.849.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
+                  />
+                </svg>
+                Follow
+                <span class="btn-icon" aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </div>
+          <figure class="gallery-feature" data-kind="cup house">
+            <button type="button" class="gallery-open" aria-haspopup="dialog">
+              <img
+                src="assets/photos/latte-case.jpg"
+                alt="An iced Blanco latte held in front of the pastry case and the house blanco. sign."
+                width="1350"
+                height="1800"
+                fetchpriority="high"
+                decoding="async"
+              />
+            </button>
+            <figcaption>The iced latte, the case, the sign.</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="band" aria-labelledby="gallery-grid-title">
+        <div class="wrap">
+          <h2 class="visually-hidden" id="gallery-grid-title">Photographs</h2>
+          <ul class="gallery-bento" aria-label="Shop photographs">
+            <li class="span-tall" data-kind="cup house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/lights.jpg"
+                  alt="An iced Blanco latte held in the dining room under the hanging lights."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li class="span-hero" data-kind="cup house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/sit-in.jpg"
+                  alt="An iced Blanco latte on a marble table, looking out through the house toward Fiveways Parade."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="cup sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/mascot-counter.jpg"
+                  alt="The Blanco mug mascot beside an iced latte, with cookies in the case below."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="cup house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/gelato-counter.jpg"
+                  alt="An iced Blanco latte in front of the gelato cabinet."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="cup sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/latte-cookies.jpg"
+                  alt="An iced Blanco latte on the counter, with cookie trays in the pastry case behind it."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="sweets house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/cookie-case.jpg"
+                  alt="Oreo cookies on a wooden tray in the pastry case, with Biscoff cookies below and Fiveways Parade in the window."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/oreo-cookie.jpg"
+                  alt="Oreo cookies with a chocolate drip on a wooden tray."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/pistachio-cookie.jpg"
+                  alt="Pistachio and white chocolate cookies on a wooden tray."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/biscoff-cookie.jpg"
+                  alt="A Biscoff cookie on a wooden tray in the pastry case."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/chocolate-cookie.jpg"
+                  alt="Double chocolate cookies with white chocolate chunks on a wooden tray."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/heart-cookie.jpg"
+                  alt="Cookies topped with melted chocolate and a heart biscuit on a wooden tray."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/caramel-cookie.jpg"
+                  alt="Chocolate chip cookies with caramel and chocolate pieces on a wooden tray."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/coffee-club-tee.jpg"
+                  alt="A barista at the counter wearing the Blanco coffee club tee."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="cup house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/coffee-club.jpg"
+                  alt="An iced Blanco latte held in front of the cool coffee club print."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="cup house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/soft-life.jpg"
+                  alt="An iced Blanco latte held in front of the Soft Life Strong Coffee print."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="cup house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/matcha-lover.jpg"
+                  alt="An iced Blanco latte held in front of the Matcha Lover print."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="cup">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/espresso-bar.jpg"
+                  alt="An iced Blanco latte in front of the espresso machine."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/house-jars.jpg"
+                  alt="Blanco-branded jars of tea, sugar, and matcha on the bar shelf."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/matcha-jars.jpg"
+                  alt="Stacked Blanco jars of sugar and matcha on the bar shelf."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/cookie-gelato.jpg"
+                  alt="A pistachio cookie in a paper bowl beside a scoop of gelato."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/loaf.jpg"
+                  alt="A chocolate chip loaf on a ceramic plate."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="sweets">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/brownies.jpg"
+                  alt="Oreo brownies and cookies from Blanco Coffee House."
+                  width="1354"
+                  height="1600"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/table-ten.jpg"
+                  alt="A toy car on table 10, with the blanco. sign and a stack of cups behind it."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/storefront.jpg"
+                  alt="The Blanco Coffee House shopfront at 4 Fiveways Parade, with iced drinks on the pavement."
+                  width="1354"
+                  height="1600"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="house">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/interior.jpg"
+                  alt="Inside Blanco Coffee House: a branded balloon above a tray of brownies."
+                  width="1354"
+                  height="1600"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li data-kind="cup">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/matcha.jpg"
+                  alt="An iced matcha and a chocolate chip cookie at Blanco Coffee House."
+                  width="1360"
+                  height="1600"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+          </ul>
+          <p class="gallery-foot">
+            <a class="btn" href="index.html">Back to the house</a>
+            <a class="btn btn-ghost" href="index.html#menu">View menu</a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <div class="footer-brand">
+          <img
+            class="logo-badge"
+            src="assets/logo.png"
+            alt="blanco."
+            width="512"
+            height="512"
+            decoding="async"
+          />
+          <span>
+            blanco.
+            <span class="footer-tag">your way.</span>
+          </span>
+        </div>
+        <div class="footer-meta">
+          <div data-hours-footer>Monday–Sunday, 11am–8pm</div>
+          <div>4 Fiveways Parade, Hazel Grove, Stockport, SK7 6DG</div>
+          <div>
+            <a href="index.html#reviews">Reviews</a>
+            ·
+            <a href="gallery.html" aria-current="page">Gallery</a>
+            ·
+            <a href="index.html#wear">Apparel</a>
+            ·
+            <a
+              href="https://www.instagram.com/blancocoffeehouse/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Instagram</a
+            >
+          </div>
+        </div>
+      </div>
+      <p class="wrap fineprint">
+        © 2026 Blanco Coffee House · blancocoffeehouse.com · made by
+        <a
+          href="https://mahirahmed.co.uk"
+          target="_blank"
+          rel="noopener noreferrer"
+          >mahirahmed</a
+        >
+      </p>
+    </footer>
+
+    <div
+      class="lightbox"
+      id="lightbox"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="lightbox-caption"
+    >
+      <div class="lightbox-backdrop" data-lightbox-close></div>
+      <div class="lightbox-stage">
+        <button
+          class="lightbox-close"
+          type="button"
+          aria-label="Close photograph"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <button
+          class="lightbox-nav lightbox-prev"
+          type="button"
+          aria-label="Previous photograph"
+        >
+          <span aria-hidden="true">‹</span>
+        </button>
+        <figure class="lightbox-figure">
+          <img class="lightbox-image" alt="" />
+          <figcaption id="lightbox-caption" class="lightbox-caption"></figcaption>
+        </figure>
+        <button
+          class="lightbox-nav lightbox-next"
+          type="button"
+          aria-label="Next photograph"
+        >
+          <span aria-hidden="true">›</span>
+        </button>
+      </div>
+    </div>
+
+    <script src="house-config.js"></script>
+    <script src="clerk-config.js?v=4"></script>
+    <script src="script.js"></script>
+    <script src="house.js"></script>
+    <script src="clerk-auth.js?v=4"></script>
+  </body>
+</html>

@@ -139,7 +139,7 @@
             <a href="#ways">Sit in</a>
             <a href="#ways">Pick up</a>
             <a href="#ways">Delivery</a>
-            <a href="#gallery">In-store</a>
+            <a href="gallery.html">The gallery</a>
             <a href="#wear">Apparel</a>
           </section>
           <section class="mega-col">
@@ -164,7 +164,7 @@
                 decoding="async"
               />
             </a>
-            <p class="mega-hours">Open every day · 11am–8pm</p>
+            <p class="mega-hours" data-hours-line>Open every day · 11am–8pm</p>
             <p class="mega-address">4 Fiveways Parade, Hazel Grove, SK7 6DG</p>
             <a class="btn" href="#visit">Find us</a>
           </aside>
@@ -226,8 +226,8 @@
             <a class="btn" href="#menu">View menu</a>
             <a class="btn btn-ghost" href="#visit">Find us</a>
           </div>
-          <p class="hours-chip">
-            Open every day · <strong>11am–8pm</strong>
+          <p class="hours-chip" data-hours-line>
+            Open every day · <strong data-hours-range>11am–8pm</strong>
           </p>
         </div>
       </section>
@@ -405,8 +405,8 @@
             <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> in-store</p>
             <h2 class="campaign-title">the house.</h2>
             <p class="prose">
-              Coffee, matcha, and sweet’n’savory treats on Fiveways Parade.
-              Open the photographs here — follow blanco on Instagram for more.
+              New photographs from the counter, the case, and the room.
+              Open a few here — the rest live on the gallery page.
             </p>
           </div>
           <a
@@ -430,14 +430,14 @@
           </a>
         </div>
         <div class="wrap">
-          <ul class="photo-gallery" aria-label="Shop photographs">
+          <ul class="photo-gallery gallery-teaser" aria-label="Shop photographs">
             <li>
               <button type="button" class="gallery-open" aria-haspopup="dialog">
                 <img
-                  src="assets/photos/brownies.jpg"
-                  alt="Oreo brownies and cookies from Blanco Coffee House."
-                  width="1354"
-                  height="1600"
+                  src="assets/photos/latte-case.jpg"
+                  alt="An iced Blanco latte held in front of the pastry case and the house blanco. sign."
+                  width="1350"
+                  height="1800"
                   loading="lazy"
                   decoding="async"
                 />
@@ -446,16 +446,55 @@
             <li>
               <button type="button" class="gallery-open" aria-haspopup="dialog">
                 <img
-                  src="assets/photos/interior.jpg"
-                  alt="Inside Blanco Coffee House: a branded balloon above a tray of brownies."
-                  width="1354"
-                  height="1600"
+                  src="assets/photos/lights.jpg"
+                  alt="An iced Blanco latte held in the dining room under the hanging lights."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li>
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/cookie-case.jpg"
+                  alt="Oreo cookies on a wooden tray in the pastry case, with Biscoff cookies below and Fiveways Parade in the window."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li>
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/mascot-counter.jpg"
+                  alt="The Blanco mug mascot beside an iced latte, with cookies in the case below."
+                  width="1350"
+                  height="1800"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li>
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/coffee-club-tee.jpg"
+                  alt="A barista at the counter wearing the Blanco coffee club tee."
+                  width="1350"
+                  height="1800"
                   loading="lazy"
                   decoding="async"
                 />
               </button>
             </li>
           </ul>
+          <p class="gallery-cta-row">
+            <a class="btn" href="gallery.html">Open the gallery</a>
+          </p>
         </div>
       </section>
 
@@ -566,6 +605,7 @@
                 <h3 id="drinks-board-title">Blanco Coffee House</h3>
               </header>
 
+              <div class="board-cols">
               <div class="board-section">
                 <h4>Blanco Coffee</h4>
                 <div class="menu-item">
@@ -751,6 +791,7 @@
                   <span class="price">£2</span>
                 </div>
               </div>
+              </div>
             </article>
 
             <article
@@ -767,6 +808,7 @@
                 </h3>
               </header>
 
+              <div class="board-cols">
               <div class="board-section">
                 <h4>Milkshakes</h4>
                 <div class="menu-item">
@@ -948,6 +990,7 @@
                   <span class="price">£7</span>
                 </div>
               </div>
+              </div>
             </article>
           </div>
 
@@ -1093,8 +1136,8 @@
               <div class="visit-card">
                 <dt>Hours</dt>
                 <dd>
-                  Monday–Sunday<br />
-                  <strong>11am–8pm</strong>
+                  <span data-hours-days>Monday–Sunday</span><br />
+                  <strong data-hours-range>11am–8pm</strong>
                 </dd>
               </div>
               <div class="visit-card">
@@ -1138,10 +1181,12 @@
           </span>
         </div>
         <div class="footer-meta">
-          <div>Monday–Sunday, 11am–8pm</div>
+          <div data-hours-footer>Monday–Sunday, 11am–8pm</div>
           <div>4 Fiveways Parade, Hazel Grove, Stockport, SK7 6DG</div>
           <div>
             <a href="index.html#reviews">Reviews</a>
+            ·
+            <a href="gallery.html">Gallery</a>
             ·
             <a href="index.html#wear">Apparel</a>
             ·
@@ -1203,8 +1248,10 @@
       </div>
     </div>
 
+    <script src="house-config.js"></script>
     <script src="clerk-config.js?v=4"></script>
     <script src="script.js"></script>
+    <script src="house.js"></script>
     <script src="clerk-auth.js?v=4"></script>
   </body>
 </html>
