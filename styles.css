@@ -115,7 +115,7 @@ a {
   max-width: none;
   aspect-ratio: 1;
   flex-shrink: 0;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   border-radius: 50%;
   background: var(--beige);
@@ -264,7 +264,7 @@ a {
   height: 3.55rem;
   max-width: none;
   aspect-ratio: 1;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   border-radius: 50%;
   background: var(--beige);
@@ -456,7 +456,7 @@ body:not(.clerk-ready) .clerk-signed-in {
   max-width: none;
   aspect-ratio: 1;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   background: var(--beige);
   border: 5px solid var(--beige);
@@ -1132,7 +1132,7 @@ body.lightbox-open {
   height: 3.6rem;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: url("assets/logo.png") center / cover no-repeat;
+  background: url("assets/logo.svg") center / cover no-repeat;
   opacity: 0.08;
   pointer-events: none;
 }
