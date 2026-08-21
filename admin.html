@@ -250,11 +250,52 @@
                   The line
                   <input id="hours-line" name="hours_line" type="text" maxlength="80" />
                 </label>
+                <label class="admin-hours-line">
+                  A line for today
+                  <input
+                    id="hours-notice"
+                    name="notice"
+                    type="text"
+                    maxlength="120"
+                    placeholder="Optional — matcha is off, kitchen closes 7."
+                  />
+                </label>
               </div>
               <p class="admin-hint">
                 Opens and closes write the range (11am–8pm). The line is the
-                sentence on the house page.
+                sentence on the house page. A line for today sits under the
+                header until you clear it.
               </p>
+            </article>
+
+            <article class="account-card admin-stamps">
+              <div class="admin-card-head">
+                <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> stamps</p>
+                <h2>The card</h2>
+              </div>
+              <p class="admin-hint">
+                Eight stamps. A drink on the house. Type the member email from
+                their blanco account.
+              </p>
+              <div class="admin-stamp-row">
+                <label>
+                  Member email
+                  <input
+                    id="stamp-email"
+                    type="email"
+                    autocomplete="off"
+                    enterkeyhint="search"
+                    placeholder="hello@…"
+                  />
+                </label>
+                <button class="btn btn-ghost" type="button" id="stamp-find">Find</button>
+              </div>
+              <ol class="stamp-row" id="stamp-preview" aria-label="Member stamps">
+                <li></li><li></li><li></li><li></li>
+                <li></li><li></li><li></li><li></li>
+              </ol>
+              <p class="admin-hint" id="stamp-status">No card open yet.</p>
+              <button class="btn" type="button" id="stamp-give" disabled>Give a stamp</button>
             </article>
 
             <div class="admin-toolbar">
@@ -395,10 +436,10 @@
     </footer>
 
     <script src="house-config.js"></script>
-    <script src="clerk-config.js?v=4"></script>
+    <script src="clerk-config.js?v=5"></script>
     <script src="script.js"></script>
     <script src="house.js"></script>
-    <script src="clerk-auth.js?v=4"></script>
+    <script src="clerk-auth.js?v=5"></script>
     <script src="admin.js"></script>
   </body>
 </html>

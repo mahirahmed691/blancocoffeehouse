@@ -3033,6 +3033,52 @@ body.lightbox-open {
   background: color-mix(in srgb, var(--beige) 70%, transparent);
 }
 
+.stamp-row li.is-stamped {
+  border-style: solid;
+  border-color: var(--brown);
+  background: var(--brown);
+  box-shadow: inset 0 0 0 3px var(--paper);
+}
+
+.house-notice {
+  position: sticky;
+  top: 80px;
+  z-index: 70;
+  margin: 0 auto;
+  padding: 0.7rem var(--pad);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--beige);
+  background: var(--brown);
+}
+
+.house-notice[hidden] {
+  display: none;
+}
+
+.admin-stamp-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: end;
+  margin-top: 0.85rem;
+}
+
+.admin-stamp-row .btn {
+  min-height: 2.85rem;
+}
+
+#stamp-give {
+  margin-top: 0.85rem;
+}
+
+#stamp-status.is-error {
+  color: color-mix(in srgb, var(--brown) 70%, #c45c4a);
+}
+
 .menu-item.is-sold-out .price,
 .menu-row.is-sold-out .price {
   text-decoration: line-through;
@@ -3615,7 +3661,8 @@ body.lightbox-open {
   .admin-hours-grid,
   .admin-add-grid,
   .admin-item-row,
-  .admin-item-bar {
+  .admin-item-bar,
+  .admin-stamp-row {
     grid-template-columns: 1fr;
   }
 

@@ -192,6 +192,8 @@
     if (range) range.value = settings.hours_range || "";
     if (opens) opens.value = String(settings.opens || "11:00").slice(0, 5);
     if (closes) closes.value = String(settings.closes || "20:00").slice(0, 5);
+    var notice = document.getElementById("hours-notice");
+    if (notice) notice.value = settings.notice || "";
   }
 
   function matchesFilter(item) {
@@ -499,6 +501,7 @@
 
   form.addEventListener("input", function (event) {
     if (event.target.closest("#admin-pick")) return;
+    if (event.target.id === "stamp-email") return;
     var card = event.target.closest(".admin-item");
     if (card) readItemCard(card);
     if (event.target.id === "hours-opens" || event.target.id === "hours-closes") {
@@ -509,6 +512,7 @@
 
   form.addEventListener("change", function (event) {
     if (event.target.closest("#admin-pick")) return;
+    if (event.target.id === "stamp-email") return;
     if (event.target.getAttribute("data-field") === "name") refreshPick();
     if (event.target.id === "hours-opens" || event.target.id === "hours-closes") {
       syncHoursRange();
@@ -686,7 +690,10 @@
             hours_days: document.getElementById("hours-days").value.trim(),
             hours_range: document.getElementById("hours-range").value.trim(),
             opens: document.getElementById("hours-opens").value,
-            closes: document.getElementById("hours-closes").value
+            closes: document.getElementById("hours-closes").value,
+            notice: document.getElementById("hours-notice")
+              ? document.getElementById("hours-notice").value.trim()
+              : ""
           },
           deleted_ids: deletedIds,
           items: items.map(function (item) {
@@ -738,6 +745,111 @@
     event.preventDefault();
     event.returnValue = "";
   });
+
+  var stampEmail = document.getElementById("stamp-email");
+  var stampFind = document.getElementById("stamp-find");
+  var stampGive = document.getElementById("stamp-give");
+  var stampStatus = document.getElementById("stamp-status");
+  var stampPreview = document.getElementById("stamp-preview");
+  var stampLoadedEmail = "";
+
+  function paintStamps(count) {
+    if (!stampPreview) return;
+    var n = Number(count) || 0;
+    stampPreview.querySelectorAll("li").forEach(function (li, i) {
+      li.classList.toggle("is-stamped", i < n);
+    });
+  }
+
+  function setStampStatus(text, kind) {
+    if (!stampStatus) return;
+    stampStatus.textContent = text || "";
+    stampStatus.classList.toggle("is-error", kind === "error");
+  }
+
+  function stampNote(data) {
+    var name = data.name || "that member";
+    if (data.filled) {
+      return "A drink on the house for " + name + ". The card starts again.";
+    }
+    if (!data.stamps) {
+      return name + " has an empty card." + (data.cards_done ? " " + data.cards_done + " already on the house." : "");
+    }
+    return name + " · " + data.stamps + " of 8.";
+  }
+
+  function loadStampCard() {
+    var email = stampEmail ? stampEmail.value.trim().toLowerCase() : "";
+    if (!email || email.indexOf("@") === -1) {
+      setStampStatus("Type a member email.", "error");
+      if (stampGive) stampGive.disabled = true;
+      return;
+    }
+    setStampStatus("Opening the card…");
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/stamps?email=" + encodeURIComponent(email), { headers: headers });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "No account for that email.");
+          return data;
+        });
+      })
+      .then(function (data) {
+        stampLoadedEmail = email;
+        paintStamps(data.stamps);
+        if (stampGive) stampGive.disabled = false;
+        setStampStatus(stampNote(data));
+      })
+      .catch(function (err) {
+        stampLoadedEmail = "";
+        paintStamps(0);
+        if (stampGive) stampGive.disabled = true;
+        setStampStatus(err.message || "No account for that email.", "error");
+      });
+  }
+
+  function giveStamp() {
+    var email = stampLoadedEmail || (stampEmail && stampEmail.value.trim().toLowerCase()) || "";
+    if (!email) return;
+    if (stampGive) stampGive.disabled = true;
+    setStampStatus("Stamping…");
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/stamps", {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ email: email })
+        });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "The card could not update.");
+          return data;
+        });
+      })
+      .then(function (data) {
+        stampLoadedEmail = email;
+        paintStamps(data.stamps);
+        if (stampGive) stampGive.disabled = false;
+        setStampStatus(stampNote(data));
+      })
+      .catch(function (err) {
+        if (stampGive) stampGive.disabled = false;
+        setStampStatus(err.message || "The card could not update.", "error");
+      });
+  }
+
+  if (stampFind) stampFind.addEventListener("click", loadStampCard);
+  if (stampGive) stampGive.addEventListener("click", giveStamp);
+  if (stampEmail) {
+    stampEmail.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      loadStampCard();
+    });
+  }
 
   function bindClerk() {
     showPanels();

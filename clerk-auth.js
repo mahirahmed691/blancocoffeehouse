@@ -247,6 +247,9 @@
     setAdminUi();
     mountUserButtons();
     mountAuthForm(false);
+    if (inSession && typeof window.blancoLoadStamps === "function") {
+      window.blancoLoadStamps();
+    }
   }
 
   function bind() {
