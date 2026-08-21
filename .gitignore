@@ -31,3 +31,6 @@ assets/slides/
 assets/photos/campaign*
 assets/photos/slide*
 **/campaign-slide*
+.vercel
+.env*
+!.env.example
