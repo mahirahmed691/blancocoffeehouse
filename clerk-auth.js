@@ -121,22 +121,87 @@
       });
   }
 
-  function mountAuthForm() {
+  function wantsSignUp() {
+    return location.hash === "#sign-up";
+  }
+
+  function setAuthCopy(signUp) {
+    var title = document.getElementById("auth-panel-title");
+    var lede = document.getElementById("auth-panel-lede");
+    if (title) title.textContent = signUp ? "Join the house." : "Welcome back.";
+    if (lede) {
+      lede.textContent = signUp
+        ? "A quiet account for when orders and stamps are ready."
+        : "The same email you’ll keep for collection, delivery, and rewards.";
+    }
+    document.querySelectorAll("[data-auth-mode]").forEach(function (tab) {
+      var active = tab.getAttribute("data-auth-mode") === (signUp ? "sign-up" : "sign-in");
+      tab.classList.toggle("is-active", active);
+      if (tab.getAttribute("role") === "tab") {
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+      }
+    });
+  }
+
+  function setMountLoading(mount, on) {
+    if (!mount) return;
+    if (on) {
+      mount.setAttribute("data-clerk-loading", "");
+      if (!mount.querySelector(".clerk-loading")) {
+        var p = document.createElement("p");
+        p.className = "clerk-loading";
+        p.textContent = "Opening the book…";
+        mount.appendChild(p);
+      }
+    } else {
+      mount.removeAttribute("data-clerk-loading");
+      var loading = mount.querySelector(".clerk-loading");
+      if (loading) loading.remove();
+    }
+  }
+
+  function unmountAuth() {
     var mount = document.getElementById("clerk-sign-in");
-    if (!mount || isSignedIn()) return;
-    if (mount.getAttribute("data-mounted") === "true") return;
+    if (!mount || !window.Clerk) return;
+    try {
+      Clerk.unmountSignIn(mount);
+    } catch (err) {}
+    try {
+      Clerk.unmountSignUp(mount);
+    } catch (err) {}
+    mount.removeAttribute("data-mounted");
+    mount.innerHTML = "";
+  }
+
+  function mountAuthForm(force) {
+    var mount = document.getElementById("clerk-sign-in");
+    if (!mount || isSignedIn() || !window.Clerk) return;
+    var mode = wantsSignUp() ? "sign-up" : "sign-in";
+    if (!force && mount.getAttribute("data-mounted") === mode) return;
+    unmountAuth();
+    setAuthCopy(mode === "sign-up");
+    setMountLoading(mount, true);
     var opts = {
       appearance: appearance,
       forceRedirectUrl: accountUrl,
       signInForceRedirectUrl: accountUrl,
       signUpForceRedirectUrl: accountUrl
     };
-    if (location.hash === "#sign-up") {
+    if (mode === "sign-up") {
       Clerk.mountSignUp(mount, opts);
     } else {
       Clerk.mountSignIn(mount, opts);
     }
-    mount.setAttribute("data-mounted", "true");
+    mount.setAttribute("data-mounted", mode);
+    setMountLoading(mount, false);
+  }
+
+  function switchAuthMode(mode) {
+    var next = mode === "sign-up" ? "#sign-up" : "#account-auth";
+    if (location.hash !== next) {
+      history.replaceState(null, "", next);
+    }
+    mountAuthForm(true);
   }
 
   function render() {
@@ -145,27 +210,26 @@
     setReady();
     if (inSession) fillProfile();
     mountUserButtons();
-    mountAuthForm();
+    mountAuthForm(false);
   }
 
   function bind() {
-    document.querySelectorAll("[data-clerk-signin]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        if (!window.Clerk) return;
-        Clerk.openSignIn({
-          appearance: appearance,
-          forceRedirectUrl: accountUrl
-        });
+    document.querySelectorAll("[data-auth-mode]").forEach(function (btn) {
+      btn.addEventListener("click", function (event) {
+        var mode = btn.getAttribute("data-auth-mode");
+        if (btn.tagName === "A" && btn.getAttribute("href") && btn.getAttribute("href").charAt(0) !== "#") {
+          return;
+        }
+        if (document.getElementById("clerk-sign-in")) {
+          event.preventDefault();
+          switchAuthMode(mode);
+        }
       });
     });
-    document.querySelectorAll("[data-clerk-signup]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        if (!window.Clerk) return;
-        Clerk.openSignUp({
-          appearance: appearance,
-          forceRedirectUrl: accountUrl
-        });
-      });
+    window.addEventListener("hashchange", function () {
+      if (document.getElementById("clerk-sign-in") && !isSignedIn()) {
+        mountAuthForm(true);
+      }
     });
     document.querySelectorAll("[data-clerk-profile]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -204,6 +268,8 @@
     afterSignOutUrl: homeUrl
   };
 
+  setAuthCopy(wantsSignUp());
+
   loadScript("https://" + host + "/npm/@clerk/ui@1/dist/ui.browser.js")
     .catch(function () {
       return null;
@@ -222,6 +288,7 @@
     })
     .then(function () {
       bind();
+      setAuthCopy(wantsSignUp());
       render();
       Clerk.addListener(render);
     })
