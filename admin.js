@@ -10,7 +10,7 @@
   var sectionList = document.getElementById("admin-sections");
   var saveBtn = document.getElementById("admin-save");
   var undoBtn = document.getElementById("admin-undo");
-  var filterInput = document.getElementById("admin-filter");
+  var pickEl = document.getElementById("admin-pick");
   var metaEl = document.getElementById("admin-meta");
   var nameEl = document.querySelector("[data-admin-name]");
 
@@ -20,7 +20,7 @@
   var dirty = false;
   var saving = false;
   var undo = null;
-  var filterText = "";
+  var pickedKey = "";
 
   function setStatus(text, kind) {
     if (!statusEl) return;
@@ -188,11 +188,66 @@
   }
 
   function matchesFilter(item) {
-    if (!filterText) return true;
-    var hay = [item.name, item.section, item.description]
-      .join(" ")
-      .toLowerCase();
-    return hay.indexOf(filterText) !== -1;
+    if (!pickedKey) return true;
+    return item._key === pickedKey;
+  }
+
+  function formatPickPrice(value) {
+    var n = Number(value);
+    if (!isFinite(n)) return "";
+    if (Math.round(n * 100) % 100 === 0) return "£" + String(Math.round(n));
+    return "£" + n.toFixed(2);
+  }
+
+  function refreshPick() {
+    if (!pickEl) return;
+    if (document.activeElement === pickEl) return;
+    var html = '<option value="">Whole board</option>';
+    ["drinks", "sweets"].forEach(function (board) {
+      group(board).forEach(function (section) {
+        html +=
+          '<optgroup label="' +
+          escapeHtml((board === "sweets" ? "Sweets" : "Drinks") + " · " + section.title) +
+          '">';
+        section.items.forEach(function (item) {
+          var label = (item.name || "Untitled") + " · " + formatPickPrice(item.price_gbp);
+          if (item.sold_out) label += " · sold out";
+          html +=
+            '<option value="' +
+            escapeHtml(item._key) +
+            '">' +
+            escapeHtml(label) +
+            "</option>";
+        });
+        html += "</optgroup>";
+      });
+    });
+    pickEl.innerHTML = html;
+    pickEl.value = pickedKey && findItem(pickedKey) ? pickedKey : "";
+    if (!findItem(pickedKey)) pickedKey = "";
+  }
+
+  function switchBoard(board) {
+    document.querySelectorAll("[data-admin-board]").forEach(function (el) {
+      var on = el.getAttribute("data-admin-board") === board;
+      el.classList.toggle("is-active", on);
+      el.setAttribute("aria-selected", on ? "true" : "false");
+      el.tabIndex = on ? 0 : -1;
+    });
+    if (drinksRoot) drinksRoot.hidden = board !== "drinks";
+    if (sweetsRoot) sweetsRoot.hidden = board !== "sweets";
+    var addBoard = document.getElementById("add-board");
+    if (addBoard) addBoard.value = board;
+  }
+
+  function focusPicked() {
+    if (!pickedKey) return;
+    var card = document.querySelector('.admin-item[data-id="' + pickedKey + '"]');
+    if (!card) return;
+    card.classList.add("is-picked");
+    card.scrollIntoView({ block: "center", behavior: "smooth" });
+    var sold = card.querySelector("[data-sold]");
+    if (sold) sold.focus();
   }
 
   function renderBoard(root, board) {
@@ -207,6 +262,7 @@
             return (
               '<article class="admin-item' +
               (item.sold_out ? " is-sold-out" : "") +
+              (item._key === pickedKey ? " is-picked" : "") +
               '" data-id="' +
               item._key +
               '">' +
@@ -242,8 +298,8 @@
     if (!html) {
       root.innerHTML =
         '<p class="admin-empty">' +
-        (filterText
-          ? "Nothing on this board matches that."
+        (pickedKey
+          ? "That line is not on this board."
           : "This board is empty. Add a line above.") +
         "</p>";
       return;
@@ -288,6 +344,7 @@
     renderBoard(drinksRoot, "drinks");
     renderBoard(sweetsRoot, "sweets");
     refreshSections();
+    refreshPick();
     updateChrome();
   }
 
@@ -382,7 +439,7 @@
   }
 
   form.addEventListener("input", function (event) {
-    if (event.target.id === "admin-filter") return;
+    if (event.target.id === "admin-pick") return;
     var card = event.target.closest(".admin-item");
     if (card) readItemCard(card);
     if (event.target.id === "hours-opens" || event.target.id === "hours-closes") {
@@ -392,6 +449,8 @@
   });
 
   form.addEventListener("change", function (event) {
+    if (event.target.id === "admin-pick") return;
+    if (event.target.getAttribute("data-field") === "name") refreshPick();
     if (event.target.id === "hours-opens" || event.target.id === "hours-closes") {
       syncHoursRange();
       markDirty();
@@ -408,6 +467,7 @@
         soldCard.classList.toggle("is-sold-out", soldItem.sold_out);
         soldBtn.setAttribute("aria-pressed", soldItem.sold_out ? "true" : "false");
         soldBtn.textContent = soldItem.sold_out ? "Sold out" : "On the board";
+        refreshPick();
         markDirty();
       }
       return;
@@ -442,6 +502,7 @@
     items = items.filter(function (row) {
       return row._key !== key;
     });
+    if (pickedKey === key) pickedKey = "";
     if (undoBtn) undoBtn.hidden = false;
     render();
     markDirty();
@@ -466,27 +527,27 @@
     });
   }
 
-  if (filterInput) {
-    filterInput.addEventListener("input", function () {
-      filterText = filterInput.value.trim().toLowerCase();
+  if (pickEl) {
+    pickEl.addEventListener("change", function () {
+      pickedKey = pickEl.value;
+      var item = pickedKey ? findItem(pickedKey) : null;
+      if (item) switchBoard(item.board);
       render();
+      if (item) {
+        setStatus("Editing " + (item.name || "that line") + ".");
+        window.setTimeout(focusPicked, 60);
+      } else {
+        setStatus("The whole board.");
+      }
     });
   }
 
   document.querySelectorAll("[data-admin-board]").forEach(function (tab) {
     tab.addEventListener("click", function () {
-      var board = tab.getAttribute("data-admin-board");
-      document.querySelectorAll("[data-admin-board]").forEach(function (el) {
-        var on = el === tab;
-        el.classList.toggle("is-active", on);
-        el.setAttribute("aria-selected", on ? "true" : "false");
-        el.tabIndex = on ? 0 : -1;
-      });
-      if (drinksRoot) drinksRoot.hidden = board !== "drinks";
-      if (sweetsRoot) sweetsRoot.hidden = board !== "sweets";
-      var addBoard = document.getElementById("add-board");
-      if (addBoard) addBoard.value = board;
-      if (filterInput) filterInput.placeholder = "Find on " + board + "…";
+      pickedKey = "";
+      if (pickEl) pickEl.value = "";
+      switchBoard(tab.getAttribute("data-admin-board"));
+      render();
     });
   });
 
@@ -507,8 +568,9 @@
       same.reduce(function (max, item) {
         return Math.max(max, item.sort || 0);
       }, board === "sweets" ? 1000 : 0) + 10;
+    var key = uid();
     items.push({
-      _key: uid(),
+      _key: key,
       board: board,
       section: section,
       name: name,
@@ -520,16 +582,12 @@
     document.getElementById("add-name").value = "";
     document.getElementById("add-price").value = "";
     document.getElementById("add-desc").value = "";
-    if (filterInput) {
-      filterInput.value = "";
-      filterText = "";
-    }
-    document.querySelectorAll("[data-admin-board]").forEach(function (el) {
-      if (el.getAttribute("data-admin-board") === board) el.click();
-    });
+    pickedKey = key;
+    switchBoard(board);
     render();
     markDirty();
     setStatus("Added " + name + ". Save to put it live.");
+    window.setTimeout(focusPicked, 60);
   }
 
   var addBtn = document.getElementById("admin-add");
