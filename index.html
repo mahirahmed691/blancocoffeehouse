@@ -49,6 +49,13 @@
           "https://blancocoffeehouse.com/assets/photos/matcha.jpg"
         ],
         "hasMap": "https://www.google.com/maps/search/?api=1&query=Blanco+Coffee+House&query_place_id=ChIJA7O_BgBLekgRM6KmmvtDE_k",
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "5.0",
+          "reviewCount": "29",
+          "bestRating": "5",
+          "worstRating": "1"
+        },
         "sameAs": [
           "https://www.instagram.com/blancocoffeehouse/",
           "https://www.google.com/maps/search/?api=1&query=Blanco+Coffee+House&query_place_id=ChIJA7O_BgBLekgRM6KmmvtDE_k"
@@ -1079,14 +1086,21 @@
         </div>
       </section>
 
-      <section class="band" id="reviews">
+      <section class="band" id="reviews" data-reviews>
         <div class="wrap reviews-layout">
           <div class="reviews-copy">
             <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> google</p>
             <h2 class="campaign-title">from the house.</h2>
+            <div class="reviews-score">
+              <p class="reviews-mark" data-reviews-rating>5.0</p>
+              <p class="reviews-count">
+                <span data-reviews-count>29</span> on Google
+              </p>
+            </div>
             <p class="prose">
-              If blanco was your way today, a few words on Google help the next
-              person find the house. Only if you like.
+              People keep finding the house this way. If blanco was your way
+              today, a few words on Google help the next person in. Only if
+              you like.
             </p>
             <p class="google-presence">
               <span class="google-kicker">Google</span>
@@ -1095,50 +1109,87 @@
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                See reviews on Google
+                See all reviews
               </a>
             </p>
           </div>
-          <aside class="reviews-note">
-            <p class="closing-line">a few words, if you like.</p>
-            <p class="prose">
-              Leave a review, or pass the house along. No hurry.
-            </p>
-            <div class="reviews-actions">
-              <a
-                class="btn"
-                href="https://search.google.com/local/writereview?placeid=ChIJA7O_BgBLekgRM6KmmvtDE_k"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Leave a review
-              </a>
-              <button class="btn btn-ghost" type="button" data-share-house>
-                Share
-              </button>
-            </div>
-            <p class="share-fallback" data-share-fallback hidden>
-              <button type="button" data-copy-link>Copy link</button>
-              <a
-                href="https://wa.me/?text=blanco.%20your%20way.%20%E2%80%94%20Blanco%20Coffee%20House%2C%20Hazel%20Grove%20https%3A%2F%2Fblancocoffeehouse.com%2F"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                WhatsApp
-              </a>
-              <a
-                href="sms:?&amp;body=blanco.%20your%20way.%20%E2%80%94%20Blanco%20Coffee%20House%2C%20Hazel%20Grove%20https%3A%2F%2Fblancocoffeehouse.com%2F"
-              >
-                Messages
-              </a>
-            </p>
-            <p
-              class="share-status"
-              data-share-status
-              role="status"
-              aria-live="polite"
-            ></p>
-          </aside>
+          <div class="reviews-quotes">
+            <ol class="review-list" data-reviews-list>
+              <li class="review-quote is-featured">
+                <blockquote>
+                  <p>
+                    Great coffee picked up on our way to Poynton pool. The lads
+                    were great and super friendly atmosphere inside. Will be
+                    coming again for our local caffeine fix
+                  </p>
+                </blockquote>
+                <cite>Joe Andrews, 3 weeks ago · Google</cite>
+              </li>
+              <li class="review-quote">
+                <blockquote>
+                  <p>
+                    amazing company, the man who served us was very polite and
+                    made you feel welcome. we had a cookie monster milkshake
+                    and a white chocolate matcha and found it was very good
+                    value for money. thank you very much; we will definitely
+                    be returning soon
+                  </p>
+                </blockquote>
+                <cite>Gracie, a month ago · Google</cite>
+              </li>
+              <li class="review-quote">
+                <blockquote>
+                  <p>
+                    Lovely Coffee, tasty ice cream and lovely looking desserts.
+                    Didn't get around to having a dessert but they look
+                    delicious. The coffee was amazing and the lad serving me
+                    was welcoming and kind. Would recommend!
+                  </p>
+                </blockquote>
+                <cite>SabreMogDawg, 2 months ago · Google</cite>
+              </li>
+            </ol>
+            <aside class="reviews-note">
+              <p class="closing-line">a few words, if you like.</p>
+              <p class="prose">
+                Leave a review, or pass the house along. No hurry.
+              </p>
+              <div class="reviews-actions">
+                <a
+                  class="btn"
+                  href="https://search.google.com/local/writereview?placeid=ChIJA7O_BgBLekgRM6KmmvtDE_k"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Leave a review
+                </a>
+                <button class="btn btn-ghost" type="button" data-share-house>
+                  Share
+                </button>
+              </div>
+              <p class="share-fallback" data-share-fallback hidden>
+                <button type="button" data-copy-link>Copy link</button>
+                <a
+                  href="https://wa.me/?text=blanco.%20your%20way.%20%E2%80%94%20Blanco%20Coffee%20House%2C%20Hazel%20Grove%20https%3A%2F%2Fblancocoffeehouse.com%2F"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  WhatsApp
+                </a>
+                <a
+                  href="sms:?&amp;body=blanco.%20your%20way.%20%E2%80%94%20Blanco%20Coffee%20House%2C%20Hazel%20Grove%20https%3A%2F%2Fblancocoffeehouse.com%2F"
+                >
+                  Messages
+                </a>
+              </p>
+              <p
+                class="share-status"
+                data-share-status
+                role="status"
+                aria-live="polite"
+              ></p>
+            </aside>
+          </div>
         </div>
       </section>
 
@@ -1281,6 +1332,7 @@
     <script src="clerk-config.js?v=4"></script>
     <script src="script.js"></script>
     <script src="house.js"></script>
+    <script src="reviews.js"></script>
     <script src="clerk-auth.js?v=4"></script>
   </body>
 </html>

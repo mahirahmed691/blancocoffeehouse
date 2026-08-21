@@ -215,35 +215,21 @@
               <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> the desk</p>
               <h1 class="campaign-title" id="admin-desk-title">the board, live.</h1>
               <p class="prose">
-                Change a price, mark something sold out, or add a line. Save
-                writes to the public menu.
+                Hello, <span data-admin-name>the house</span>. Change a price,
+                mark something sold out, or add a line. Save writes to the
+                public menu.
               </p>
             </div>
-            <div class="admin-welcome-tools">
-              <button class="btn" type="submit" form="admin-form">Save the board</button>
-              <a class="btn btn-ghost" href="index.html#menu">View menu</a>
-            </div>
+            <p class="admin-meta" id="admin-meta">The board is still loading.</p>
           </div>
-
-          <p class="admin-status" id="admin-status" role="status" aria-live="polite"></p>
 
           <form id="admin-form" class="admin-form">
             <article class="account-card admin-hours">
-              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> visit</p>
-              <h2>Hours</h2>
+              <div class="admin-card-head">
+                <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> visit</p>
+                <h2>Hours</h2>
+              </div>
               <div class="admin-hours-grid">
-                <label>
-                  Line
-                  <input id="hours-line" name="hours_line" type="text" maxlength="80" />
-                </label>
-                <label>
-                  Days
-                  <input id="hours-days" name="hours_days" type="text" maxlength="40" />
-                </label>
-                <label>
-                  Range
-                  <input id="hours-range" name="hours_range" type="text" maxlength="24" />
-                </label>
                 <label>
                   Opens
                   <input id="hours-opens" name="opens" type="time" />
@@ -252,35 +238,60 @@
                   Closes
                   <input id="hours-closes" name="closes" type="time" />
                 </label>
+                <label>
+                  Days on the site
+                  <input id="hours-days" name="hours_days" type="text" maxlength="40" />
+                </label>
+                <label>
+                  Range on the site
+                  <input id="hours-range" name="hours_range" type="text" maxlength="24" />
+                </label>
+                <label class="admin-hours-line">
+                  The line
+                  <input id="hours-line" name="hours_line" type="text" maxlength="80" />
+                </label>
               </div>
+              <p class="admin-hint">
+                Opens and closes write the range (11am–8pm). The line is the
+                sentence on the house page.
+              </p>
             </article>
 
-            <div class="gallery-tabs admin-board-tabs" role="tablist" aria-label="Boards">
-              <button
-                type="button"
-                class="gallery-tab is-active"
-                role="tab"
-                id="admin-tab-drinks"
-                aria-selected="true"
-                data-admin-board="drinks"
-              >
-                Drinks
-              </button>
-              <button
-                type="button"
-                class="gallery-tab"
-                role="tab"
-                id="admin-tab-sweets"
-                aria-selected="false"
-                tabindex="-1"
-                data-admin-board="sweets"
-              >
-                Sweets
-              </button>
+            <div class="admin-toolbar">
+              <div class="gallery-tabs admin-board-tabs" role="tablist" aria-label="Boards">
+                <button
+                  type="button"
+                  class="gallery-tab is-active"
+                  role="tab"
+                  id="admin-tab-drinks"
+                  aria-selected="true"
+                  data-admin-board="drinks"
+                >
+                  Drinks <span class="admin-tab-count" data-count-drinks></span>
+                </button>
+                <button
+                  type="button"
+                  class="gallery-tab"
+                  role="tab"
+                  id="admin-tab-sweets"
+                  aria-selected="false"
+                  tabindex="-1"
+                  data-admin-board="sweets"
+                >
+                  Sweets <span class="admin-tab-count" data-count-sweets></span>
+                </button>
+              </div>
+              <label class="admin-filter">
+                <span class="visually-hidden">Find on this board</span>
+                <input
+                  id="admin-filter"
+                  type="search"
+                  placeholder="Find on this board…"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+              </label>
             </div>
-
-            <div id="admin-board-drinks" class="admin-board"></div>
-            <div id="admin-board-sweets" class="admin-board" hidden></div>
 
             <article class="account-card admin-add">
               <h2>Add a line</h2>
@@ -294,30 +305,45 @@
                 </label>
                 <label>
                   Section
-                  <input id="add-section" type="text" list="admin-sections" maxlength="48" />
+                  <input id="add-section" type="text" list="admin-sections" maxlength="48" placeholder="Coffee" />
                 </label>
                 <label>
                   Name
-                  <input id="add-name" type="text" maxlength="80" />
+                  <input id="add-name" type="text" maxlength="80" placeholder="Flat white" />
                 </label>
                 <label>
                   Price
-                  <input id="add-price" type="number" min="0" step="0.01" />
+                  <input id="add-price" type="number" min="0" step="0.01" placeholder="3.20" />
                 </label>
               </div>
               <label class="admin-add-desc">
-                Description
-                <textarea id="add-desc" rows="2" maxlength="280"></textarea>
+                Note on the board
+                <textarea id="add-desc" rows="2" maxlength="280" placeholder="Optional — oat, extra shot, a short line."></textarea>
               </label>
               <datalist id="admin-sections"></datalist>
               <button class="btn btn-ghost" type="button" id="admin-add">Add to the board</button>
             </article>
 
-            <div class="account-footer-actions">
-              <button class="btn" type="submit">Save the board</button>
-              <a class="btn btn-ghost" href="account.html">Back to account</a>
-            </div>
+            <div id="admin-board-drinks" class="admin-board"></div>
+            <div id="admin-board-sweets" class="admin-board" hidden></div>
           </form>
+        </div>
+
+        <div class="admin-dock" id="admin-dock">
+          <div class="admin-dock-copy">
+            <p class="admin-status" id="admin-status" role="status" aria-live="polite">
+              Opening the board…
+            </p>
+            <button class="admin-undo" type="button" id="admin-undo" hidden>
+              Undo remove
+            </button>
+          </div>
+          <div class="admin-dock-actions">
+            <a class="btn btn-ghost" href="index.html#menu">View menu</a>
+            <button class="btn" type="submit" form="admin-form" id="admin-save" disabled>
+              Save the board
+            </button>
+          </div>
         </div>
       </section>
     </main>
