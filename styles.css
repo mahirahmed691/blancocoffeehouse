@@ -110,13 +110,13 @@ a {
 
 .eyebrow .mark,
 .board-kicker .mark {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 1.08rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 50%;
+  background: var(--beige);
   letter-spacing: 0;
-  text-transform: none;
-  color: var(--brown);
-  line-height: 1;
 }
 
 /* Steam */
@@ -785,7 +785,7 @@ h2 {
 }
 
 .eyebrow-on-dark .mark {
-  color: var(--beige);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--beige) 32%, transparent);
 }
 
 .prose-on-dark {
@@ -1233,16 +1233,15 @@ body.auth-open {
 }
 
 .board::after {
-  content: "b.";
+  content: "";
   position: absolute;
-  right: 0.7rem;
-  bottom: -0.35rem;
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 4.5rem;
-  color: var(--brown);
-  opacity: 0.045;
-  line-height: 1;
+  right: 0.55rem;
+  bottom: 0.4rem;
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 50%;
+  background: url("assets/blanco-logo.png") center / cover no-repeat;
+  opacity: 0.08;
   pointer-events: none;
 }
 
