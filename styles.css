@@ -5,9 +5,11 @@
   --muted: #76635b;
   --hover: #3d2b25;
   --ink: #2a1e1a;
+  --white: #ffffff;
   --line: color-mix(in srgb, var(--brown) 12%, transparent);
   --serif: "Fraunces", "Times New Roman", serif;
   --sans: "Work Sans", system-ui, sans-serif;
+  --round: "Nunito", "Work Sans", system-ui, sans-serif;
   --max: 1280px;
   --pad: clamp(1.25rem, 4.5vw, 3rem);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -352,67 +354,153 @@ a {
   background: color-mix(in srgb, var(--brown) 5%, transparent);
 }
 
-/* Hero */
+/* Hero — campaign full-bleed */
 .hero {
   position: relative;
   overflow: hidden;
-  padding: clamp(3.1rem, 7.5vw, 6.4rem) 0 clamp(5.25rem, 12vw, 9rem);
+  min-height: min(92svh, 920px);
+  display: flex;
+  align-items: flex-end;
+  padding: clamp(5.5rem, 10vw, 7.5rem) 0 clamp(2.6rem, 6vw, 4.2rem);
+  color: var(--white);
 }
 
-.hero-watermark {
+.hero-photo,
+.hero-veil {
   position: absolute;
-  left: -7%;
-  top: -16%;
-  font-family: var(--serif);
-  font-style: italic;
-  font-weight: 600;
-  font-size: clamp(14rem, 44vw, 28rem);
-  line-height: 0.75;
-  color: var(--brown);
-  opacity: 0.035;
+  inset: 0;
+}
+
+.hero-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 58% 42%;
+}
+
+.hero-veil {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ink) 28%, transparent) 0%,
+      color-mix(in srgb, var(--ink) 52%, transparent) 42%,
+      color-mix(in srgb, var(--ink) 78%, transparent) 100%
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--brown) 55%, transparent) 0%,
+      color-mix(in srgb, var(--brown) 18%, transparent) 58%,
+      transparent 100%
+    );
+}
+
+.hero-stamp {
+  position: absolute;
+  top: clamp(1.1rem, 3vw, 2rem);
+  right: var(--pad);
+  z-index: 2;
+  margin: 0;
+  width: 6.75rem;
+  height: 6.75rem;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--beige);
+  border: 5px solid var(--beige);
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--ink) 35%, transparent);
   pointer-events: none;
-  user-select: none;
+  animation: hero-rise 1.1s var(--ease) 0.18s both;
 }
 
 .hero-inner {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 0.94fr) minmax(280px, 1.16fr);
-  gap: clamp(2rem, 6vw, 5.5rem);
-  align-items: center;
-}
-
-.hero-copy {
-  max-width: 42rem;
+  max-width: 40rem;
+  margin-right: auto;
   animation: hero-rise 0.95s var(--ease) both;
 }
 
-.hero h1 {
+.hero-kicker {
+  margin: 0 0 1.15rem;
+  font-family: var(--round);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: color-mix(in srgb, var(--white) 78%, transparent);
+}
+
+.hero-poem {
   margin: 0 0 1.35rem;
-  font-family: var(--serif);
+  font-family: var(--round);
   font-weight: 600;
-  font-size: clamp(3.55rem, 11vw, 7.45rem);
-  line-height: 0.86;
-  letter-spacing: -0.042em;
+  font-size: clamp(1.02rem, 2.15vw, 1.32rem);
+  line-height: 1.42;
+  color: color-mix(in srgb, var(--white) 92%, transparent);
 }
 
-.hero h1 span {
-  display: block;
-  font-size: 0.5em;
-  font-weight: 500;
-  font-style: italic;
-  letter-spacing: -0.02em;
-  margin-top: 0.14em;
-  color: var(--muted);
+.hero h1 {
+  margin: 0 0 1.25rem;
+  font-family: var(--round);
+  font-weight: 800;
+  font-size: clamp(2.35rem, 7.2vw, 4.35rem);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  text-transform: lowercase;
+  color: var(--white);
 }
 
-.lede {
-  margin: 0 0 1.85rem;
-  color: var(--muted);
-  font-size: clamp(1.12rem, 1.7vw, 1.34rem);
-  line-height: 1.55;
-  max-width: 34rem;
+.modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0 0 1.35rem;
+  padding: 0;
+}
+
+.modes a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  border: 1.5px solid color-mix(in srgb, var(--white) 72%, transparent);
+  border-radius: 999px;
+  padding: 0.58rem 1.05rem;
+  font-family: var(--round);
+  font-weight: 700;
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
+  color: var(--white);
+  transition:
+    background 0.28s var(--ease),
+    color 0.28s var(--ease),
+    border-color 0.28s var(--ease);
+}
+
+.modes a:hover {
+  background: var(--white);
+  color: var(--brown);
+  border-color: var(--white);
+}
+
+.hero .btn {
+  background: var(--beige);
+  color: var(--brown);
+  border-color: var(--beige);
+}
+
+.hero .btn:hover {
+  background: var(--white);
+  border-color: var(--white);
+}
+
+.hero .btn-ghost {
+  background: transparent;
+  color: var(--white);
+  border-color: color-mix(in srgb, var(--white) 72%, transparent);
+}
+
+.hero .btn-ghost:hover {
+  background: color-mix(in srgb, var(--white) 12%, transparent);
 }
 
 .hero-actions {
@@ -428,71 +516,15 @@ a {
   gap: 0.5rem;
   margin: 0;
   padding-top: 1.2rem;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
+  border-top: 1px solid color-mix(in srgb, var(--white) 22%, transparent);
+  color: color-mix(in srgb, var(--white) 78%, transparent);
   font-size: 0.92rem;
   letter-spacing: 0.04em;
 }
 
 .hours-chip strong {
-  color: var(--brown);
+  color: var(--white);
   font-weight: 600;
-}
-
-.hero-media {
-  position: relative;
-  min-height: 0;
-  padding: 1.9rem 0 2.5rem 1.55rem;
-}
-
-.hero-frame.media-frame {
-  position: relative;
-  z-index: 1;
-  width: 90%;
-  margin-left: auto;
-  min-height: 0;
-  aspect-ratio: 4 / 5;
-  animation: hero-rise 1.05s var(--ease) 0.1s both;
-}
-
-.hero-inset.media-frame {
-  position: absolute;
-  left: 0;
-  bottom: 5.5%;
-  z-index: 2;
-  width: min(46%, 252px);
-  min-height: 0;
-  aspect-ratio: 4 / 5;
-  border: 8px solid var(--paper);
-  box-shadow: 0 22px 48px color-mix(in srgb, var(--brown) 16%, transparent);
-  animation: hero-rise 1.12s var(--ease) 0.22s both;
-}
-
-.hero-stamp {
-  position: absolute;
-  right: 4%;
-  top: 4%;
-  z-index: 3;
-  margin: 0;
-  width: 10.25rem;
-  height: 10.25rem;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--beige);
-  border: 6px solid var(--paper);
-  box-shadow: 0 16px 36px color-mix(in srgb, var(--brown) 18%, transparent);
-  pointer-events: none;
-  animation: hero-rise 1.18s var(--ease) 0.32s both;
-}
-
-.hero-frame .gallery-open img,
-.hero-inset .gallery-open img {
-  transition: transform 0.8s var(--ease);
-}
-
-.hero-frame .gallery-open:hover img,
-.hero-inset .gallery-open:hover img {
-  transform: scale(1.04);
 }
 
 @keyframes hero-rise {
@@ -536,12 +568,179 @@ h2 {
   line-height: 1.04;
 }
 
+.campaign-title {
+  font-family: var(--round);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  text-transform: lowercase;
+}
+
 .prose {
   color: var(--muted);
   margin: 0;
   max-width: 38em;
   font-size: 1.14rem;
   line-height: 1.62;
+}
+
+.prose + .prose {
+  margin-top: 1rem;
+}
+
+.closing-line {
+  margin: 1.5rem 0 0;
+  font-family: var(--round);
+  font-weight: 800;
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--brown);
+}
+
+.experience {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 2.15rem 0 0;
+  padding: 0;
+}
+
+.experience li {
+  font-family: var(--round);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  color: var(--brown);
+  background: var(--beige);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.5rem 0.95rem;
+}
+
+.ways-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1rem, 2.4vw, 1.6rem);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.way-card {
+  min-width: 0;
+  scroll-margin-top: 5.5rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 0.7rem 0.7rem 1.25rem;
+}
+
+.way-card .gallery-open {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: var(--ink);
+  cursor: zoom-in;
+  appearance: none;
+}
+
+.way-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.55s var(--ease);
+}
+
+.way-card .gallery-open:hover img {
+  transform: scale(1.04);
+}
+
+.way-card h3 {
+  margin: 1rem 0.35rem 0.4rem;
+  font-family: var(--round);
+  font-weight: 800;
+  font-size: clamp(1.35rem, 2.2vw, 1.65rem);
+  letter-spacing: -0.03em;
+  text-transform: lowercase;
+}
+
+.way-card p {
+  margin: 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.gallery-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.gallery-head .ig-cta {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.band-brown {
+  background: var(--brown);
+  color: var(--beige);
+}
+
+.eyebrow-on-dark {
+  color: color-mix(in srgb, var(--beige) 70%, transparent);
+}
+
+.eyebrow-on-dark .mark {
+  color: var(--beige);
+}
+
+.prose-on-dark {
+  color: color-mix(in srgb, var(--beige) 78%, transparent);
+}
+
+.band-brown .campaign-title {
+  color: var(--beige);
+}
+
+.app-grid {
+  display: grid;
+  grid-template-columns: 0.92fr 1.08fr;
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+}
+
+.app-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid color-mix(in srgb, var(--beige) 18%, transparent);
+}
+
+.app-features li {
+  display: grid;
+  gap: 0.15rem;
+  padding: 1.05rem 0 1.1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--beige) 18%, transparent);
+}
+
+.app-feature-name {
+  font-family: var(--round);
+  font-weight: 800;
+  font-size: 1.28rem;
+  letter-spacing: -0.03em;
+  text-transform: lowercase;
+  color: var(--beige);
+}
+
+.app-features span:last-child {
+  color: color-mix(in srgb, var(--beige) 72%, transparent);
+  font-size: 0.95rem;
 }
 
 .media-frame {
@@ -615,7 +814,12 @@ h2 {
 
 .ig-cta {
   gap: 0.55rem;
-  margin-top: 1.65rem;
+}
+
+.ig-cta .ig-logo {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
 }
 
 .ig-cta .ig-logo {
@@ -975,9 +1179,18 @@ body.lightbox-open {
   display: flex;
   align-items: center;
   gap: 0.95rem;
-  font-family: var(--serif);
-  font-size: 1.45rem;
-  letter-spacing: -0.02em;
+  font-family: var(--round);
+  font-weight: 800;
+  font-size: 1.55rem;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.footer-tag {
+  display: block;
+  font-size: 0.62em;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--beige) 72%, transparent);
 }
 
 .footer-brand img,
@@ -1056,50 +1269,28 @@ body.lightbox-open {
   .hero-inner,
   .split,
   .boards,
-  .visit-grid {
+  .visit-grid,
+  .ways-grid,
+  .app-grid {
     grid-template-columns: 1fr;
   }
 
   .hero {
-    padding-top: clamp(2rem, 6.5vw, 3rem);
-  }
-
-  .hero-copy {
-    max-width: 38rem;
-  }
-
-  .hero-media {
-    padding: 0.45rem 0 1.6rem 1rem;
-    max-width: 32rem;
-    margin-inline: auto;
-  }
-
-  .hero-frame.media-frame {
-    width: 92%;
-  }
-
-  .hero-inset.media-frame {
-    width: min(44%, 188px);
-    border-width: 6px;
+    min-height: 0;
+    padding: clamp(4.6rem, 14vw, 5.6rem) 0 2.4rem;
   }
 
   .hero-stamp {
-    width: 6.5rem;
-    height: 6.5rem;
+    width: 5.4rem;
+    height: 5.4rem;
     border-width: 4px;
-    right: 5%;
-    top: 5%;
+    top: 1rem;
+    right: var(--pad);
   }
 
   .media-frame {
     min-height: 280px;
     aspect-ratio: 5 / 4;
-  }
-
-  .hero-frame.media-frame,
-  .hero-inset.media-frame {
-    min-height: 0;
-    aspect-ratio: 4 / 5;
   }
 
   .photo-gallery {
@@ -1150,15 +1341,12 @@ body.lightbox-open {
   }
 
   .hero h1 {
-    font-size: 3rem;
+    font-size: 2.15rem;
   }
 
-  .hero h1 span {
-    font-size: 0.46em;
-  }
-
-  .lede {
-    font-size: 1.05rem;
+  .hero-poem {
+    font-size: 0.98rem;
+    line-height: 1.38;
   }
 
   h2 {
@@ -1169,13 +1357,9 @@ body.lightbox-open {
     font-size: 1.02rem;
   }
 
-  .hero-media {
-    padding-left: 0.7rem;
-  }
-
   .hero-stamp {
-    width: 5.4rem;
-    height: 5.4rem;
+    width: 4.6rem;
+    height: 4.6rem;
     border-width: 3px;
   }
 
@@ -1187,6 +1371,11 @@ body.lightbox-open {
 
   .board {
     padding: 1.15rem 1rem 1.25rem;
+  }
+
+  .modes a {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.85rem;
   }
 }
 
@@ -1203,9 +1392,7 @@ body.lightbox-open {
     transition-duration: 0.01ms !important;
   }
 
-  .hero-copy,
-  .hero-frame.media-frame,
-  .hero-inset.media-frame,
+  .hero-inner,
   .hero-stamp {
     animation: none;
   }

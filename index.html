@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Blanco Coffee House</title>
+    <title>blanco. your way. — Blanco Coffee House</title>
     <meta
       name="description"
-      content="Blanco Coffee House — coffee, matcha, desserts and ice cream in Hazel Grove. Open every day, 11am–8pm."
+      content="blanco. your way. Coffee, matcha, and sweet’n’savory treats in Hazel Grove — sit in, pick up, or get it delivered. Hard launch in-store and online. Open every day, 11am–8pm."
     />
     <meta name="theme-color" content="#E9E1D8" />
     <link rel="canonical" href="https://blancocoffeehouse.com" />
@@ -54,7 +54,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Work+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Nunito:wght@500;600;700;800&family=Work+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -86,8 +86,9 @@
           <span></span>
         </button>
         <ul class="nav-links" id="site-nav">
-          <li><a href="#about">About</a></li>
+          <li><a href="#ways">Your way</a></li>
           <li><a href="#menu">Menu</a></li>
+          <li><a href="#app">The app</a></li>
           <li><a href="#visit">Visit</a></li>
           <li><a class="btn" href="#visit">Find us</a></li>
         </ul>
@@ -95,99 +96,80 @@
     </header>
 
     <main>
-      <section class="hero">
-        <div class="hero-watermark" aria-hidden="true">b.</div>
+      <section class="hero" aria-labelledby="hero-tagline">
+        <div class="hero-photo" aria-hidden="true">
+          <img
+            src="assets/photos/storefront.jpg"
+            alt=""
+            width="1354"
+            height="1600"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </div>
+        <div class="hero-veil" aria-hidden="true"></div>
+        <img
+          class="hero-stamp"
+          src="assets/logo.png"
+          alt=""
+          width="256"
+          height="256"
+          decoding="async"
+          aria-hidden="true"
+        />
         <div class="wrap hero-inner">
-          <div class="hero-copy">
-            <p class="eyebrow">
-              <span class="steam-eyebrow" aria-hidden="true"
-                ><span></span><span></span><span></span
-              ></span>
-              <span class="mark">b.</span>
-              coffee house
-            </p>
-            <h1>Blanco <span>Coffee House</span></h1>
-            <p class="lede">
-              Coffee, matcha, desserts and ice cream in Hazel Grove. The house
-              is open every day.
-            </p>
-            <div class="hero-actions">
-              <a class="btn" href="#menu">View menu</a>
-              <a class="btn btn-ghost" href="#visit">Visit</a>
-            </div>
-            <p class="hours-chip">
-              Open every day · <strong>11am–8pm</strong>
-            </p>
+          <p class="hero-kicker">hard launch · in-store &amp; online</p>
+          <p class="hero-poem">
+            Some days start early.<br />
+            Others take their time.<br />
+            Some orders are made from the counter.<br />
+            Others from the comfort of home.<br />
+            You might stay for the catch-up,<br />
+            pick up on the way,<br />
+            or have your favourite brought straight to<br />
+            your door.<br />
+            Coffee or matcha.<br />
+            Something sweet or something new.<br />
+            Your usual order,<br />
+            or today’s reward.<br />
+            Because there’s no single way<br />
+            to take a break,<br />
+            treat yourself<br />
+            or enjoy the moment.<br />
+            There’s only—
+          </p>
+          <h1 id="hero-tagline">blanco. your way.</h1>
+          <ul class="modes">
+            <li><a href="#sit-in">sit in.</a></li>
+            <li><a href="#pick-up">pick up.</a></li>
+            <li><a href="#delivered">get it delivered.</a></li>
+          </ul>
+          <div class="hero-actions">
+            <a class="btn" href="#menu">View menu</a>
+            <a class="btn btn-ghost" href="#visit">Find us</a>
           </div>
-          <div class="hero-media">
-            <div class="ring ring-a" aria-hidden="true"></div>
-            <div class="ring ring-b" aria-hidden="true"></div>
-            <figure class="media-frame media-frame-photo hero-frame">
-              <button type="button" class="gallery-open" aria-haspopup="dialog">
-                <img
-                  src="assets/photos/storefront.jpg"
-                  alt="The Blanco Coffee House shopfront at 4 Fiveways Parade, with iced drinks on the pavement."
-                  width="1354"
-                  height="1600"
-                  fetchpriority="high"
-                  decoding="async"
-                />
-              </button>
-              <figcaption>4 Fiveways Parade</figcaption>
-            </figure>
-            <figure class="media-frame media-frame-photo hero-inset">
-              <button type="button" class="gallery-open" aria-haspopup="dialog">
-                <img
-                  src="assets/photos/matcha.jpg"
-                  alt="An iced matcha and a chocolate chip cookie at Blanco Coffee House."
-                  width="1360"
-                  height="1600"
-                  decoding="async"
-                />
-              </button>
-            </figure>
-            <img
-              class="hero-stamp"
-              src="assets/logo.png"
-              alt=""
-              width="256"
-              height="256"
-              decoding="async"
-              aria-hidden="true"
-            />
-          </div>
+          <p class="hours-chip">
+            Open every day · <strong>11am–8pm</strong>
+          </p>
         </div>
       </section>
 
-      <section class="band band-paper" id="about">
+      <section class="band band-paper" id="launch">
         <div class="wrap split">
           <div>
-            <p class="eyebrow"><span class="mark">b.</span> about</p>
-            <h2>Coffee, matcha, desserts, ice cream.</h2>
+            <p class="eyebrow"><span class="mark">b.</span> the launch</p>
+            <h2 class="campaign-title">everyday blanco.</h2>
             <p class="prose">
-              Blanco Coffee House is on Fiveways Parade in Hazel Grove. Espresso
-              and tea, matcha, milkshakes, sundaes, loaded cups, and ice cream
-              — the full board, every day.
+              The hard launch takes blanco from a local hidden gem to an
+              everyday destination — whether you visit in Hazel Grove or order
+              from home. In-store and online, built around discovery,
+              convenience and rewards.
             </p>
-            <a
-              class="btn ig-cta"
-              href="https://www.instagram.com/blancocoffeehouse/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <svg
-                class="ig-logo"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path
-                  fill="currentColor"
-                  d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
-                />
-              </svg>
-              Follow on Instagram
-            </a>
+            <p class="prose">
+              Coffee, matcha, and sweet’n’savory treats. A social house for
+              creators and locals, and a counter you already know.
+            </p>
+            <p class="closing-line">one brand. more ways to enjoy blanco.</p>
           </div>
           <figure class="media-frame media-frame-photo">
             <button type="button" class="gallery-open" aria-haspopup="dialog">
@@ -200,8 +182,106 @@
                 decoding="async"
               />
             </button>
-            <div class="ring ring-c" aria-hidden="true"></div>
           </figure>
+        </div>
+        <div class="wrap">
+          <ul class="experience" aria-label="What blanco is built around">
+            <li>coffee</li>
+            <li>matcha</li>
+            <li>sweet’n’savory</li>
+            <li>social</li>
+            <li>creators</li>
+            <li>local</li>
+            <li>in-store</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="band" id="ways">
+        <div class="wrap">
+          <div class="menu-head">
+            <p class="eyebrow"><span class="mark">b.</span> your way</p>
+            <h2 class="campaign-title">sit in. pick up. get it delivered.</h2>
+            <p class="prose">
+              There’s no single way to take a break. Stay for the catch-up,
+              grab it on the way, or have your favourite brought to your door.
+            </p>
+          </div>
+          <ul class="ways-grid">
+            <li class="way-card" id="sit-in">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/mascot.jpg"
+                  alt="The Blanco Coffee House mug mascot in front of a Soft Life Strong Coffee print."
+                  width="1354"
+                  height="1600"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+              <h3>sit in.</h3>
+              <p>Stay for the catch-up. The house on Fiveways Parade is open every day, 11am–8pm.</p>
+            </li>
+            <li class="way-card" id="pick-up">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/storefront.jpg"
+                  alt="The Blanco Coffee House shopfront at 4 Fiveways Parade, with iced drinks on the pavement."
+                  width="1354"
+                  height="1600"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </button>
+              <h3>pick up.</h3>
+              <p>Made at the counter, ready on the way. Collection lands with the app at launch.</p>
+            </li>
+            <li class="way-card" id="delivered">
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/matcha.jpg"
+                  alt="An iced matcha and a chocolate chip cookie at Blanco Coffee House."
+                  width="1360"
+                  height="1600"
+                  decoding="async"
+                />
+              </button>
+              <h3>get it delivered.</h3>
+              <p>Your usual — or today’s reward — brought straight to your door from the comfort of home.</p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="band band-paper" id="gallery">
+        <div class="wrap gallery-head">
+          <div>
+            <p class="eyebrow"><span class="mark">b.</span> in-store</p>
+            <h2 class="campaign-title">the house.</h2>
+            <p class="prose">
+              Coffee, matcha, and sweet’n’savory treats on Fiveways Parade.
+              Open the photographs here — follow blanco on Instagram for more.
+            </p>
+          </div>
+          <a
+            class="btn ig-cta"
+            href="https://www.instagram.com/blancocoffeehouse/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg
+              class="ig-logo"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                fill="currentColor"
+                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
+              />
+            </svg>
+            Follow
+          </a>
         </div>
         <div class="wrap">
           <ul class="photo-gallery" aria-label="Shop photographs">
@@ -220,8 +300,8 @@
             <li>
               <button type="button" class="gallery-open" aria-haspopup="dialog">
                 <img
-                  src="assets/photos/mascot.jpg"
-                  alt="The Blanco Coffee House mug mascot in front of a Soft Life Strong Coffee print."
+                  src="assets/photos/interior.jpg"
+                  alt="Inside Blanco Coffee House: a branded balloon above a tray of brownies."
                   width="1354"
                   height="1600"
                   loading="lazy"
@@ -633,11 +713,52 @@
         </div>
       </section>
 
+      <section class="band band-brown" id="app">
+        <div class="wrap app-grid">
+          <div>
+            <p class="eyebrow eyebrow-on-dark">
+              <span class="mark">b.</span> launching
+            </p>
+            <h2 class="campaign-title">the app.</h2>
+            <p class="prose prose-on-dark">
+              Collection, delivery, loyalty rewards, daily spins, and exclusive
+              merchandise — landing with the hard launch. Your usual order, or
+              today’s reward, from the counter or from home.
+            </p>
+          </div>
+          <ul class="app-features">
+            <li>
+              <span class="app-feature-name">collection</span>
+              <span>Pick up on the way.</span>
+            </li>
+            <li>
+              <span class="app-feature-name">delivery</span>
+              <span>Brought straight to your door.</span>
+            </li>
+            <li>
+              <span class="app-feature-name">loyalty rewards</span>
+              <span>Built around coming back.</span>
+            </li>
+            <li>
+              <span class="app-feature-name">daily spins</span>
+              <span>Today’s reward, every day.</span>
+            </li>
+            <li>
+              <span class="app-feature-name">exclusive merchandise</span>
+              <span>Only through the app.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <section class="band band-paper" id="visit">
         <div class="wrap visit-grid">
           <div class="visit-copy">
             <p class="eyebrow"><span class="mark">b.</span> visit</p>
-            <h2>Fiveways Parade.</h2>
+            <h2 class="campaign-title">Fiveways Parade.</h2>
+            <p class="prose">
+              Sit in at the house, or start from home. Open every day.
+            </p>
             <dl class="visit-facts">
               <div class="visit-card">
                 <dt>Address</dt>
@@ -662,11 +783,6 @@
                 <dd>
                   <a href="mailto:hello@blancocoffeehouse.com"
                     >hello@blancocoffeehouse.com</a
-                  ><br />
-                  <a
-                    href="https://www.instagram.com/blancocoffeehouse/"
-                    rel="noopener noreferrer"
-                    >Instagram · @blancocoffeehouse</a
                   >
                 </dd>
               </div>
@@ -697,7 +813,10 @@
             height="256"
             decoding="async"
           />
-          Blanco Coffee House
+          <span>
+            blanco.
+            <span class="footer-tag">your way.</span>
+          </span>
         </div>
         <div class="footer-meta">
           <div>Monday–Sunday, 11am–8pm</div>
@@ -705,13 +824,6 @@
           <div>
             <a href="mailto:hello@blancocoffeehouse.com"
               >hello@blancocoffeehouse.com</a
-            >
-          </div>
-          <div>
-            <a
-              href="https://www.instagram.com/blancocoffeehouse/"
-              rel="noopener noreferrer"
-              >Instagram · @blancocoffeehouse</a
             >
           </div>
         </div>
