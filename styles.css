@@ -113,8 +113,10 @@ a {
   width: 1.6rem;
   height: 1.6rem;
   max-width: none;
+  aspect-ratio: 1;
   flex-shrink: 0;
   object-fit: cover;
+  object-position: center;
   border-radius: 50%;
   background: var(--beige);
   letter-spacing: 0;
@@ -261,7 +263,9 @@ a {
   width: 3.55rem;
   height: 3.55rem;
   max-width: none;
+  aspect-ratio: 1;
   object-fit: cover;
+  object-position: center;
   border-radius: 50%;
   background: var(--beige);
   box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--brown) 16%, transparent);
@@ -433,8 +437,10 @@ a {
   width: 6.75rem;
   height: 6.75rem;
   max-width: none;
+  aspect-ratio: 1;
   border-radius: 50%;
   object-fit: cover;
+  object-position: center;
   background: var(--beige);
   border: 5px solid var(--beige);
   box-shadow: 0 16px 36px color-mix(in srgb, var(--ink) 35%, transparent);
@@ -1243,7 +1249,7 @@ body.auth-open {
   width: 3.6rem;
   height: 3.6rem;
   border-radius: 50%;
-  background: url("assets/blanco-logo.png") center / cover no-repeat;
+  background: url("assets/logo.png") center / cover no-repeat;
   opacity: 0.08;
   pointer-events: none;
 }

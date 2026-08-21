@@ -29,7 +29,7 @@ Then visit `http://localhost:8000`.
 - Hours: Monday–Sunday, 11am–8pm
 - Domain: blancocoffeehouse.com (canonical `https://blancocoffeehouse.com`)
 - Instagram: https://www.instagram.com/blancocoffeehouse/
-- Logo: cream **b.** mark (`assets/blanco-logo.png`), espresso brown on cream
+- Logo: cream **b.** mark (`assets/logo.png`), espresso brown on cream
 - Menu items and prices: from the printed Blanco Coffee House boards (integers, shown with the site’s existing £)
   - Drinks: coffee, tea, chocolate, iced, matcha, smoothies, and soft drinks
   - Desserts: milkshakes, ice cream scoops, sundaes, and loaded cups
@@ -50,8 +50,7 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 
 ## Logo
 
-- `assets/blanco-logo.png` — canonical cream **b.** mark (the official circular icon, with period). Used as a circular badge in the header, hero seal, footer, section eyebrows, apple-touch icon, and JSON-LD.
-- `assets/logo.png` — same artwork as `blanco-logo.png` (kept so older `/assets/logo.png` URLs still resolve).
+- `assets/logo.png` — canonical cream **b.** mark (the official circular icon, with period). Used as a circular badge in the header, hero seal, footer, section eyebrows, apple-touch icon, and JSON-LD.
 - `assets/favicon.png` — the same mark, circular-cropped with a transparent outside, for the browser tab icon.
 - `assets/logo-wordmark.png` — espresso **blanco. / COFFEEHOUSE** lockup (kept on file, not used as the nav/hero/footer brand image).
 
@@ -61,8 +60,7 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 index.html              # markup (nav, hero, about, two menu boards, visit, footer) + JSON-LD
 styles.css              # design system and layout
 script.js               # nav, lightbox, member login, interactive menu
-assets/blanco-logo.png  # canonical cream “b.” mark (circular badge on the page)
-assets/logo.png         # same artwork (legacy path)
+assets/logo.png         # canonical cream “b.” mark (circular badge on the page)
 assets/favicon.png      # circular crop of the mark
 assets/logo-wordmark.png
 assets/photos/          # shop photographs saved from Instagram
