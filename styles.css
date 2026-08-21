@@ -1659,13 +1659,26 @@ body.auth-open {
   color: color-mix(in srgb, var(--beige) 50%, transparent);
 }
 
-.fineprint a {
-  color: inherit;
-  text-underline-offset: 0.15em;
+.maker-credit {
+  display: inline-block;
+  margin-left: 0.15rem;
+  color: var(--beige);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+  text-decoration: none;
+  border-bottom: 1px solid var(--brass);
+  padding-bottom: 0.08em;
+  transition:
+    color 0.35s var(--ease),
+    border-color 0.35s var(--ease),
+    letter-spacing 0.35s var(--ease);
 }
 
-.fineprint a:hover {
-  color: var(--beige);
+.maker-credit:hover {
+  color: var(--white);
+  border-bottom-color: var(--beige);
+  letter-spacing: 0.16em;
 }
 
 @media (min-width: 900px) {
@@ -1682,7 +1695,7 @@ body.auth-open {
   .nav-links {
     display: none;
     position: absolute;
-    top: 80px;
+    top: 88px;
     left: 0;
     right: 0;
     flex-direction: column;
