@@ -1,3 +1,5 @@
+var blancoShowBoard = null;
+
 (function () {
   var header = document.querySelector(".site-header");
   var toggle = document.querySelector(".nav-toggle");
@@ -226,16 +228,64 @@
   });
 
   var tabs = Array.prototype.slice.call(document.querySelectorAll(".menu-tab"));
-  tabs.forEach(function (tab) {
-    tab.addEventListener("click", function () {
-      tabs.forEach(function (other) {
-        other.classList.toggle(
-          "is-active",
-          other === tab
-        );
-      });
+  var drinksBoard = document.getElementById("drinks-board");
+  var sweetsBoard = document.getElementById("sweets-board");
+
+  function kindFromHash(hash) {
+    hash = hash || "";
+    if (hash.indexOf("sweets") !== -1) return "Sweets";
+    if (hash.indexOf("drinks") !== -1) return "Drinks";
+    return null;
+  }
+
+  function showBoard(kind) {
+    if (!drinksBoard || !sweetsBoard) return;
+    var sweetsOn = kind === "Sweets";
+    drinksBoard.hidden = sweetsOn;
+    sweetsBoard.hidden = !sweetsOn;
+    drinksBoard.classList.toggle("is-active", !sweetsOn);
+    sweetsBoard.classList.toggle("is-active", sweetsOn);
+    tabs.forEach(function (tab) {
+      var isSweets = (tab.getAttribute("href") || "").indexOf("sweets") !== -1;
+      var on = sweetsOn ? isSweets : !isSweets;
+      tab.classList.toggle("is-active", on);
+      tab.setAttribute("aria-selected", on ? "true" : "false");
+      tab.tabIndex = on ? 0 : -1;
+    });
+  }
+
+  blancoShowBoard = showBoard;
+
+  tabs.forEach(function (tab, index) {
+    tab.addEventListener("click", function (event) {
+      event.preventDefault();
+      var sweetsOn = (tab.getAttribute("href") || "").indexOf("sweets") !== -1;
+      showBoard(sweetsOn ? "Sweets" : "Drinks");
+    });
+    tab.addEventListener("keydown", function (event) {
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      event.preventDefault();
+      var next = tabs[(index + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+      next.focus();
+      next.click();
     });
   });
+
+  showBoard(kindFromHash(window.location.hash) || "Drinks");
+
+  function revealFromHash() {
+    var kind = kindFromHash(window.location.hash);
+    if (!kind) return;
+    showBoard(kind);
+    var id = (window.location.hash || "").replace(/^#/, "");
+    var target = (id && document.getElementById(id)) || document.getElementById("menu");
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  window.addEventListener("hashchange", revealFromHash);
+  if (kindFromHash(window.location.hash)) {
+    window.setTimeout(revealFromHash, 0);
+  }
 })();
 
 (function () {
@@ -399,6 +449,10 @@
   }
 
   function activateBoard(kind) {
+    if (typeof blancoShowBoard === "function") {
+      blancoShowBoard(kind);
+      return;
+    }
     var tabs = document.querySelectorAll(".menu-tab");
     tabs.forEach(function (tab) {
       var sweets = (tab.getAttribute("href") || "").indexOf("sweets") !== -1;

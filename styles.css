@@ -1583,10 +1583,12 @@ body.lightbox-open {
 }
 
 .boards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(1.1rem, 2.5vw, 1.75rem);
-  align-items: start;
+  display: block;
+  max-width: 44rem;
+}
+
+.board[hidden] {
+  display: none;
 }
 
 .board {
@@ -1690,10 +1692,14 @@ body.lightbox-open {
 }
 
 .menu-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0.2rem;
   margin-top: 1.25rem;
+  padding: 0.22rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
 }
 
 .menu-tab {
@@ -1701,18 +1707,17 @@ body.lightbox-open {
   align-items: center;
   text-decoration: none;
   border-radius: 999px;
-  padding: 0.45rem 0.95rem;
+  padding: 0.5rem 1.15rem;
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border: 1px solid var(--line);
+  border: 0;
   background: transparent;
   color: var(--brown);
   transition:
     background 0.28s var(--ease),
-    color 0.28s var(--ease),
-    border-color 0.28s var(--ease);
+    color 0.28s var(--ease);
 }
 
 .menu-tab:hover,
@@ -2171,7 +2176,6 @@ body.lightbox-open {
 
   .hero-inner,
   .split,
-  .boards,
   .visit-grid,
   .reviews-layout,
   .ways-grid,
