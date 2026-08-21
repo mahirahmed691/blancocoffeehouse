@@ -249,13 +249,17 @@ a {
   display: flex;
   align-items: center;
   text-decoration: none;
+  border-radius: 50%;
 }
 
-.logo img {
-  width: 108px;
-  height: 72px;
-  object-fit: contain;
-  background: var(--espresso);
+.logo img,
+.logo-badge {
+  width: 3.15rem;
+  height: 3.15rem;
+  object-fit: cover;
+  border-radius: 50%;
+  background: var(--cream);
+  box-shadow: 0 0 0 1.5px rgba(59, 42, 34, 0.16);
 }
 
 .nav-links {
@@ -383,6 +387,16 @@ a {
   animation: hero-rise 0.95s var(--ease) both;
 }
 
+.hero-logo {
+  width: 7.25rem;
+  height: 7.25rem;
+  margin: 0 0 1.15rem;
+  object-fit: cover;
+  border-radius: 50%;
+  background: var(--cream);
+  box-shadow: 0 0 0 1.5px rgba(59, 42, 34, 0.14);
+}
+
 .hero h1 {
   margin: 0 0 1.15rem;
   font-family: var(--serif);
@@ -465,23 +479,17 @@ a {
 
 .hero-stamp {
   position: absolute;
-  right: 7%;
-  top: 9%;
+  right: 5%;
+  top: 6%;
   z-index: 3;
   margin: 0;
-  width: 4.35rem;
-  height: 4.35rem;
+  width: 6.5rem;
+  height: 6.5rem;
   border-radius: 50%;
-  display: grid;
-  place-items: center;
+  object-fit: cover;
   background: var(--cream);
-  color: var(--espresso);
-  font-family: var(--serif);
-  font-style: italic;
-  font-weight: 600;
-  font-size: 1.7rem;
-  line-height: 1;
-  box-shadow: 0 10px 24px rgba(59, 42, 34, 0.12);
+  border: 5px solid var(--paper);
+  box-shadow: 0 14px 32px rgba(59, 42, 34, 0.18);
   pointer-events: none;
   animation: hero-rise 1.18s var(--ease) 0.32s both;
 }
@@ -979,10 +987,14 @@ body.lightbox-open {
   letter-spacing: -0.02em;
 }
 
-.footer-brand img {
-  width: 90px;
-  height: 60px;
-  object-fit: contain;
+.footer-brand img,
+.footer-brand .logo-badge {
+  width: 3.25rem;
+  height: 3.25rem;
+  object-fit: cover;
+  border-radius: 50%;
+  background: var(--cream);
+  box-shadow: 0 0 0 1.5px rgba(239, 230, 217, 0.28);
 }
 
 .footer-meta {
@@ -1063,6 +1075,12 @@ body.lightbox-open {
     max-width: 34rem;
   }
 
+  .hero-logo {
+    width: 5.85rem;
+    height: 5.85rem;
+    margin-bottom: 0.95rem;
+  }
+
   .hero-media {
     padding: 0.35rem 0 1.4rem 0.85rem;
     max-width: 28rem;
@@ -1079,11 +1097,11 @@ body.lightbox-open {
   }
 
   .hero-stamp {
-    width: 3.55rem;
-    height: 3.55rem;
-    font-size: 1.38rem;
-    right: 8%;
-    top: 8%;
+    width: 5.75rem;
+    height: 5.75rem;
+    border-width: 4px;
+    right: 6%;
+    top: 6%;
   }
 
   .media-frame {
@@ -1152,14 +1170,15 @@ body.lightbox-open {
   }
 
   .hero-stamp {
-    width: 3.05rem;
-    height: 3.05rem;
-    font-size: 1.18rem;
+    width: 5.1rem;
+    height: 5.1rem;
+    border-width: 3px;
   }
 
-  .logo img {
-    width: 92px;
-    height: 61px;
+  .logo img,
+  .logo-badge {
+    width: 2.85rem;
+    height: 2.85rem;
   }
 
   .board {
