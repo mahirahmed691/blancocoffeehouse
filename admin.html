@@ -281,12 +281,30 @@
                   Sweets <span class="admin-tab-count" data-count-sweets></span>
                 </button>
               </div>
-              <label class="admin-filter">
-                Pick a line
-                <select id="admin-pick">
-                  <option value="">Whole board</option>
-                </select>
-              </label>
+              <div class="admin-filter">
+                <p class="admin-filter-label" id="admin-pick-label">Pick a line</p>
+                <div class="admin-pick" id="admin-pick">
+                  <button
+                    type="button"
+                    class="admin-pick-btn"
+                    id="admin-pick-btn"
+                    aria-expanded="false"
+                    aria-haspopup="listbox"
+                    aria-controls="admin-pick-list"
+                    aria-labelledby="admin-pick-label admin-pick-current"
+                  >
+                    <span class="admin-pick-current" id="admin-pick-current">Whole board</span>
+                    <span class="admin-pick-chevron" aria-hidden="true"></span>
+                  </button>
+                  <div
+                    class="admin-pick-menu"
+                    id="admin-pick-list"
+                    hidden
+                    role="listbox"
+                    aria-labelledby="admin-pick-label"
+                  ></div>
+                </div>
+              </div>
             </div>
 
             <article class="account-card admin-add">

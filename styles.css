@@ -3176,6 +3176,8 @@ body.lightbox-open {
 .admin-filter {
   display: grid;
   gap: 0.35rem;
+  position: relative;
+  z-index: 8;
   font-size: 0.72rem;
   font-weight: 500;
   letter-spacing: 0.16em;
@@ -3183,10 +3185,22 @@ body.lightbox-open {
   color: var(--muted);
 }
 
-.admin-filter select {
-  min-height: 2.85rem;
-  height: 100%;
+.admin-filter-label {
+  margin: 0;
+}
+
+.admin-pick {
+  position: relative;
+}
+
+.admin-pick-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   width: 100%;
+  min-height: 2.85rem;
+  padding: 0.55rem 0.85rem;
   border: 1px solid var(--line);
   border-radius: 2px;
   background: var(--white);
@@ -3195,8 +3209,116 @@ body.lightbox-open {
   font-size: 16px;
   letter-spacing: 0;
   text-transform: none;
-  padding: 0.65rem 0.8rem;
+  text-align: left;
+  cursor: pointer;
   touch-action: manipulation;
+}
+
+.admin-pick.is-open .admin-pick-btn {
+  border-color: color-mix(in srgb, var(--brown) 45%, transparent);
+}
+
+.admin-pick-current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.12rem;
+  letter-spacing: -0.03em;
+}
+
+.admin-pick-chevron {
+  flex: 0 0 auto;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.25s var(--ease);
+}
+
+.admin-pick.is-open .admin-pick-chevron {
+  transform: rotate(225deg) translateY(-1px);
+}
+
+.admin-pick-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 20;
+  max-height: min(24rem, calc(100dvh - 8rem));
+  overflow: auto;
+  padding: 0.35rem 0 0.5rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--ink) 12%, transparent);
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-pick-menu[hidden] {
+  display: none;
+}
+
+.admin-pick-group,
+.admin-pick-section {
+  margin: 0;
+  padding: 0.7rem 0.9rem 0.15rem;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-pick-section {
+  padding-top: 0.3rem;
+  letter-spacing: 0.14em;
+}
+
+.admin-pick-option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.85rem;
+  padding: 0.55rem 0.9rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.admin-pick-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.12rem;
+  letter-spacing: -0.03em;
+}
+
+.admin-pick-meta {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.admin-pick-option.is-active {
+  background: color-mix(in srgb, var(--beige) 72%, var(--paper));
 }
 
 .admin-item.is-picked {
@@ -3410,6 +3532,11 @@ body.lightbox-open {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .admin-pick-option:hover,
+  .admin-pick-option:focus-visible {
+    background: color-mix(in srgb, var(--beige) 72%, var(--paper));
+  }
+
   .admin-sold-btn:hover,
   .admin-move:hover,
   .admin-remove:hover {
@@ -3447,7 +3574,9 @@ body.lightbox-open {
 
   .admin-move:active,
   .admin-remove:active,
-  .admin-sold-btn:active {
+  .admin-sold-btn:active,
+  .admin-pick-option:active,
+  .admin-pick-btn:active {
     transform: scale(0.98);
   }
 }
