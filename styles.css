@@ -1584,20 +1584,38 @@ body.lightbox-open {
 
 .boards {
   display: block;
-  max-width: 44rem;
-}
-
-.board[hidden] {
-  display: none;
+  width: 100%;
 }
 
 .board {
   position: relative;
+  width: 100%;
   min-width: 0;
   background: var(--paper);
   border: 1px solid var(--line);
   padding: clamp(1.6rem, 2.8vw, 2.35rem) clamp(1.35rem, 2.4vw, 2.1rem) 1.85rem;
   transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+}
+
+@media (min-width: 901px) {
+  .board.is-active {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: clamp(1.75rem, 3.5vw, 3.25rem);
+    row-gap: 1.35rem;
+  }
+
+  .board.is-active .board-mast {
+    grid-column: 1 / -1;
+  }
+
+  .board.is-active .board-section + .board-section {
+    margin-top: 0;
+  }
+}
+
+.board[hidden] {
+  display: none !important;
 }
 
 .board::after {
