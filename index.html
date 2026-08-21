@@ -63,6 +63,7 @@
     />
     <link rel="stylesheet" href="styles.css" />
     <link rel="prefetch" href="account.html" />
+    <link rel="prefetch" href="gallery.html" />
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
@@ -89,6 +90,7 @@
           The house
           <span class="mega-chevron" aria-hidden="true"></span>
         </button>
+        <a class="nav-page" href="gallery.html">Gallery</a>
         <div class="nav-search">
           <label class="visually-hidden" for="house-search">Search the house</label>
           <input
@@ -202,21 +204,60 @@
           decoding="async"
           aria-hidden="true"
         />
-        <div class="wrap hero-inner">
-          <p class="hero-kicker">Fiveways Parade, Hazel Grove</p>
-          <h1 id="hero-tagline">blanco. your way.</h1>
-          <ul class="modes">
-            <li><a href="#sit-in">sit in.</a></li>
-            <li><a href="#pick-up">pick up.</a></li>
-            <li><a href="#delivered">get it delivered.</a></li>
-          </ul>
-          <div class="hero-actions">
-            <a class="btn" href="#menu">View menu</a>
-            <a class="btn btn-ghost" href="#visit">Find us</a>
+        <div class="wrap hero-stage">
+          <div class="hero-inner">
+            <p class="hero-kicker">Fiveways Parade, Hazel Grove</p>
+            <h1 id="hero-tagline">blanco. your way.</h1>
+            <ul class="modes">
+              <li><a href="#sit-in">sit in.</a></li>
+              <li><a href="#pick-up">pick up.</a></li>
+              <li><a href="#delivered">get it delivered.</a></li>
+            </ul>
+            <div class="hero-actions">
+              <a class="btn" href="#menu">View menu</a>
+              <a class="btn btn-ghost" href="gallery.html">The gallery</a>
+              <a class="btn btn-ghost" href="#visit">Find us</a>
+            </div>
+            <p class="hours-chip" data-hours-line>
+              Open every day · <strong data-hours-range>11am–8pm</strong>
+            </p>
           </div>
-          <p class="hours-chip" data-hours-line>
-            Open every day · <strong data-hours-range>11am–8pm</strong>
-          </p>
+          <ul class="hero-gallery" aria-label="From the gallery">
+            <li>
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/latte-case.jpg"
+                  alt="An iced Blanco latte held in front of the pastry case and the house blanco. sign."
+                  width="1350"
+                  height="1800"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li>
+              <button type="button" class="gallery-open" aria-haspopup="dialog">
+                <img
+                  src="assets/photos/cookie-case.jpg"
+                  alt="Oreo cookies on a wooden tray in the pastry case, with Biscoff cookies below and Fiveways Parade in the window."
+                  width="1350"
+                  height="1800"
+                  decoding="async"
+                />
+              </button>
+            </li>
+            <li>
+              <a class="hero-gallery-more" href="gallery.html">
+                <img
+                  src="assets/photos/sit-in.jpg"
+                  alt=""
+                  width="1350"
+                  height="1800"
+                  decoding="async"
+                />
+                <span>Open the gallery</span>
+              </a>
+            </li>
+          </ul>
         </div>
       </section>
 
