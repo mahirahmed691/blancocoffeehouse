@@ -343,6 +343,7 @@ a {
 
 .btn:hover {
   background: var(--hover);
+  transform: translateY(-1px);
 }
 
 .btn-ghost {
@@ -1231,6 +1232,12 @@ body.lightbox-open {
 
 .fineprint a:hover {
   color: var(--beige);
+}
+
+@media (min-width: 900px) {
+  .hero-media {
+    margin-right: calc(-1 * var(--pad));
+  }
 }
 
 @media (max-width: 760px) {

@@ -72,4 +72,21 @@ assets/photos/          # shop photographs saved from Instagram
 
 - GitHub: [mahirahmed691/blancocoffeehouse](https://github.com/mahirahmed691/blancocoffeehouse)
 - Vercel: https://blancocoffeehouse.vercel.app
-- Custom domain `blancocoffeehouse.com` is **not attached yet**. The site uses that URL as canonical / JSON-LD `url` so it is ready when DNS is pointed.
+- Registrar: **GoDaddy** for `blancocoffeehouse.com`
+
+### Attach `blancocoffeehouse.com` (GoDaddy → Vercel)
+
+1. In Vercel, open the **blancocoffeehouse** project → **Settings** → **Domains** → add `blancocoffeehouse.com`. Accept the prompt to also add `www.blancocoffeehouse.com`.
+2. Open the domain card and copy the **exact** A / CNAME values it shows (newer projects sometimes use a different anycast IP than the default below).
+3. In [GoDaddy DNS](https://dcc.godaddy.com/): **blancocoffeehouse.com** → **DNS** → **DNS Records**. Turn **off** domain forwarding / the GoDaddy parking page if either is on.
+4. Delete leftover apex `A` / `CNAME` / `Forward` records that still point at GoDaddy parking or an old host.
+5. Add (or match) these records — use the domain card values if they differ:
+
+| Type  | Name | Value | TTL |
+| ----- | ---- | ----- | --- |
+| A     | `@`  | `76.76.21.21` (or the IP on the Vercel domain card) | 600 / 1 hour |
+| CNAME | `www` | `cname.vercel-dns.com` (or the `*.vercel-dns-*.com` target on the card) | 600 / 1 hour |
+
+6. Wait for Vercel to show **Valid Configuration**, then SSL. Apex (`blancocoffeehouse.com`) and `www` should both serve the site; optional: in Vercel set `www` as primary and redirect the apex to it.
+
+Do not point nameservers away from GoDaddy unless you intend to manage DNS on Vercel instead. Keep MX/TXT records for email if you add those later.
