@@ -59,16 +59,37 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 ## Project layout
 
 ```
-index.html              # markup (nav, hero, about, two menu boards, visit, footer) + JSON-LD
+index.html              # public shop (nav, hero, about, menu boards, visit, footer) + JSON-LD
+account.html            # Clerk member area (sign-in when signed out; dashboard when signed in)
+clerk-config.js         # Clerk publishable key only (pk_test_ / pk_live_)
+clerk-auth.js           # shared Clerk JS CDN bootstrap for index + account
 styles.css              # design system and layout
-script.js               # nav, lightbox, member login, interactive menu
+script.js               # nav, lightbox, interactive menu
 assets/logo.png         # cream “b.” mark (circular badge on the page)
 assets/favicon.png      # circular crop of the mark
 assets/logo-wordmark.png
 assets/photos/          # shop photographs saved from Instagram
 ```
 
-Member **Log in / Create account** is browser-local (email + salted hash in `localStorage`). It is not a server account. Plug in a real auth backend when one exists.
+## Accounts (Clerk)
+
+The **menu, gallery, visit, and home page are public**. You do not need to sign in to browse the shop.
+
+`account.html` is the authenticated member area:
+
+- Signed out: Clerk sign-in / sign-up (mounted on the page). After auth, you stay on the account page.
+- Signed in: profile (name/email from Clerk), an orders placeholder, and a rewards/stamps placeholder. Orders are not faked — copy says they will live here and will require sign-in when that feature is built.
+
+Nav: **Sign in / Sign up** when signed out; **Account** + Clerk UserButton when signed in.
+
+### Add your publishable key
+
+1. Open the Clerk Dashboard for app `app_3ICtW3IyvsokSBEB7HVoxDweHCq`.
+2. **API keys** → copy the **Publishable key** (`pk_test_…` or `pk_live_…`).
+3. Paste it into `clerk-config.js` as `window.CLERK_PUBLISHABLE_KEY = "pk_…";`
+4. In Clerk, add this site’s origins to **Allowed origins** (e.g. `https://blancocoffeehouse.com`, `https://blancocoffeehouse.vercel.app`, and `http://localhost:8000` for local preview).
+
+Never put `CLERK_SECRET_KEY` in client files. This static site only uses the publishable key.
 
 ## Hosting
 

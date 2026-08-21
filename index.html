@@ -90,19 +90,17 @@
           <li><a href="#menu">Menu</a></li>
           <li><a href="#app">Rewards</a></li>
           <li><a href="#visit">Visit</a></li>
-          <li>
-            <button
-              class="btn nav-login"
-              type="button"
-              data-auth-open
-            >
-              Log in
-            </button>
+          <li class="clerk-signed-out">
+            <a class="btn" href="account.html">Sign in</a>
           </li>
-          <li class="nav-account" hidden>
-            <button class="nav-account-chip" type="button" data-auth-account>
-              <span data-auth-name>Account</span>
-            </button>
+          <li class="clerk-signed-out">
+            <a class="nav-account-chip" href="account.html#sign-up">Sign up</a>
+          </li>
+          <li class="clerk-signed-in" hidden>
+            <a href="account.html">Account</a>
+          </li>
+          <li class="clerk-signed-in nav-user" hidden>
+            <div class="clerk-user-button" data-clerk-user-button></div>
           </li>
         </ul>
       </nav>
@@ -742,19 +740,20 @@
               exclusive merchandise. Your usual order, or today’s reward, from
               the counter or from home.
             </p>
-            <div class="app-actions">
-              <button class="btn btn-on-dark" type="button" data-auth-open>
-                Log in
-              </button>
-              <button
-                class="btn btn-ghost-on-dark"
-                type="button"
-                data-auth-open
-                data-auth-mode="create"
-              >
-                Create account
-              </button>
+            <div class="app-actions clerk-signed-out">
+              <a class="btn btn-on-dark" href="account.html">Sign in</a>
+              <a class="btn btn-ghost-on-dark" href="account.html#sign-up">
+                Sign up
+              </a>
             </div>
+            <div class="app-actions clerk-signed-in" hidden>
+              <a class="btn btn-on-dark" href="account.html">Your account</a>
+            </div>
+            <p class="prose prose-on-dark clerk-signed-in" hidden>
+              You’re signed in.
+              <a href="account.html">Open your account</a>
+              for profile, rewards, and orders (coming soon).
+            </p>
           </div>
           <ul class="app-features">
             <li>
@@ -861,7 +860,7 @@
       <p class="wrap fineprint">
         © 2026 Blanco Coffee House · blancocoffeehouse.com · made by
         <a
-          href="https://github.com/mahirahmed691"
+          href="https://mahirahmed.co.uk"
           target="_blank"
           rel="noopener noreferrer"
           >mahirahmed</a
@@ -907,112 +906,8 @@
       </div>
     </div>
 
-    <div
-      class="auth-layer"
-      id="auth-layer"
-      hidden
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="auth-title"
-    >
-      <div class="auth-backdrop" data-auth-close></div>
-      <div class="auth-panel">
-        <button class="auth-close" type="button" data-auth-close aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-        <p class="eyebrow"><span class="mark">b.</span> account</p>
-        <h2 id="auth-title">Log in</h2>
-        <p class="auth-lede" data-auth-lede>
-          Use your email to collect, order, and pick up rewards.
-        </p>
-        <form class="auth-form" id="auth-form" novalidate>
-          <label class="auth-field" data-auth-name-field hidden>
-            <span>Name</span>
-            <input
-              type="text"
-              name="name"
-              autocomplete="name"
-              maxlength="48"
-            />
-          </label>
-          <label class="auth-field">
-            <span>Email</span>
-            <input
-              type="email"
-              name="email"
-              autocomplete="email"
-              required
-              inputmode="email"
-            />
-          </label>
-          <label class="auth-field">
-            <span>Password</span>
-            <input
-              type="password"
-              name="password"
-              autocomplete="current-password"
-              required
-              minlength="8"
-            />
-          </label>
-          <p class="auth-error" data-auth-error role="alert" hidden></p>
-          <button class="btn auth-submit" type="submit">Log in</button>
-        </form>
-        <p class="auth-switch">
-          <button type="button" data-auth-toggle>
-            New here? Create an account
-          </button>
-        </p>
-      </div>
-    </div>
-
-    <div
-      class="auth-layer"
-      id="account-layer"
-      hidden
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="account-title"
-    >
-      <div class="auth-backdrop" data-account-close></div>
-      <div class="auth-panel account-panel">
-        <button
-          class="auth-close"
-          type="button"
-          data-account-close
-          aria-label="Close account"
-        >
-          <span aria-hidden="true">&times;</span>
-        </button>
-        <p class="eyebrow"><span class="mark">b.</span> member</p>
-        <h2 id="account-title">Your way.</h2>
-        <p class="auth-lede">
-          Welcome back, <strong data-account-name>member</strong>. Sit in, pick
-          up, or get it delivered — rewards stay on this device.
-        </p>
-        <ul class="account-ways">
-          <li>
-            <span>sit in.</span>
-            <span>Fiveways Parade, 11am–8pm.</span>
-          </li>
-          <li>
-            <span>pick up.</span>
-            <span>Ready at the counter.</span>
-          </li>
-          <li>
-            <span>delivery.</span>
-            <span>Straight to your door.</span>
-          </li>
-        </ul>
-        <div class="account-actions">
-          <a class="btn" href="#menu" data-account-close>View menu</a>
-          <button class="btn btn-ghost" type="button" data-auth-logout>
-            Log out
-          </button>
-        </div>
-      </div>
-    </div>
-
+    <script src="clerk-config.js"></script>
     <script src="script.js"></script>
+    <script src="clerk-auth.js"></script>
   </body>
 </html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Your account — Blanco Coffee House</title>
+    <meta
+      name="description"
+      content="Sign in to your Blanco Coffee House account for profile, rewards, and orders."
+    />
+    <meta name="theme-color" content="#E9E1D8" />
+    <link rel="canonical" href="https://blancocoffeehouse.com/account.html" />
+    <link rel="icon" href="assets/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Nunito:wght@500;600;700;800&family=Work+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="account-page">
+    <div class="grain" aria-hidden="true"></div>
+    <a class="skip" href="#account-main">Skip to account</a>
+
+    <header class="site-header">
+      <nav class="nav wrap" aria-label="Primary">
+        <a class="logo" href="index.html">
+          <img
+            class="logo-badge"
+            src="assets/logo.png"
+            alt="Blanco Coffee House"
+            width="256"
+            height="256"
+            decoding="async"
+          />
+        </a>
+        <button
+          class="nav-toggle"
+          type="button"
+          aria-label="Open menu"
+          aria-expanded="false"
+          aria-controls="site-nav"
+        >
+          <span></span>
+          <span></span>
+        </button>
+        <ul class="nav-links" id="site-nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="index.html#menu">Menu</a></li>
+          <li><a href="index.html#app">Rewards</a></li>
+          <li><a href="index.html#visit">Visit</a></li>
+          <li class="clerk-signed-out">
+            <a class="btn" href="#account-auth">Sign in</a>
+          </li>
+          <li class="clerk-signed-out">
+            <a class="nav-account-chip" href="account.html#sign-up">Sign up</a>
+          </li>
+          <li class="clerk-signed-in" hidden>
+            <a href="account.html" aria-current="page">Account</a>
+          </li>
+          <li class="clerk-signed-in nav-user" hidden>
+            <div class="clerk-user-button" data-clerk-user-button></div>
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <main id="account-main">
+      <section
+        class="band band-paper clerk-signed-out"
+        id="account-auth"
+        aria-labelledby="account-auth-title"
+      >
+        <div class="wrap account-auth-grid">
+          <div>
+            <p class="eyebrow"><span class="mark">b.</span> account</p>
+            <h1 class="campaign-title" id="account-auth-title">your way in.</h1>
+            <p class="prose">
+              The house, the menu, and the gallery stay open — no account
+              needed. Sign in here for your member area. Orders will live on
+              this page, and you’ll need to be signed in to see them when that
+              feature is ready.
+            </p>
+            <p class="prose" id="clerk-setup-note" hidden>
+              Paste your Clerk publishable key (<code>pk_test_</code> or
+              <code>pk_live_</code>) into <code>clerk-config.js</code>, then
+              reload. Never put <code>CLERK_SECRET_KEY</code> in client files.
+            </p>
+            <p class="closing-line">sit in. pick up. come back.</p>
+            <div class="account-actions">
+              <a class="btn" href="index.html#menu">View menu</a>
+              <a class="btn btn-ghost" href="index.html">Back home</a>
+            </div>
+          </div>
+          <div class="account-auth-panel">
+            <p class="eyebrow"><span class="mark">b.</span> sign in</p>
+            <h2>Welcome back.</h2>
+            <p class="auth-lede">
+              Use the same email you’ll keep for collection, delivery, and
+              rewards.
+            </p>
+            <div id="clerk-sign-in" class="clerk-mount"></div>
+            <p class="account-auth-fallback">
+              New here?
+              <button class="text-link" type="button" data-clerk-signup>
+                Create an account
+              </button>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="band clerk-signed-in"
+        id="account-home"
+        hidden
+        aria-labelledby="account-home-title"
+      >
+        <div class="wrap">
+          <div class="account-welcome">
+            <p class="eyebrow"><span class="mark">b.</span> member</p>
+            <h1 class="campaign-title" id="account-home-title">
+              Welcome back, <span data-account-name>member</span>.
+            </h1>
+            <p class="prose">
+              This is your blanco account. The public menu is still on the
+              house page — this space is for profile, rewards, and (soon)
+              orders.
+            </p>
+            <div class="account-welcome-tools">
+              <div class="clerk-user-button clerk-user-button-lg"></div>
+              <a class="btn btn-ghost" href="index.html#menu">View menu</a>
+            </div>
+          </div>
+
+          <div class="account-grid">
+            <article class="account-card" aria-labelledby="account-details-title">
+              <p class="eyebrow"><span class="mark">b.</span> profile</p>
+              <h2 id="account-details-title">Account details</h2>
+              <dl class="account-facts">
+                <div>
+                  <dt>Name</dt>
+                  <dd data-account-name>member</dd>
+                </div>
+                <div>
+                  <dt>Email</dt>
+                  <dd data-account-email>—</dd>
+                </div>
+                <div>
+                  <dt>House</dt>
+                  <dd>4 Fiveways Parade, Hazel Grove · 11am–8pm</dd>
+                </div>
+              </dl>
+              <p class="note">
+                Name and email come from Clerk. Use the profile button to
+                update them.
+              </p>
+            </article>
+
+            <article class="account-card" aria-labelledby="account-orders-title">
+              <p class="eyebrow"><span class="mark">b.</span> orders</p>
+              <h2 id="account-orders-title">Your orders</h2>
+              <div class="empty-orders">
+                <p class="empty-orders-kicker">Coming soon</p>
+                <p>
+                  Collection and delivery history will live here. There is
+                  nothing to show yet — we are not inventing past orders.
+                </p>
+                <p>
+                  When ordering is ready, you will need to be signed in to see
+                  it. The public menu does not require an account.
+                </p>
+              </div>
+            </article>
+
+            <article class="account-card" aria-labelledby="account-rewards-title">
+              <p class="eyebrow"><span class="mark">b.</span> rewards</p>
+              <h2 id="account-rewards-title">Stamps &amp; the counter</h2>
+              <p class="prose">
+                Loyalty, daily spins, and exclusive merchandise will sit on
+                this account. Nothing is stored yet.
+              </p>
+              <ol class="stamp-row" aria-label="Reward stamps, empty">
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+                <li></li>
+              </ol>
+              <p class="note">
+                Same idea as rewards on the house page — a placeholder until a
+                backend exists.
+              </p>
+            </article>
+          </div>
+
+          <div class="account-footer-actions">
+            <a class="btn" href="index.html">Back to the house</a>
+            <button class="btn btn-ghost" type="button" data-clerk-signout>
+              Sign out
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <div class="footer-brand">
+          <img
+            class="logo-badge"
+            src="assets/logo.png"
+            alt=""
+            width="256"
+            height="256"
+            decoding="async"
+          />
+          <span>
+            blanco.
+            <span class="footer-tag">your way.</span>
+          </span>
+        </div>
+        <div class="footer-meta">
+          <div>Monday–Sunday, 11am–8pm</div>
+          <div>4 Fiveways Parade, Hazel Grove, Stockport, SK7 6DG</div>
+          <div>
+            <a href="mailto:hello@blancocoffeehouse.com"
+              >hello@blancocoffeehouse.com</a
+            >
+          </div>
+        </div>
+      </div>
+      <p class="wrap fineprint">
+        © 2026 Blanco Coffee House · blancocoffeehouse.com · made by
+        <a
+          href="https://mahirahmed.co.uk"
+          target="_blank"
+          rel="noopener noreferrer"
+          >mahirahmed</a
+        >
+      </p>
+    </footer>
+
+    <script src="clerk-config.js"></script>
+    <script src="script.js"></script>
+    <script src="clerk-auth.js"></script>
+  </body>
+</html>
