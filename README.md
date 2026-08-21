@@ -57,7 +57,10 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 ## Project layout
 
 ```
-index.html              # markup (nav, hero, about, two menu boards, visit, footer) + JSON-LD
+index.html              # public shop (nav, hero, about, menu boards, visit, footer) + JSON-LD
+account.html            # Clerk member area (sign-in when signed out; dashboard when signed in)
+clerk-config.js         # Clerk publishable key only (pk_test_ / pk_live_)
+clerk-auth.js           # shared Clerk JS CDN bootstrap for index + account
 styles.css              # design system and layout
 script.js               # nav, lightbox, interactive menu
 clerk-config.js         # Clerk publishable key (pk_test_ / pk_live_ only)
