@@ -96,14 +96,13 @@
           <li><a href="#visit">Visit</a></li>
           <li><a href="#reviews">Reviews</a></li>
           <li class="clerk-signed-out">
-            <button class="btn" type="button" data-clerk-signin>
-              Sign in
-            </button>
+            <a class="btn" href="account.html">Sign in</a>
           </li>
           <li class="clerk-signed-out">
-            <button class="nav-account-chip" type="button" data-clerk-signup>
-              Sign up
-            </button>
+            <a class="nav-account-chip" href="account.html#sign-up">Sign up</a>
+          </li>
+          <li class="clerk-signed-in" hidden>
+            <a href="account.html">Account</a>
           </li>
           <li class="clerk-signed-in" hidden>
             <div id="clerk-user-button"></div>
@@ -747,17 +746,11 @@
               the counter or from home.
             </p>
             <div class="app-actions clerk-signed-out">
-              <button class="btn btn-on-dark" type="button" data-clerk-signin>
-                Sign in
-              </button>
-              <button class="btn btn-ghost-on-dark" type="button" data-clerk-signup>
-                Sign up
-              </button>
+              <a class="btn btn-on-dark" href="account.html">Sign in</a>
+              <a class="btn btn-ghost-on-dark" href="account.html#sign-up">Sign up</a>
             </div>
             <div class="app-actions clerk-signed-in" hidden>
-              <button class="btn btn-on-dark" type="button" data-clerk-profile>
-                Your account
-              </button>
+              <a class="btn btn-on-dark" href="account.html">Your account</a>
             </div>
             <p class="prose prose-on-dark clerk-signed-in" hidden>
               You’re signed in. Use the profile icon in the header, or open your
