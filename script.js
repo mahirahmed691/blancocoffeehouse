@@ -495,3 +495,71 @@
 
   renderSession();
 })();
+
+(function () {
+  var shareBtn = document.querySelector("[data-share-house]");
+  var fallback = document.querySelector("[data-share-fallback]");
+  var statusEl = document.querySelector("[data-share-status]");
+  var copyBtn = document.querySelector("[data-copy-link]");
+  if (!shareBtn) return;
+
+  var pageUrl = "https://blancocoffeehouse.com/";
+  var shareTitle = "blanco. your way.";
+  var shareText =
+    "Blanco Coffee House, Hazel Grove — sit in, pick up, or get it delivered.";
+
+  function setStatus(message) {
+    if (!statusEl) return;
+    statusEl.textContent = message || "";
+  }
+
+  function showFallback() {
+    if (fallback) fallback.hidden = false;
+  }
+
+  function copyLink() {
+    var done = function () {
+      setStatus("Link copied.");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(pageUrl).then(done).catch(showFallback);
+      return;
+    }
+    var field = document.createElement("textarea");
+    field.value = pageUrl;
+    field.setAttribute("readonly", "");
+    field.style.position = "absolute";
+    field.style.left = "-9999px";
+    document.body.appendChild(field);
+    field.select();
+    try {
+      document.execCommand("copy");
+      done();
+    } catch (err) {
+      setStatus(pageUrl);
+    }
+    document.body.removeChild(field);
+  }
+
+  shareBtn.addEventListener("click", function () {
+    setStatus("");
+    if (typeof navigator.share === "function") {
+      navigator
+        .share({
+          title: shareTitle,
+          text: shareText,
+          url: pageUrl
+        })
+        .catch(function (err) {
+          if (err && err.name === "AbortError") return;
+          showFallback();
+        });
+      return;
+    }
+    showFallback();
+  });
+
+  if (copyBtn) {
+    copyBtn.addEventListener("click", copyLink);
+  }
+})();
