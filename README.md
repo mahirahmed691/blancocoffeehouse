@@ -29,7 +29,7 @@ Then visit `http://localhost:8000`.
 - Hours: Monday–Sunday, 11am–8pm
 - Domain: blancocoffeehouse.com (canonical `https://blancocoffeehouse.com`)
 - Instagram: https://www.instagram.com/blancocoffeehouse/
-- Logo: geometric **b.** mark (`assets/logo.svg`), espresso brown on cream
+- Logo: Instagram **b.** mark (`assets/logo.png`), espresso brown on cream
 - Menu items and prices: from the printed Blanco Coffee House boards (integers, shown with the site’s existing £)
   - Drinks: coffee, tea, chocolate, iced, matcha, smoothies, and soft drinks
   - Desserts: milkshakes, ice cream scoops, sundaes, and loaded cups
@@ -50,8 +50,8 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 
 ## Logo
 
-- `assets/logo.svg` — canonical geometric **b.** mark (circular bowl + period). Used as a circular badge in the header, hero seal, footer, section eyebrows, favicon, and JSON-LD.
-- `assets/favicon.png` — a PNG raster of the same SVG for apple-touch / older browsers.
+- `assets/logo.png` — official Instagram **b.** mark (saved locally, not hotlinked). Used as a circular badge in the header, hero seal, footer, section eyebrows, favicon, and JSON-LD.
+- `assets/favicon.png` — the same mark at 256px for apple-touch.
 - `assets/logo-wordmark.png` — espresso **blanco. / COFFEEHOUSE** lockup (kept on file, not used as the nav/hero/footer brand image).
 
 ## Project layout
@@ -65,8 +65,8 @@ styles.css              # design system and layout
 script.js               # nav, lightbox, interactive menu
 clerk-config.js         # Clerk publishable key (pk_test_ / pk_live_ only)
 clerk-auth.js           # Clerk JS CDN: Sign in / Sign up / UserButton
-assets/logo.svg         # geometric “b.” mark (circular badge on the page)
-assets/favicon.png      # PNG raster of the SVG for apple-touch
+assets/logo.png         # official Instagram “b.” mark (circular badge)
+assets/favicon.png      # 256px crop of the same mark
 assets/logo-wordmark.png
 assets/photos/          # shop photographs saved from Instagram
 ```
