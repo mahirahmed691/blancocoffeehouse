@@ -89,6 +89,25 @@
           The house
           <span class="mega-chevron" aria-hidden="true"></span>
         </button>
+        <div class="nav-search">
+          <label class="visually-hidden" for="house-search">Search the house</label>
+          <input
+            id="house-search"
+            type="search"
+            name="q"
+            placeholder="Search the board…"
+            autocomplete="off"
+            spellcheck="false"
+            enterkeyhint="search"
+          />
+          <ul
+            class="search-results"
+            id="house-search-results"
+            hidden
+            role="listbox"
+            aria-label="Search results"
+          ></ul>
+        </div>
         <div class="nav-cta">
           <a class="btn clerk-signed-out" href="account.html">Sign in</a>
           <a class="nav-account-link clerk-signed-in" href="account.html" hidden>Account</a>
