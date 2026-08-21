@@ -358,10 +358,10 @@ a {
 .hero {
   position: relative;
   overflow: hidden;
-  min-height: min(92svh, 920px);
+  min-height: min(88svh, 860px);
   display: flex;
   align-items: flex-end;
-  padding: clamp(5.5rem, 10vw, 7.5rem) 0 clamp(2.6rem, 6vw, 4.2rem);
+  padding: clamp(5.2rem, 9vw, 6.8rem) 0 clamp(2.2rem, 5vw, 3.6rem);
   color: var(--white);
 }
 
@@ -430,19 +430,19 @@ a {
 }
 
 .hero-poem {
-  margin: 0 0 1.35rem;
+  margin: 0 0 1.05rem;
   font-family: var(--round);
   font-weight: 600;
-  font-size: clamp(1.02rem, 2.15vw, 1.32rem);
-  line-height: 1.42;
+  font-size: clamp(0.98rem, 1.9vw, 1.2rem);
+  line-height: 1.38;
   color: color-mix(in srgb, var(--white) 92%, transparent);
 }
 
 .hero h1 {
-  margin: 0 0 1.25rem;
+  margin: 0 0 1.05rem;
   font-family: var(--round);
   font-weight: 800;
-  font-size: clamp(2.35rem, 7.2vw, 4.35rem);
+  font-size: clamp(2.2rem, 6.6vw, 4.05rem);
   line-height: 0.95;
   letter-spacing: -0.045em;
   text-transform: lowercase;
