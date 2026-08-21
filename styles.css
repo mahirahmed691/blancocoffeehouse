@@ -475,14 +475,14 @@ a {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--cream);
-  color: var(--espresso);
+  background: var(--espresso);
+  color: var(--cream);
   font-family: var(--serif);
   font-style: italic;
   font-weight: 600;
   font-size: 1.7rem;
   line-height: 1;
-  box-shadow: 0 10px 24px rgba(59, 42, 34, 0.12);
+  box-shadow: 0 10px 24px rgba(59, 42, 34, 0.22);
   pointer-events: none;
   animation: hero-rise 1.18s var(--ease) 0.32s both;
 }
