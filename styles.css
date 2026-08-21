@@ -1248,6 +1248,7 @@ body.auth-open {
   bottom: 0.4rem;
   width: 3.6rem;
   height: 3.6rem;
+  aspect-ratio: 1;
   border-radius: 50%;
   background: url("assets/logo.png") center / cover no-repeat;
   opacity: 0.08;
@@ -1608,7 +1609,10 @@ body.auth-open {
 .footer-brand .logo-badge {
   width: 3.85rem;
   height: 3.85rem;
+  max-width: none;
+  aspect-ratio: 1;
   object-fit: cover;
+  object-position: center;
   border-radius: 50%;
   background: var(--beige);
   box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--beige) 28%, transparent);

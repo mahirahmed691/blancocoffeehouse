@@ -50,8 +50,8 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 
 ## Logo
 
-- `assets/logo.png` — canonical cream **b.** mark (the official circular icon, with period). Used as a circular badge in the header, hero seal, footer, section eyebrows, apple-touch icon, and JSON-LD.
-- `assets/favicon.png` — the same mark, circular-cropped with a transparent outside, for the browser tab icon.
+- `assets/logo.png` — canonical cream **b.** mark (the official circular icon, with period). Used as a circular badge in the header, hero seal, footer, section eyebrows, favicon, apple-touch icon, and JSON-LD.
+- `assets/favicon.png` — a circular crop of the same mark with a transparent outside (kept on file; the live `<link rel="icon">` points at `logo.png`).
 - `assets/logo-wordmark.png` — espresso **blanco. / COFFEEHOUSE** lockup (kept on file, not used as the nav/hero/footer brand image).
 
 ## Project layout
@@ -60,8 +60,8 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 index.html              # markup (nav, hero, about, two menu boards, visit, footer) + JSON-LD
 styles.css              # design system and layout
 script.js               # nav, lightbox, member login, interactive menu
-assets/logo.png         # canonical cream “b.” mark (circular badge on the page)
-assets/favicon.png      # circular crop of the mark
+assets/logo.png         # cream “b.” mark (nav, hero, footer, eyebrows, favicon)
+assets/favicon.png      # circular crop of the same mark (not linked)
 assets/logo-wordmark.png
 assets/photos/          # shop photographs saved from Instagram
 ```
