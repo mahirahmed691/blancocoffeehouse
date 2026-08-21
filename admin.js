@@ -211,8 +211,10 @@
               item._key +
               '">' +
               '<div class="admin-item-row">' +
-              '<label class="admin-item-name">Name<input data-field="name" type="text" maxlength="80" autocomplete="off"></label>' +
+              '<label class="admin-item-name">Name<input data-field="name" type="text" maxlength="80" autocomplete="off" enterkeyhint="next"></label>' +
               '<label class="admin-item-price">Price<input data-field="price_gbp" type="number" min="0" step="0.01" inputmode="decimal"></label>' +
+              "</div>" +
+              '<div class="admin-item-bar">' +
               '<button type="button" class="admin-sold-btn" data-sold aria-pressed="false">On the board</button>' +
               '<div class="admin-item-tools">' +
               '<button type="button" class="admin-move" data-move="up" aria-label="Move up">Up</button>' +
