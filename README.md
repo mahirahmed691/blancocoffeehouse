@@ -29,7 +29,7 @@ Then visit `http://localhost:8000`.
 - Hours: Monday–Sunday, 11am–8pm
 - Domain: blancocoffeehouse.com (canonical `https://blancocoffeehouse.com`)
 - Instagram: https://www.instagram.com/blancocoffeehouse/
-- Logo: lowercase “b.” mark, espresso brown on cream
+- Logo: cream **b.** mark (`assets/logo.png`), espresso brown on cream
 - Menu items and prices: from the printed Blanco Coffee House boards (integers, shown with the site’s existing £)
   - Drinks: coffee, tea, chocolate, iced, matcha, smoothies, and soft drinks
   - Desserts: milkshakes, ice cream scoops, sundaes, and loaded cups
@@ -50,11 +50,9 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 
 ## Logo
 
-- `assets/logo.png` — cream **b.** mark with circular period. Primary brand image, shown as a circular badge in the header, hero, and footer. Also used for apple-touch and JSON-LD.
-- `assets/favicon.png` — the same mark, circular-cropped with a transparent outside, for the browser tab icon.
+- `assets/logo.png` — canonical cream **b.** mark (the official circular icon, with period). Used as a circular badge in the header, hero seal, footer, section eyebrows, favicon, apple-touch icon, and JSON-LD.
+- `assets/favicon.png` — a circular crop of the same mark with a transparent outside (kept on file; the live `<link rel="icon">` points at `logo.png`).
 - `assets/logo-wordmark.png` — espresso **blanco. / COFFEEHOUSE** lockup (kept on file, not used as the nav/hero/footer brand image).
-
-`logo.png` is sized for the page (not the original 1024px master).
 
 ## Project layout
 
@@ -65,31 +63,53 @@ clerk-config.js         # Clerk publishable key only (pk_test_ / pk_live_)
 clerk-auth.js           # shared Clerk JS CDN bootstrap for index + account
 styles.css              # design system and layout
 script.js               # nav, lightbox, interactive menu
+clerk-config.js         # Clerk publishable key (pk_test_ / pk_live_ only)
+clerk-auth.js           # Clerk JS CDN: Sign in / Sign up / UserButton
 assets/logo.png         # cream “b.” mark (circular badge on the page)
 assets/favicon.png      # circular crop of the mark
 assets/logo-wordmark.png
 assets/photos/          # shop photographs saved from Instagram
 ```
 
-## Accounts (Clerk)
+Member accounts use **[Clerk](https://clerk.com)**. The old browser-local `localStorage` login has been removed.
 
-The **menu, gallery, visit, and home page are public**. You do not need to sign in to browse the shop.
+## Clerk authentication
 
-`account.html` is the authenticated member area:
+This remains a **static HTML** site. Clerk is loaded from the Clerk JS CDN (`@clerk/ui` + `@clerk/clerk-js`) — not Next.js, not Vite.
 
-- Signed out: Clerk sign-in / sign-up (mounted on the page). After auth, you stay on the account page.
-- Signed in: profile (name/email from Clerk), an orders placeholder, and a rewards/stamps placeholder. Orders are not faked — copy says they will live here and will require sign-in when that feature is built.
+Linked application id: `app_3ICtW3IyvsokSBEB7HVoxDweHCq`
 
-Nav: **Sign in / Sign up** when signed out; **Account** + Clerk UserButton when signed in.
+### Publishable key
 
-### Add your publishable key
+1. Open [Clerk Dashboard → API keys](https://dashboard.clerk.com/~/api-keys) for app `app_3ICtW3IyvsokSBEB7HVoxDweHCq`.
+2. Copy the **Publishable key** (`pk_test_…` or `pk_live_…`).
+3. Paste it into `clerk-config.js` as `window.CLERK_PUBLISHABLE_KEY`.
 
-1. Open the Clerk Dashboard for app `app_3ICtW3IyvsokSBEB7HVoxDweHCq`.
-2. **API keys** → copy the **Publishable key** (`pk_test_…` or `pk_live_…`).
-3. Paste it into `clerk-config.js` as `window.CLERK_PUBLISHABLE_KEY = "pk_…";`
-4. In Clerk, add this site’s origins to **Allowed origins** (e.g. `https://blancocoffeehouse.com`, `https://blancocoffeehouse.vercel.app`, and `http://localhost:8000` for local preview).
+Never put `CLERK_SECRET_KEY` in this repo, in `index.html`, or in any client script. The publishable key is safe in the browser.
 
-Never put `CLERK_SECRET_KEY` in client files. This static site only uses the publishable key.
+This site has no build step, so Vercel environment variables are **not** injected automatically. Paste the publishable key into `clerk-config.js`.
+
+Until the key is set, Sign in / Sign up explain that the key is missing.
+
+### CLI (run on your machine)
+
+`clerk auth login` cannot finish on the cloud VM: the OAuth callback is `http://127.0.0.1:<port>/callback`. On a laptop:
+
+```bash
+npm install -g clerk
+clerk auth login
+cd /path/to/blancocoffeehouse
+clerk init --app app_3ICtW3IyvsokSBEB7HVoxDweHCq
+```
+
+Do not pass `--framework javascript` / `--starter` here — that scaffolds a new Vite app and would overwrite this shop.
+
+### First user after deploy
+
+1. Open the site and choose **Sign up** in the nav (or Rewards).
+2. After the profile icon appears, you’re signed in.
+3. If Clerk shows a **Configure your application** callout, click it.
+4. Then explore [Organizations](https://dashboard.clerk.com), [Components](https://clerk.com/docs/js-frontend/reference/components/overview), and the [Dashboard](https://dashboard.clerk.com).
 
 ## Hosting
 

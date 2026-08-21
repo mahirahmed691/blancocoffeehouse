@@ -1,6 +1,10 @@
-/* Clerk publishable key — safe to expose in the browser.
-   Dashboard → API keys → copy Publishable key (pk_test_… or pk_live_…).
-   Linked app: app_3ICtW3IyvsokSBEB7HVoxDweHCq
+/* Clerk publishable key — safe to expose in the browser (pk_test_ / pk_live_).
+   Linked Clerk application: app_3ICtW3IyvsokSBEB7HVoxDweHCq
+   Dashboard → API keys → copy the Publishable key into the string below.
 
-   Do not put CLERK_SECRET_KEY in this file or any other client script. */
-window.CLERK_PUBLISHABLE_KEY = "";
+   Never put CLERK_SECRET_KEY in this file, in index.html, or in any client script.
+
+   This is a static HTML site (not Next.js). Vercel env vars are not injected
+   into these files; paste the publishable key here. If a public runtime already
+   set window.CLERK_PUBLISHABLE_KEY, that value is kept. */
+window.CLERK_PUBLISHABLE_KEY = window.CLERK_PUBLISHABLE_KEY || "";
