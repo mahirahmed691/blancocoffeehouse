@@ -37,31 +37,78 @@
           />
         </a>
         <button
+          class="mega-trigger"
+          type="button"
+          aria-expanded="false"
+          aria-controls="mega-panel"
+        >
+          The house
+          <span class="mega-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="nav-cta">
+          <a class="btn clerk-signed-out" href="#account-auth" data-auth-mode="sign-in">Sign in</a>
+          <a class="nav-account-link clerk-signed-in" href="account.html" hidden aria-current="page">Account</a>
+          <div class="clerk-signed-in clerk-user-button" data-clerk-user-button hidden></div>
+        </div>
+        <button
           class="nav-toggle"
           type="button"
           aria-label="Open menu"
           aria-expanded="false"
-          aria-controls="site-nav"
+          aria-controls="mega-panel"
         >
           <span></span>
           <span></span>
         </button>
-        <ul class="nav-links" id="site-nav">
-          <li><a href="index.html">Home</a></li>
-          <li><a href="index.html#menu">Menu</a></li>
-          <li><a href="index.html#app">Rewards</a></li>
-          <li><a href="index.html#visit">Visit</a></li>
-          <li class="clerk-signed-out">
-            <a class="btn" href="#account-auth" data-auth-mode="sign-in">Sign in</a>
-          </li>
-          <li class="clerk-signed-in" hidden>
-            <a href="account.html" aria-current="page">Account</a>
-          </li>
-          <li class="clerk-signed-in nav-user" hidden>
-            <div class="clerk-user-button" data-clerk-user-button></div>
-          </li>
-        </ul>
       </nav>
+      <div class="mega-panel" id="mega-panel" hidden>
+        <div class="wrap mega-inner">
+          <section class="mega-col">
+            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> the board</p>
+            <a href="index.html#menu">The full menu</a>
+            <a href="index.html#drinks-board-title">Drinks</a>
+            <a href="index.html#sweets-board-title">Sweets</a>
+            <a href="index.html#app">Rewards</a>
+          </section>
+          <section class="mega-col">
+            <p class="eyebrow">your way</p>
+            <a href="index.html#ways">Sit in</a>
+            <a href="index.html#ways">Pick up</a>
+            <a href="index.html#ways">Delivery</a>
+            <a href="index.html#gallery">In-store</a>
+          </section>
+          <section class="mega-col">
+            <p class="eyebrow">visit</p>
+            <a href="index.html#visit">Fiveways Parade</a>
+            <a href="index.html#reviews">Google reviews</a>
+            <a
+              href="https://www.instagram.com/blancocoffeehouse/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Instagram</a
+            >
+            <a href="account.html">Your account</a>
+          </section>
+          <aside class="mega-feature">
+            <a class="mega-feature-photo" href="index.html#visit">
+              <img
+                src="assets/photos/interior.jpg"
+                alt="Inside Blanco Coffee House."
+                width="1360"
+                height="1600"
+                decoding="async"
+              />
+            </a>
+            <p class="mega-hours">Open every day · 11am–8pm</p>
+            <p class="mega-address">4 Fiveways Parade, Hazel Grove, SK7 6DG</p>
+            <a class="btn" href="index.html#visit">Find us</a>
+          </aside>
+          <div class="mega-cta">
+            <a class="btn clerk-signed-out" href="#account-auth" data-auth-mode="sign-in">Sign in</a>
+            <a class="btn btn-ghost clerk-signed-in" href="account.html" hidden>Account</a>
+          </div>
+        </div>
+      </div>
     </header>
 
     <main id="account-main">
