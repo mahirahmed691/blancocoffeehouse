@@ -387,16 +387,6 @@ a {
   animation: hero-rise 0.95s var(--ease) both;
 }
 
-.hero-logo {
-  width: 7.25rem;
-  height: 7.25rem;
-  margin: 0 0 1.15rem;
-  object-fit: cover;
-  border-radius: 50%;
-  background: var(--cream);
-  box-shadow: 0 0 0 1.5px rgba(59, 42, 34, 0.14);
-}
-
 .hero h1 {
   margin: 0 0 1.15rem;
   font-family: var(--serif);
@@ -483,8 +473,8 @@ a {
   top: 6%;
   z-index: 3;
   margin: 0;
-  width: 6.5rem;
-  height: 6.5rem;
+  width: 8.75rem;
+  height: 8.75rem;
   border-radius: 50%;
   object-fit: cover;
   background: var(--cream);
@@ -1073,12 +1063,6 @@ body.lightbox-open {
 
   .hero-copy {
     max-width: 34rem;
-  }
-
-  .hero-logo {
-    width: 5.85rem;
-    height: 5.85rem;
-    margin-bottom: 0.95rem;
   }
 
   .hero-media {
