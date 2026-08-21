@@ -112,6 +112,7 @@ a {
 .board-kicker .mark {
   width: 1.6rem;
   height: 1.6rem;
+  max-width: none;
   flex-shrink: 0;
   object-fit: cover;
   border-radius: 50%;
@@ -259,6 +260,7 @@ a {
 .logo-badge {
   width: 3.55rem;
   height: 3.55rem;
+  max-width: none;
   object-fit: cover;
   border-radius: 50%;
   background: var(--beige);
@@ -430,6 +432,7 @@ a {
   margin: 0;
   width: 6.75rem;
   height: 6.75rem;
+  max-width: none;
   border-radius: 50%;
   object-fit: cover;
   background: var(--beige);
