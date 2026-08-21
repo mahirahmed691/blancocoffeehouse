@@ -46,7 +46,7 @@ Shop photographs on the about section are from the public [@blancocoffeehouse](h
 
 `index.html` includes a `CafeOrCoffeeShop` JSON-LD block (`<script type="application/ld+json">`) with name, URL, PostalAddress, opening hours (all 7 days, 11:00–20:00), Instagram `sameAs`, and logo.
 
-Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/lng), `aggregateRating`, and `priceRange`. `image` is set to the shop photographs under `assets/photos/`.
+Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/lng), and `priceRange`. `image` is set to the shop photographs under `assets/photos/`. `aggregateRating` is the live Google listing (5.0 from 29 reviews as of August 2026). Quotes on `#reviews` are copied from that listing and attributed.
 
 ## Logo
 
@@ -62,10 +62,13 @@ account.html            # Clerk member area (sign-in when signed out; dashboard 
 admin.html              # house desk (prices, sold-out, names, hours) — Clerk admin only
 gallery.html            # in-store photographs
 menu.json               # seed of the printed boards (same data as supabase/schema.sql)
+reviews.json            # Google rating + a few public quotes (HTML fallback)
 supabase/schema.sql     # tables, RLS (public read), seed
 api/admin.js            # Vercel function: verify Clerk, write to Supabase
+api/reviews.js          # optional Places API; else serves reviews.json
 house-config.js         # Supabase URL + anon key only
 house.js                # fetch live menu/hours; keep printed HTML if unset
+reviews.js              # hydrate Google reviews from /api/reviews
 clerk-config.js         # Clerk publishable key only (pk_test_ / pk_live_)
 clerk-auth.js           # Clerk JS CDN: Sign in / Sign up / UserButton
 styles.css              # design system and layout
@@ -131,6 +134,7 @@ To finish the **admin save** path (Vercel `/api/admin`):
    - `SUPABASE_ANON_KEY` = the anon key already in `house-config.js`
    - `SUPABASE_SERVICE_ROLE_KEY` = the service_role key
    - `ADMIN_EMAILS` = your house email(s), comma-separated
+   - `GOOGLE_PLACES_API_KEY` (optional) so `/api/reviews` can refresh the Google rating. Without it, the site uses [`reviews.json`](reviews.json).
 3. In Clerk Dashboard → Users → your user → **publicMetadata**: `{ "role": "admin" }`.
 4. Redeploy, then open `/admin.html`, sign in, and Save.
 
