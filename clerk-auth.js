@@ -3,6 +3,9 @@
    Quickstart: https://clerk.com/docs/js-frontend/getting-started/quickstart */
 (function () {
   var key = String(window.CLERK_PUBLISHABLE_KEY || "").trim();
+  if (!key || key.indexOf("pk_") !== 0) {
+    key = "pk_test_cHJlY2lzZS1jaXZldC0zMzguY2xlcmsuYWNjb3VudHMuZGV2JA";
+  }
   var accountUrl = new URL("account.html", window.location.href).href;
   var homeUrl = new URL("index.html", window.location.href).href;
   var appearance = {
