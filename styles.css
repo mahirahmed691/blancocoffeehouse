@@ -1132,7 +1132,7 @@ body.lightbox-open {
   height: 3.6rem;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: url("assets/logo.png") center / cover no-repeat;
+  background: url("assets/logo.svg") center / cover no-repeat;
   opacity: 0.08;
   pointer-events: none;
 }
