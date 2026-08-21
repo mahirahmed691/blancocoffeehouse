@@ -90,19 +90,18 @@
           <li><a href="#menu">Menu</a></li>
           <li><a href="#app">Rewards</a></li>
           <li><a href="#visit">Visit</a></li>
-          <li>
-            <button
-              class="btn nav-login"
-              type="button"
-              data-auth-open
-            >
-              Log in
+          <li class="clerk-signed-out">
+            <button class="btn" type="button" data-clerk-signin>
+              Sign in
             </button>
           </li>
-          <li class="nav-account" hidden>
-            <button class="nav-account-chip" type="button" data-auth-account>
-              <span data-auth-name>Account</span>
+          <li class="clerk-signed-out">
+            <button class="nav-account-chip" type="button" data-clerk-signup>
+              Sign up
             </button>
+          </li>
+          <li class="clerk-signed-in" hidden>
+            <div id="clerk-user-button"></div>
           </li>
         </ul>
       </nav>
@@ -742,19 +741,23 @@
               exclusive merchandise. Your usual order, or today’s reward, from
               the counter or from home.
             </p>
-            <div class="app-actions">
-              <button class="btn btn-on-dark" type="button" data-auth-open>
-                Log in
+            <div class="app-actions clerk-signed-out">
+              <button class="btn btn-on-dark" type="button" data-clerk-signin>
+                Sign in
               </button>
-              <button
-                class="btn btn-ghost-on-dark"
-                type="button"
-                data-auth-open
-                data-auth-mode="create"
-              >
-                Create account
+              <button class="btn btn-ghost-on-dark" type="button" data-clerk-signup>
+                Sign up
               </button>
             </div>
+            <div class="app-actions clerk-signed-in" hidden>
+              <button class="btn btn-on-dark" type="button" data-clerk-profile>
+                Your account
+              </button>
+            </div>
+            <p class="prose prose-on-dark clerk-signed-in" hidden>
+              You’re signed in. Use the profile icon in the header, or open your
+              account here.
+            </p>
           </div>
           <ul class="app-features">
             <li>
@@ -907,112 +910,8 @@
       </div>
     </div>
 
-    <div
-      class="auth-layer"
-      id="auth-layer"
-      hidden
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="auth-title"
-    >
-      <div class="auth-backdrop" data-auth-close></div>
-      <div class="auth-panel">
-        <button class="auth-close" type="button" data-auth-close aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-        <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> account</p>
-        <h2 id="auth-title">Log in</h2>
-        <p class="auth-lede" data-auth-lede>
-          Use your email to collect, order, and pick up rewards.
-        </p>
-        <form class="auth-form" id="auth-form" novalidate>
-          <label class="auth-field" data-auth-name-field hidden>
-            <span>Name</span>
-            <input
-              type="text"
-              name="name"
-              autocomplete="name"
-              maxlength="48"
-            />
-          </label>
-          <label class="auth-field">
-            <span>Email</span>
-            <input
-              type="email"
-              name="email"
-              autocomplete="email"
-              required
-              inputmode="email"
-            />
-          </label>
-          <label class="auth-field">
-            <span>Password</span>
-            <input
-              type="password"
-              name="password"
-              autocomplete="current-password"
-              required
-              minlength="8"
-            />
-          </label>
-          <p class="auth-error" data-auth-error role="alert" hidden></p>
-          <button class="btn auth-submit" type="submit">Log in</button>
-        </form>
-        <p class="auth-switch">
-          <button type="button" data-auth-toggle>
-            New here? Create an account
-          </button>
-        </p>
-      </div>
-    </div>
-
-    <div
-      class="auth-layer"
-      id="account-layer"
-      hidden
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="account-title"
-    >
-      <div class="auth-backdrop" data-account-close></div>
-      <div class="auth-panel account-panel">
-        <button
-          class="auth-close"
-          type="button"
-          data-account-close
-          aria-label="Close account"
-        >
-          <span aria-hidden="true">&times;</span>
-        </button>
-        <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> member</p>
-        <h2 id="account-title">Your way.</h2>
-        <p class="auth-lede">
-          Welcome back, <strong data-account-name>member</strong>. Sit in, pick
-          up, or get it delivered — rewards stay on this device.
-        </p>
-        <ul class="account-ways">
-          <li>
-            <span>sit in.</span>
-            <span>Fiveways Parade, 11am–8pm.</span>
-          </li>
-          <li>
-            <span>pick up.</span>
-            <span>Ready at the counter.</span>
-          </li>
-          <li>
-            <span>delivery.</span>
-            <span>Straight to your door.</span>
-          </li>
-        </ul>
-        <div class="account-actions">
-          <a class="btn" href="#menu" data-account-close>View menu</a>
-          <button class="btn btn-ghost" type="button" data-auth-logout>
-            Log out
-          </button>
-        </div>
-      </div>
-    </div>
-
+    <script src="clerk-config.js"></script>
     <script src="script.js"></script>
+    <script src="clerk-auth.js"></script>
   </body>
 </html>

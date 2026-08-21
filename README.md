@@ -59,14 +59,54 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 ```
 index.html              # markup (nav, hero, about, two menu boards, visit, footer) + JSON-LD
 styles.css              # design system and layout
-script.js               # nav, lightbox, member login, interactive menu
-assets/logo.png         # cream “b.” mark (nav, hero, footer, eyebrows, favicon)
-assets/favicon.png      # circular crop of the same mark (not linked)
+script.js               # nav, lightbox, interactive menu
+clerk-config.js         # Clerk publishable key (pk_test_ / pk_live_ only)
+clerk-auth.js           # Clerk JS CDN: Sign in / Sign up / UserButton
+assets/logo.png         # cream “b.” mark (circular badge on the page)
+assets/favicon.png      # circular crop of the mark
 assets/logo-wordmark.png
 assets/photos/          # shop photographs saved from Instagram
 ```
 
-Member **Log in / Create account** is browser-local (email + salted hash in `localStorage`). It is not a server account. Plug in a real auth backend when one exists.
+Member accounts use **[Clerk](https://clerk.com)**. The old browser-local `localStorage` login has been removed.
+
+## Clerk authentication
+
+This remains a **static HTML** site. Clerk is loaded from the Clerk JS CDN (`@clerk/ui` + `@clerk/clerk-js`) — not Next.js, not Vite.
+
+Linked application id: `app_3ICtW3IyvsokSBEB7HVoxDweHCq`
+
+### Publishable key
+
+1. Open [Clerk Dashboard → API keys](https://dashboard.clerk.com/~/api-keys) for app `app_3ICtW3IyvsokSBEB7HVoxDweHCq`.
+2. Copy the **Publishable key** (`pk_test_…` or `pk_live_…`).
+3. Paste it into `clerk-config.js` as `window.CLERK_PUBLISHABLE_KEY`.
+
+Never put `CLERK_SECRET_KEY` in this repo, in `index.html`, or in any client script. The publishable key is safe in the browser.
+
+This site has no build step, so Vercel environment variables are **not** injected automatically. Paste the publishable key into `clerk-config.js`.
+
+Until the key is set, Sign in / Sign up explain that the key is missing.
+
+### CLI (run on your machine)
+
+`clerk auth login` cannot finish on the cloud VM: the OAuth callback is `http://127.0.0.1:<port>/callback`. On a laptop:
+
+```bash
+npm install -g clerk
+clerk auth login
+cd /path/to/blancocoffeehouse
+clerk init --app app_3ICtW3IyvsokSBEB7HVoxDweHCq
+```
+
+Do not pass `--framework javascript` / `--starter` here — that scaffolds a new Vite app and would overwrite this shop.
+
+### First user after deploy
+
+1. Open the site and choose **Sign up** in the nav (or Rewards).
+2. After the profile icon appears, you’re signed in.
+3. If Clerk shows a **Configure your application** callout, click it.
+4. Then explore [Organizations](https://dashboard.clerk.com), [Components](https://clerk.com/docs/js-frontend/reference/components/overview), and the [Dashboard](https://dashboard.clerk.com).
 
 ## Hosting
 
