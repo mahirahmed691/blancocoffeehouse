@@ -6,7 +6,7 @@
     <title>blanco. your way. — Blanco Coffee House</title>
     <meta
       name="description"
-      content="blanco. your way. Coffee, matcha, and sweet’n’savory treats in Hazel Grove — sit in, pick up, or get it delivered. Hard launch in-store and online. Open every day, 11am–8pm."
+      content="blanco. your way. Coffee, matcha, and sweet’n’savory treats in Hazel Grove — sit in, pick up, or get it delivered. Open every day, 11am–8pm."
     />
     <meta name="theme-color" content="#E9E1D8" />
     <link rel="canonical" href="https://blancocoffeehouse.com" />
@@ -88,9 +88,22 @@
         <ul class="nav-links" id="site-nav">
           <li><a href="#ways">Your way</a></li>
           <li><a href="#menu">Menu</a></li>
-          <li><a href="#app">The app</a></li>
+          <li><a href="#app">Rewards</a></li>
           <li><a href="#visit">Visit</a></li>
-          <li><a class="btn" href="#visit">Find us</a></li>
+          <li>
+            <button
+              class="btn nav-login"
+              type="button"
+              data-auth-open
+            >
+              Log in
+            </button>
+          </li>
+          <li class="nav-account" hidden>
+            <button class="nav-account-chip" type="button" data-auth-account>
+              <span data-auth-name>Account</span>
+            </button>
+          </li>
         </ul>
       </nav>
     </header>
@@ -108,6 +121,10 @@
           />
         </div>
         <div class="hero-veil" aria-hidden="true"></div>
+        <div class="hero-steam" aria-hidden="true">
+          <span></span><span></span><span></span>
+          <span></span><span></span>
+        </div>
         <img
           class="hero-stamp"
           src="assets/logo.png"
@@ -118,7 +135,7 @@
           aria-hidden="true"
         />
         <div class="wrap hero-inner">
-          <p class="hero-kicker">hard launch · in-store &amp; online</p>
+          <p class="hero-kicker">Hazel Grove · sit in · pick up · delivery</p>
           <p class="hero-poem">
             Some days start early. Others take their time.<br />
             Some orders are made from the counter.<br />
@@ -147,20 +164,19 @@
         </div>
       </section>
 
-      <section class="band band-paper" id="launch">
+      <section class="band band-paper" id="house">
         <div class="wrap split">
           <div>
-            <p class="eyebrow"><span class="mark">b.</span> the launch</p>
+            <p class="eyebrow"><span class="mark">b.</span> the house</p>
             <h2 class="campaign-title">everyday blanco.</h2>
             <p class="prose">
-              The hard launch takes blanco from a local hidden gem to an
-              everyday destination — whether you visit in Hazel Grove or order
-              from home. In-store and online, built around discovery,
-              convenience and rewards.
+              Coffee, matcha, and sweet’n’savory treats on Fiveways Parade —
+              sit in, pick up, or get it delivered. In-store and online, built
+              around discovery, convenience and rewards.
             </p>
             <p class="prose">
-              Coffee, matcha, and sweet’n’savory treats. A social house for
-              creators and locals, and a counter you already know.
+              A social house for creators and locals, and a counter you already
+              know.
             </p>
             <p class="closing-line">one brand. more ways to enjoy blanco.</p>
           </div>
@@ -227,7 +243,7 @@
                 />
               </button>
               <h3>pick up.</h3>
-              <p>Made at the counter, ready on the way. Collection lands with the app at launch.</p>
+              <p>Made at the counter, ready on the way. Collect in-store or through your blanco account.</p>
             </li>
             <li class="way-card" id="delivered">
               <button type="button" class="gallery-open" aria-haspopup="dialog">
@@ -311,6 +327,14 @@
           <div class="menu-head">
             <p class="eyebrow"><span class="mark">b.</span> the board</p>
             <h2>Menu</h2>
+            <p class="prose menu-head-copy">
+              Hover a drink to steam it. Tap on a phone. Everything on the
+              printed boards, here.
+            </p>
+            <div class="menu-tabs" role="tablist" aria-label="Menu boards">
+              <a class="menu-tab is-active" href="#drinks-board-title">Drinks</a>
+              <a class="menu-tab" href="#sweets-board-title">Sweets</a>
+            </div>
           </div>
 
           <div class="boards">
@@ -710,14 +734,27 @@
         <div class="wrap app-grid">
           <div>
             <p class="eyebrow eyebrow-on-dark">
-              <span class="mark">b.</span> launching
+              <span class="mark">b.</span> your account
             </p>
-            <h2 class="campaign-title">the app.</h2>
+            <h2 class="campaign-title">rewards &amp; orders.</h2>
             <p class="prose prose-on-dark">
-              Collection, delivery, loyalty rewards, daily spins, and exclusive
-              merchandise — landing with the hard launch. Your usual order, or
-              today’s reward, from the counter or from home.
+              Log in for collection, delivery, loyalty rewards, daily spins, and
+              exclusive merchandise. Your usual order, or today’s reward, from
+              the counter or from home.
             </p>
+            <div class="app-actions">
+              <button class="btn btn-on-dark" type="button" data-auth-open>
+                Log in
+              </button>
+              <button
+                class="btn btn-ghost-on-dark"
+                type="button"
+                data-auth-open
+                data-auth-mode="create"
+              >
+                Create account
+              </button>
+            </div>
           </div>
           <ul class="app-features">
             <li>
@@ -738,7 +775,7 @@
             </li>
             <li>
               <span class="app-feature-name">exclusive merchandise</span>
-              <span>Only through the app.</span>
+              <span>Only through your blanco account.</span>
             </li>
           </ul>
         </div>
@@ -867,6 +904,112 @@
         >
           <span aria-hidden="true">›</span>
         </button>
+      </div>
+    </div>
+
+    <div
+      class="auth-layer"
+      id="auth-layer"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-title"
+    >
+      <div class="auth-backdrop" data-auth-close></div>
+      <div class="auth-panel">
+        <button class="auth-close" type="button" data-auth-close aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <p class="eyebrow"><span class="mark">b.</span> account</p>
+        <h2 id="auth-title">Log in</h2>
+        <p class="auth-lede" data-auth-lede>
+          Use your email to collect, order, and pick up rewards.
+        </p>
+        <form class="auth-form" id="auth-form" novalidate>
+          <label class="auth-field" data-auth-name-field hidden>
+            <span>Name</span>
+            <input
+              type="text"
+              name="name"
+              autocomplete="name"
+              maxlength="48"
+            />
+          </label>
+          <label class="auth-field">
+            <span>Email</span>
+            <input
+              type="email"
+              name="email"
+              autocomplete="email"
+              required
+              inputmode="email"
+            />
+          </label>
+          <label class="auth-field">
+            <span>Password</span>
+            <input
+              type="password"
+              name="password"
+              autocomplete="current-password"
+              required
+              minlength="8"
+            />
+          </label>
+          <p class="auth-error" data-auth-error role="alert" hidden></p>
+          <button class="btn auth-submit" type="submit">Log in</button>
+        </form>
+        <p class="auth-switch">
+          <button type="button" data-auth-toggle>
+            New here? Create an account
+          </button>
+        </p>
+      </div>
+    </div>
+
+    <div
+      class="auth-layer"
+      id="account-layer"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="account-title"
+    >
+      <div class="auth-backdrop" data-account-close></div>
+      <div class="auth-panel account-panel">
+        <button
+          class="auth-close"
+          type="button"
+          data-account-close
+          aria-label="Close account"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+        <p class="eyebrow"><span class="mark">b.</span> member</p>
+        <h2 id="account-title">Your way.</h2>
+        <p class="auth-lede">
+          Welcome back, <strong data-account-name>member</strong>. Sit in, pick
+          up, or get it delivered — rewards stay on this device.
+        </p>
+        <ul class="account-ways">
+          <li>
+            <span>sit in.</span>
+            <span>Fiveways Parade, 11am–8pm.</span>
+          </li>
+          <li>
+            <span>pick up.</span>
+            <span>Ready at the counter.</span>
+          </li>
+          <li>
+            <span>delivery.</span>
+            <span>Straight to your door.</span>
+          </li>
+        </ul>
+        <div class="account-actions">
+          <a class="btn" href="#menu" data-account-close>View menu</a>
+          <button class="btn btn-ghost" type="button" data-auth-logout>
+            Log out
+          </button>
+        </div>
       </div>
     </div>
 
