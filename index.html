@@ -330,13 +330,36 @@
               The printed boards, in full. On a desk, let a line linger.
             </p>
             <div class="menu-tabs" role="tablist" aria-label="Menu boards">
-              <a class="menu-tab is-active" href="#drinks-board-title">Drinks</a>
-              <a class="menu-tab" href="#sweets-board-title">Sweets</a>
+              <button
+                type="button"
+                class="menu-tab is-active"
+                role="tab"
+                id="tab-drinks"
+                aria-selected="true"
+                aria-controls="board-drinks"
+              >
+                Drinks
+              </button>
+              <button
+                type="button"
+                class="menu-tab"
+                role="tab"
+                id="tab-sweets"
+                aria-selected="false"
+                aria-controls="board-sweets"
+              >
+                Sweets
+              </button>
             </div>
           </div>
 
           <div class="boards">
-            <article class="board" aria-labelledby="drinks-board-title">
+            <article
+              class="board is-active"
+              id="board-drinks"
+              role="tabpanel"
+              aria-labelledby="tab-drinks"
+            >
               <header class="board-mast">
                 <p class="board-kicker">Drinks</p>
                 <h3 id="drinks-board-title">Blanco Coffee House</h3>
@@ -529,7 +552,13 @@
               </div>
             </article>
 
-            <article class="board" aria-labelledby="sweets-board-title">
+            <article
+              class="board"
+              id="board-sweets"
+              role="tabpanel"
+              aria-labelledby="tab-sweets"
+              hidden
+            >
               <header class="board-mast">
                 <p class="board-kicker">Sweets</p>
                 <h3 id="sweets-board-title">

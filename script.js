@@ -180,16 +180,50 @@
   });
 
   var tabs = Array.prototype.slice.call(document.querySelectorAll(".menu-tab"));
+  var panels = Array.prototype.slice.call(document.querySelectorAll(".board"));
+
+  function showBoard(id) {
+    panels.forEach(function (panel) {
+      var on = panel.id === id;
+      panel.classList.toggle("is-active", on);
+      panel.hidden = !on;
+    });
+    tabs.forEach(function (tab) {
+      var on = tab.getAttribute("aria-controls") === id;
+      tab.classList.toggle("is-active", on);
+      tab.setAttribute("aria-selected", on ? "true" : "false");
+      tab.tabIndex = on ? 0 : -1;
+    });
+  }
+
   tabs.forEach(function (tab) {
     tab.addEventListener("click", function () {
-      tabs.forEach(function (other) {
-        other.classList.toggle(
-          "is-active",
-          other === tab
-        );
-      });
+      showBoard(tab.getAttribute("aria-controls"));
     });
   });
+
+  var tablist = document.querySelector(".menu-tabs");
+  if (tablist) {
+    tablist.addEventListener("keydown", function (event) {
+      var current = tabs.indexOf(document.activeElement);
+      if (current < 0) return;
+      var next = current;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+        next = (current + 1) % tabs.length;
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        next = (current - 1 + tabs.length) % tabs.length;
+      } else {
+        return;
+      }
+      event.preventDefault();
+      tabs[next].focus();
+      showBoard(tabs[next].getAttribute("aria-controls"));
+    });
+  }
+
+  if (location.hash === "#sweets-board-title" || location.hash === "#board-sweets") {
+    showBoard("board-sweets");
+  }
 })();
 
 (function () {
