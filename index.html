@@ -528,17 +528,39 @@
             <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> the board</p>
             <h2>Menu</h2>
             <p class="prose menu-head-copy">
-              Hover a drink to steam it. Tap on a phone. Everything on the
-              printed boards, here.
+              Hover a drink to steam it. Tap on a phone. Drinks or sweets — one
+              board at a time.
             </p>
             <div class="menu-tabs" role="tablist" aria-label="Menu boards">
-              <a class="menu-tab is-active" href="#drinks-board-title">Drinks</a>
-              <a class="menu-tab" href="#sweets-board-title">Sweets</a>
+              <a
+                class="menu-tab is-active"
+                href="#drinks-board-title"
+                id="menu-tab-drinks"
+                role="tab"
+                aria-selected="true"
+                aria-controls="drinks-board"
+                >Drinks</a
+              >
+              <a
+                class="menu-tab"
+                href="#sweets-board-title"
+                id="menu-tab-sweets"
+                role="tab"
+                aria-selected="false"
+                aria-controls="sweets-board"
+                tabindex="-1"
+                >Sweets</a
+              >
             </div>
           </div>
 
           <div class="boards">
-            <article class="board" aria-labelledby="drinks-board-title">
+            <article
+              class="board is-active"
+              id="drinks-board"
+              role="tabpanel"
+              aria-labelledby="menu-tab-drinks drinks-board-title"
+            >
               <header class="board-mast">
                 <p class="board-kicker">Drinks</p>
                 <h3 id="drinks-board-title">Blanco Coffee House</h3>
@@ -731,7 +753,13 @@
               </div>
             </article>
 
-            <article class="board" aria-labelledby="sweets-board-title">
+            <article
+              class="board"
+              id="sweets-board"
+              role="tabpanel"
+              aria-labelledby="menu-tab-sweets sweets-board-title"
+              hidden
+            >
               <header class="board-mast">
                 <p class="board-kicker">Sweets</p>
                 <h3 id="sweets-board-title">
