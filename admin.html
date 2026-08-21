@@ -3,13 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Your account — Blanco Coffee House</title>
+    <title>House desk — Blanco Coffee House</title>
     <meta
       name="description"
-      content="Sign in to your Blanco Coffee House account for profile, rewards, and orders."
+      content="House desk for Blanco Coffee House — menu prices, sold-out marks, and hours."
     />
+    <meta name="robots" content="noindex" />
     <meta name="theme-color" content="#E9E1D8" />
-    <link rel="canonical" href="https://blancocoffeehouse.com/account.html" />
+    <link rel="canonical" href="https://blancocoffeehouse.com/admin.html" />
     <link rel="icon" href="assets/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="assets/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,9 +21,9 @@
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body class="account-page">
+  <body class="account-page admin-page">
     <div class="grain" aria-hidden="true"></div>
-    <a class="skip" href="#account-main">Skip to account</a>
+    <a class="skip" href="#admin-main">Skip to desk</a>
 
     <header class="site-header">
       <nav class="nav wrap" aria-label="Primary">
@@ -30,9 +31,9 @@
           <img
             class="logo-badge"
             src="assets/logo.png"
-            alt="Blanco Coffee House"
-            width="256"
-            height="256"
+            alt="blanco."
+            width="512"
+            height="512"
             decoding="async"
           />
         </a>
@@ -58,8 +59,8 @@
           />
         </form>
         <div class="nav-cta">
-          <a class="btn clerk-signed-out" href="#account-auth" data-auth-mode="sign-in">Sign in</a>
-          <a class="nav-account-link clerk-signed-in" href="account.html" hidden aria-current="page">Account</a>
+          <a class="btn clerk-signed-out" href="#admin-auth" data-auth-mode="sign-in">Sign in</a>
+          <a class="nav-account-link clerk-signed-in" href="account.html" hidden>Account</a>
           <div class="clerk-signed-in clerk-user-button" data-clerk-user-button hidden></div>
         </div>
         <button
@@ -95,13 +96,8 @@
             <p class="eyebrow">visit</p>
             <a href="index.html#visit">Fiveways Parade</a>
             <a href="index.html#reviews">Google reviews</a>
-            <a
-              href="https://www.instagram.com/blancocoffeehouse/"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Instagram</a
-            >
             <a href="account.html">Your account</a>
+            <a href="admin.html" aria-current="page">House desk</a>
           </section>
           <aside class="mega-feature">
             <a class="mega-feature-photo" href="index.html#visit">
@@ -118,36 +114,35 @@
             <a class="btn" href="index.html#visit">Find us</a>
           </aside>
           <div class="mega-cta">
-            <a class="btn clerk-signed-out" href="#account-auth" data-auth-mode="sign-in">Sign in</a>
+            <a class="btn clerk-signed-out" href="#admin-auth" data-auth-mode="sign-in">Sign in</a>
             <a class="btn btn-ghost clerk-signed-in" href="account.html" hidden>Account</a>
           </div>
         </div>
       </div>
     </header>
 
-    <main id="account-main">
+    <main id="admin-main">
       <section
         class="band band-paper clerk-signed-out"
-        id="account-auth"
-        aria-labelledby="account-auth-title"
+        id="admin-auth"
+        aria-labelledby="admin-auth-title"
       >
         <div class="wrap account-auth-grid">
           <div>
-            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> account</p>
-            <h1 class="campaign-title" id="account-auth-title">your way in.</h1>
+            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> the desk</p>
+            <h1 class="campaign-title" id="admin-auth-title">the house desk.</h1>
             <p class="prose">
-              The house, the menu, and the gallery stay open. This page is for
-              your member book — profile, stamps, and orders when those are
-              ready.
+              Prices, sold-out marks, names, and hours. Sign in with a house
+              account — the public menu stays on the house page.
             </p>
             <p class="prose" id="clerk-setup-note" hidden>
               Sign-in didn’t open just then. Refresh the page, or come back in
               a moment.
             </p>
-            <p class="closing-line">sit in. pick up. come back.</p>
+            <p class="closing-line">for the counter, not the queue.</p>
             <div class="account-actions">
               <a class="btn" href="index.html#menu">View menu</a>
-              <a class="btn btn-ghost" href="index.html">Back home</a>
+              <a class="btn btn-ghost" href="account.html">Member book</a>
             </div>
           </div>
           <div class="account-auth-panel">
@@ -188,90 +183,140 @@
       </section>
 
       <section
-        class="band clerk-signed-in"
-        id="account-home"
+        class="band"
+        id="admin-denied"
         hidden
-        aria-labelledby="account-home-title"
+        aria-labelledby="admin-denied-title"
       >
         <div class="wrap">
-          <div class="account-welcome">
-            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> member</p>
-            <h1 class="campaign-title" id="account-home-title">
-              Welcome back, <span data-account-name>member</span>.
-            </h1>
-            <p class="prose">
-              Your blanco account. The public menu stays on the house page.
-              Orders will sit here when the counter is ready for them.
-            </p>
-            <div class="account-welcome-tools">
-              <div class="clerk-user-button clerk-user-button-lg"></div>
+          <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> the desk</p>
+          <h1 class="campaign-title" id="admin-denied-title">not this book.</h1>
+          <p class="prose">
+            You’re signed in, but this desk is for the house. The public menu
+            stays open.
+          </p>
+          <div class="account-footer-actions">
+            <a class="btn" href="index.html">Back to the house</a>
+            <a class="btn btn-ghost" href="account.html">Your account</a>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="band"
+        id="admin-desk"
+        hidden
+        aria-labelledby="admin-desk-title"
+      >
+        <div class="wrap">
+          <div class="admin-welcome">
+            <div>
+              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> the desk</p>
+              <h1 class="campaign-title" id="admin-desk-title">the board, live.</h1>
+              <p class="prose">
+                Change a price, mark something sold out, or add a line. Save
+                writes to the public menu.
+              </p>
+            </div>
+            <div class="admin-welcome-tools">
+              <button class="btn" type="submit" form="admin-form">Save the board</button>
               <a class="btn btn-ghost" href="index.html#menu">View menu</a>
-              <a class="btn house-admin-only" data-house-desk hidden href="admin.html">House desk</a>
             </div>
           </div>
 
-          <div class="account-grid">
-            <article class="account-card" aria-labelledby="account-details-title">
-              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> profile</p>
-              <h2 id="account-details-title">Account details</h2>
-              <dl class="account-facts">
-                <div>
-                  <dt>Name</dt>
-                  <dd data-account-name>member</dd>
-                </div>
-                <div>
-                  <dt>Email</dt>
-                  <dd data-account-email>—</dd>
-                </div>
-                <div>
-                  <dt>House</dt>
-                  <dd>4 Fiveways Parade, Hazel Grove · <span data-hours-range>11am–8pm</span></dd>
-                </div>
-              </dl>
-              <p class="note">
-                Change name or email from the profile portrait.
-              </p>
-            </article>
+          <p class="admin-status" id="admin-status" role="status" aria-live="polite"></p>
 
-            <article class="account-card" aria-labelledby="account-orders-title">
-              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> orders</p>
-              <h2 id="account-orders-title">Your orders</h2>
-              <div class="empty-orders">
-                <p class="empty-orders-kicker">Not yet</p>
-                <p>
-                  Collection and delivery will be kept here. Nothing to show
-                  today — you’ll need to be signed in when ordering opens.
-                </p>
+          <form id="admin-form" class="admin-form">
+            <article class="account-card admin-hours">
+              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> visit</p>
+              <h2>Hours</h2>
+              <div class="admin-hours-grid">
+                <label>
+                  Line
+                  <input id="hours-line" name="hours_line" type="text" maxlength="80" />
+                </label>
+                <label>
+                  Days
+                  <input id="hours-days" name="hours_days" type="text" maxlength="40" />
+                </label>
+                <label>
+                  Range
+                  <input id="hours-range" name="hours_range" type="text" maxlength="24" />
+                </label>
+                <label>
+                  Opens
+                  <input id="hours-opens" name="opens" type="time" />
+                </label>
+                <label>
+                  Closes
+                  <input id="hours-closes" name="closes" type="time" />
+                </label>
               </div>
             </article>
 
-            <article class="account-card" aria-labelledby="account-rewards-title">
-              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> rewards</p>
-              <h2 id="account-rewards-title">Stamps &amp; the counter</h2>
-              <p class="prose">
-                Loyalty, daily spins, and apparel when the drop lands. Empty
-                for now — the house still pours without an account.
-              </p>
-              <ol class="stamp-row" aria-label="Reward stamps, empty">
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ol>
-              <p class="note">Eight stamps. The first one isn’t in yet.</p>
-            </article>
-          </div>
+            <div class="gallery-tabs admin-board-tabs" role="tablist" aria-label="Boards">
+              <button
+                type="button"
+                class="gallery-tab is-active"
+                role="tab"
+                id="admin-tab-drinks"
+                aria-selected="true"
+                data-admin-board="drinks"
+              >
+                Drinks
+              </button>
+              <button
+                type="button"
+                class="gallery-tab"
+                role="tab"
+                id="admin-tab-sweets"
+                aria-selected="false"
+                tabindex="-1"
+                data-admin-board="sweets"
+              >
+                Sweets
+              </button>
+            </div>
 
-          <div class="account-footer-actions">
-            <a class="btn" href="index.html">Back to the house</a>
-            <button class="btn btn-ghost" type="button" data-clerk-signout>
-              Sign out
-            </button>
-          </div>
+            <div id="admin-board-drinks" class="admin-board"></div>
+            <div id="admin-board-sweets" class="admin-board" hidden></div>
+
+            <article class="account-card admin-add">
+              <h2>Add a line</h2>
+              <div class="admin-add-grid">
+                <label>
+                  Board
+                  <select id="add-board">
+                    <option value="drinks">Drinks</option>
+                    <option value="sweets">Sweets</option>
+                  </select>
+                </label>
+                <label>
+                  Section
+                  <input id="add-section" type="text" list="admin-sections" maxlength="48" />
+                </label>
+                <label>
+                  Name
+                  <input id="add-name" type="text" maxlength="80" />
+                </label>
+                <label>
+                  Price
+                  <input id="add-price" type="number" min="0" step="0.01" />
+                </label>
+              </div>
+              <label class="admin-add-desc">
+                Description
+                <textarea id="add-desc" rows="2" maxlength="280"></textarea>
+              </label>
+              <datalist id="admin-sections"></datalist>
+              <button class="btn btn-ghost" type="button" id="admin-add">Add to the board</button>
+            </article>
+
+            <div class="account-footer-actions">
+              <button class="btn" type="submit">Save the board</button>
+              <a class="btn btn-ghost" href="account.html">Back to account</a>
+            </div>
+          </form>
         </div>
       </section>
     </main>
@@ -295,13 +340,6 @@
         <div class="footer-meta">
           <div data-hours-footer>Monday–Sunday, 11am–8pm</div>
           <div>4 Fiveways Parade, Hazel Grove, Stockport, SK7 6DG</div>
-          <div>
-            <a href="gallery.html">Gallery</a>
-            ·
-            <a href="mailto:hello@blancocoffeehouse.com"
-              >hello@blancocoffeehouse.com</a
-            >
-          </div>
         </div>
       </div>
       <p class="wrap fineprint">
@@ -320,5 +358,6 @@
     <script src="script.js"></script>
     <script src="house.js"></script>
     <script src="clerk-auth.js?v=4"></script>
+    <script src="admin.js"></script>
   </body>
 </html>

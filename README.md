@@ -59,16 +59,21 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 ```
 index.html              # public shop (nav, hero, about, menu boards, visit, footer) + JSON-LD
 account.html            # Clerk member area (sign-in when signed out; dashboard when signed in)
+admin.html              # house desk (prices, sold-out, names, hours) — Clerk admin only
+gallery.html            # in-store photographs
+menu.json               # seed of the printed boards (same data as supabase/schema.sql)
+supabase/schema.sql     # tables, RLS (public read), seed
+api/admin.js            # Vercel function: verify Clerk, write to Supabase
+house-config.js         # Supabase URL + anon key only
+house.js                # fetch live menu/hours; keep printed HTML if unset
 clerk-config.js         # Clerk publishable key only (pk_test_ / pk_live_)
-clerk-auth.js           # shared Clerk JS CDN bootstrap for index + account
+clerk-auth.js           # Clerk JS CDN: Sign in / Sign up / UserButton
 styles.css              # design system and layout
 script.js               # nav, lightbox, interactive menu
-clerk-config.js         # Clerk publishable key (pk_test_ / pk_live_ only)
-clerk-auth.js           # Clerk JS CDN: Sign in / Sign up / UserButton
 assets/logo.png         # official Instagram “b.” mark (circular badge)
 assets/favicon.png      # 256px crop of the same mark
 assets/logo-wordmark.png
-assets/photos/          # shop photographs saved from Instagram
+assets/photos/          # shop photographs
 ```
 
 Member accounts use **[Clerk](https://clerk.com)**. The old browser-local `localStorage` login has been removed.
@@ -110,6 +115,25 @@ Do not pass `--framework javascript` / `--starter` here — that scaffolds a new
 2. After the profile icon appears, you’re signed in.
 3. If Clerk shows a **Configure your application** callout, click it.
 4. Then explore [Organizations](https://dashboard.clerk.com), [Components](https://clerk.com/docs/js-frontend/reference/components/overview), and the [Dashboard](https://dashboard.clerk.com).
+
+## House desk (menu + hours)
+
+Live prices, names, descriptions, sold-out marks, add/remove, and opening hours are stored in **Supabase**. The printed boards in `index.html` remain the fallback until keys are set.
+
+1. Create a Supabase project and run [`supabase/schema.sql`](supabase/schema.sql) in the SQL editor (creates tables, public-read RLS, and seeds today’s board).
+2. Paste the project URL and **anon** key into [`house-config.js`](house-config.js).
+3. In Vercel → Settings → Environment Variables, set:
+   - `CLERK_SECRET_KEY`
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ADMIN_EMAILS` (comma-separated house emails)
+4. In Clerk Dashboard → Users → your user → **publicMetadata**: `{ "role": "admin" }`.
+5. Open `/admin.html`, sign in, edit, Save. The public menu reads the same tables.
+
+Local saves need `vercel dev` so `/api/admin` exists. `python3 -m http.server` still shows the shop (and live reads, if `house-config.js` is filled).
+
+Never put `SUPABASE_SERVICE_ROLE_KEY` or `CLERK_SECRET_KEY` in a client file.
 
 ## Hosting
 

@@ -101,8 +101,15 @@ var blancoShowBoard = null;
   var index = 0;
   var lastFocus = null;
 
+  function visibleTriggers() {
+    return triggers.filter(function (button) {
+      var host = button.closest("[data-kind], li, figure");
+      return !host || !host.hidden;
+    });
+  }
+
   function photos() {
-    return triggers.map(function (button) {
+    return visibleTriggers().map(function (button) {
       var photo = button.querySelector("img");
       return {
         src: photo.getAttribute("src"),
@@ -147,8 +154,10 @@ var blancoShowBoard = null;
     if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
   }
 
-  triggers.forEach(function (button, i) {
+  triggers.forEach(function (button) {
     button.addEventListener("click", function () {
+      var i = visibleTriggers().indexOf(button);
+      if (i < 0) return;
       openAt(i);
     });
   });
@@ -204,28 +213,35 @@ var blancoShowBoard = null;
 })();
 
 (function () {
-  document.querySelectorAll(".board-section").forEach(function (section) {
-    var children = Array.prototype.slice.call(section.children);
-    children.forEach(function (node) {
-      if (!node.classList || !node.classList.contains("menu-item")) return;
-      var row = document.createElement("div");
-      row.className = "menu-row";
-      row.tabIndex = 0;
-      section.insertBefore(row, node);
-      row.appendChild(node);
-      var next = row.nextElementSibling;
-      while (next && next.classList.contains("menu-item-desc")) {
-        var desc = next;
-        next = desc.nextElementSibling;
-        row.appendChild(desc);
-      }
-      var steam = document.createElement("span");
-      steam.className = "row-steam";
-      steam.setAttribute("aria-hidden", "true");
-      steam.innerHTML = "<span></span><span></span><span></span>";
-      row.appendChild(steam);
+  function bindMenuRows() {
+    document.querySelectorAll(".board-section").forEach(function (section) {
+      var children = Array.prototype.slice.call(section.children);
+      children.forEach(function (node) {
+        if (!node.classList || !node.classList.contains("menu-item")) return;
+        if (node.parentElement && node.parentElement.classList.contains("menu-row")) return;
+        var row = document.createElement("div");
+        row.className = "menu-row";
+        row.tabIndex = 0;
+        if (node.classList.contains("is-sold-out")) row.classList.add("is-sold-out");
+        section.insertBefore(row, node);
+        row.appendChild(node);
+        var next = row.nextElementSibling;
+        while (next && next.classList.contains("menu-item-desc")) {
+          var desc = next;
+          next = desc.nextElementSibling;
+          row.appendChild(desc);
+        }
+        var steam = document.createElement("span");
+        steam.className = "row-steam";
+        steam.setAttribute("aria-hidden", "true");
+        steam.innerHTML = "<span></span><span></span><span></span>";
+        row.appendChild(steam);
+      });
     });
-  });
+  }
+
+  bindMenuRows();
+  window.blancoBindMenuRows = bindMenuRows;
 
   var tabs = Array.prototype.slice.call(document.querySelectorAll(".menu-tab"));
   var drinksBoard = document.getElementById("drinks-board");
@@ -365,7 +381,7 @@ var blancoShowBoard = null;
     { label: "The menu", href: "#menu", hay: "menu board drinks sweets", kind: "The house" },
     { label: "In the cup", href: "#cup", hay: "coffee espresso latte cappuccino americano mocha iced matcha milk steamed hot choc", kind: "The house" },
     { label: "Sit in, pick up, delivery", href: "#ways", hay: "sit in pick up delivery your way", kind: "Your way" },
-    { label: "In-store photographs", href: "#gallery", hay: "gallery photos house", kind: "The house" },
+    { label: "The gallery", href: "gallery.html", hay: "gallery photos house instagram in-store pictures", kind: "The house" },
     { label: "Apparel, coming soon", href: "#wear", hay: "apparel merch merchandise tee hoodie tote wear drop clothing", kind: "The house" },
     { label: "Rewards & orders", href: "#app", hay: "rewards stamps loyalty account", kind: "Account" },
     { label: "Google reviews", href: "#reviews", hay: "google reviews share", kind: "The house" },
@@ -464,6 +480,10 @@ var blancoShowBoard = null;
     document.querySelectorAll(".menu-row.is-search-hit").forEach(function (row) {
       row.classList.remove("is-search-hit");
     });
+    if (item.href && item.href.indexOf(".html") !== -1) {
+      window.location.href = item.href;
+      return;
+    }
     if (!onHousePage) {
       window.location.href = "index.html?q=" + encodeURIComponent(input.value.trim() || item.label);
       return;
@@ -519,4 +539,48 @@ var blancoShowBoard = null;
       }, 250);
     }
   }
+})();
+
+(function () {
+  var tabs = Array.prototype.slice.call(
+    document.querySelectorAll("[data-gallery-filter]")
+  );
+  var items = Array.prototype.slice.call(
+    document.querySelectorAll(".gallery-bento [data-kind], .gallery-feature[data-kind]")
+  );
+  if (!tabs.length || !items.length) return;
+
+  items.forEach(function (item, i) {
+    item.style.setProperty("--d", (i % 9) * 70 + "ms");
+  });
+
+  function setFilter(kind) {
+    items.forEach(function (item) {
+      var kinds = (item.getAttribute("data-kind") || "").split(/\s+/);
+      item.hidden = kind !== "all" && kinds.indexOf(kind) === -1;
+    });
+    tabs.forEach(function (tab) {
+      var on = tab.getAttribute("data-gallery-filter") === kind;
+      tab.classList.toggle("is-active", on);
+      tab.setAttribute("aria-selected", on ? "true" : "false");
+      tab.tabIndex = on ? 0 : -1;
+    });
+  }
+
+  tabs.forEach(function (tab, index) {
+    tab.addEventListener("click", function () {
+      setFilter(tab.getAttribute("data-gallery-filter") || "all");
+    });
+    tab.addEventListener("keydown", function (event) {
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      event.preventDefault();
+      var next =
+        tabs[
+          (index + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) %
+            tabs.length
+        ];
+      next.focus();
+      next.click();
+    });
+  });
 })();
