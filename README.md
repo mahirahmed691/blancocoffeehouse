@@ -118,20 +118,23 @@ Do not pass `--framework javascript` / `--starter` here — that scaffolds a new
 
 ## House desk (menu + hours)
 
-Live prices, names, descriptions, sold-out marks, add/remove, and opening hours are stored in **Supabase**. The printed boards in `index.html` remain the fallback until keys are set.
+Live prices, names, descriptions, sold-out marks, add/remove, and opening hours are stored in **Supabase**. The printed boards in `index.html` remain the fallback if the API is down.
 
-1. Create a Supabase project and run [`supabase/schema.sql`](supabase/schema.sql) in the SQL editor (creates tables, public-read RLS, and seeds today’s board).
-2. Paste the project URL and **anon** key into [`house-config.js`](house-config.js).
-3. In Vercel → Settings → Environment Variables, set:
-   - `CLERK_SECRET_KEY`
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `ADMIN_EMAILS` (comma-separated house emails)
-4. In Clerk Dashboard → Users → your user → **publicMetadata**: `{ "role": "admin" }`.
-5. Open `/admin.html`, sign in, edit, Save. The public menu reads the same tables.
+Project: **Blanco Coffee House** (`lqswuhjwtaygixmjejmd`, London) — [dashboard](https://supabase.com/dashboard/project/lqswuhjwtaygixmjejmd). Tables are seeded. Public keys live in [`house-config.js`](house-config.js).
 
-Local saves need `vercel dev` so `/api/admin` exists. `python3 -m http.server` still shows the shop (and live reads, if `house-config.js` is filled).
+To finish the **admin save** path (Vercel `/api/admin`):
+
+1. In [Supabase API settings](https://supabase.com/dashboard/project/lqswuhjwtaygixmjejmd/settings/api), copy the **service_role** key (server only).
+2. In Vercel → blancocoffeehouse → Settings → Environment Variables, set for Production, Preview, and Development:
+   - `CLERK_SECRET_KEY` (Clerk Dashboard → API keys)
+   - `SUPABASE_URL` = `https://lqswuhjwtaygixmjejmd.supabase.co`
+   - `SUPABASE_ANON_KEY` = the anon key already in `house-config.js`
+   - `SUPABASE_SERVICE_ROLE_KEY` = the service_role key
+   - `ADMIN_EMAILS` = your house email(s), comma-separated
+3. In Clerk Dashboard → Users → your user → **publicMetadata**: `{ "role": "admin" }`.
+4. Redeploy, then open `/admin.html`, sign in, and Save.
+
+Local saves need `vercel dev` so `/api/admin` exists. The public menu reads Supabase with the anon key from any static host.
 
 Never put `SUPABASE_SERVICE_ROLE_KEY` or `CLERK_SECRET_KEY` in a client file.
 

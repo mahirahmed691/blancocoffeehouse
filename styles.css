@@ -679,7 +679,7 @@ body:not(.clerk-ready) .clerk-signed-in {
   overflow: hidden;
   min-height: min(88svh, 860px);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   padding: clamp(5.2rem, 9vw, 6.8rem) 0 clamp(2.2rem, 5vw, 3.6rem);
   color: var(--white);
 }
@@ -698,19 +698,12 @@ body:not(.clerk-ready) .clerk-signed-in {
 }
 
 .hero-veil {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--ink) 28%, transparent) 0%,
-      color-mix(in srgb, var(--ink) 52%, transparent) 42%,
-      color-mix(in srgb, var(--ink) 78%, transparent) 100%
-    ),
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--brown) 55%, transparent) 0%,
-      color-mix(in srgb, var(--brown) 18%, transparent) 58%,
-      transparent 100%
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ink) 22%, transparent) 0%,
+    color-mix(in srgb, var(--ink) 48%, transparent) 46%,
+    color-mix(in srgb, var(--ink) 82%, transparent) 100%
+  );
 }
 
 .hero-stamp {
@@ -737,38 +730,33 @@ body:not(.clerk-ready) .clerk-signed-in {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(15rem, 22rem);
-  gap: clamp(1.4rem, 4vw, 3.2rem);
-  align-items: end;
+  justify-items: center;
+  gap: clamp(1.4rem, 3vw, 2rem);
   width: 100%;
+  text-align: center;
 }
 
 .hero-inner {
-  max-width: 40rem;
+  max-width: 42rem;
   animation: hero-rise 0.95s var(--ease) both;
 }
 
 .hero-gallery {
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 1.15fr 1fr 1fr;
   gap: 0.5rem;
   list-style: none;
+  width: min(100%, 34rem);
   margin: 0;
   padding: 0;
-  min-height: min(52vh, 28rem);
   animation: hero-rise 1.05s var(--ease) 0.12s both;
-}
-
-.hero-gallery li:first-child {
-  grid-row: 1 / 3;
 }
 
 .hero-gallery .gallery-open,
 .hero-gallery-more {
   display: block;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   padding: 0;
   border: 3px solid color-mix(in srgb, var(--beige) 88%, white);
@@ -836,6 +824,7 @@ body:not(.clerk-ready) .clerk-signed-in {
 .modes {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.5rem;
   list-style: none;
   margin: 0 0 1.35rem;
@@ -890,6 +879,7 @@ body:not(.clerk-ready) .clerk-signed-in {
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.65rem;
   margin-bottom: 1.35rem;
 }
@@ -897,8 +887,9 @@ body:not(.clerk-ready) .clerk-signed-in {
 .hours-chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  margin: 0;
+  margin: 0 auto;
   padding-top: 1.2rem;
   border-top: 1px solid color-mix(in srgb, var(--white) 22%, transparent);
   color: color-mix(in srgb, var(--white) 78%, transparent);
@@ -2549,7 +2540,6 @@ body.lightbox-open {
   }
 
   .hero-inner,
-  .hero-stage,
   .split,
   .visit-grid,
   .reviews-layout,
@@ -2572,22 +2562,6 @@ body.lightbox-open {
   .hero {
     min-height: 0;
     padding: clamp(4.6rem, 14vw, 5.6rem) 0 2.4rem;
-  }
-
-  .hero-gallery {
-    min-height: 0;
-    grid-template-columns: 1.15fr 1fr 1fr;
-    grid-template-rows: auto;
-  }
-
-  .hero-gallery li:first-child {
-    grid-row: auto;
-  }
-
-  .hero-gallery .gallery-open,
-  .hero-gallery-more {
-    aspect-ratio: 3 / 4;
-    height: auto;
   }
 
   .hero-stamp {
