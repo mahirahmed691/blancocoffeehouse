@@ -733,15 +733,6 @@ body:not(.clerk-ready) .clerk-signed-in {
   color: color-mix(in srgb, var(--white) 78%, transparent);
 }
 
-.hero-poem {
-  margin: 0 0 1.05rem;
-  font-family: var(--round);
-  font-weight: 600;
-  font-size: clamp(0.98rem, 1.9vw, 1.2rem);
-  line-height: 1.38;
-  color: color-mix(in srgb, var(--white) 92%, transparent);
-}
-
 .hero h1 {
   margin: 0 0 1.05rem;
   font-family: var(--round);
@@ -2594,11 +2585,6 @@ body.lightbox-open {
 
   .hero h1 {
     font-size: 2.15rem;
-  }
-
-  .hero-poem {
-    font-size: 0.98rem;
-    line-height: 1.38;
   }
 
   h2 {
