@@ -305,3 +305,162 @@
     copyBtn.addEventListener("click", copyLink);
   }
 })();
+
+(function () {
+  var input = document.getElementById("house-search");
+  var list = document.getElementById("house-search-results");
+  if (!input) return;
+
+  var pages = [
+    { label: "The menu", href: "#menu", hay: "menu board drinks sweets", kind: "The house" },
+    { label: "Sit in, pick up, delivery", href: "#ways", hay: "sit in pick up delivery your way", kind: "Your way" },
+    { label: "In-store photographs", href: "#gallery", hay: "gallery photos house", kind: "The house" },
+    { label: "Rewards & orders", href: "#app", hay: "rewards stamps loyalty account", kind: "Account" },
+    { label: "Google reviews", href: "#reviews", hay: "google reviews share", kind: "The house" },
+    { label: "Visit Fiveways Parade", href: "#visit", hay: "visit address hours map stockport hazel grove", kind: "Visit" },
+    { label: "Your account", href: "account.html", hay: "sign in sign up account login", kind: "Account" }
+  ];
+
+  var onHousePage = !!document.getElementById("menu");
+
+  function textOf(el) {
+    return ((el && el.textContent) || "").replace(/\s+/g, " ").trim();
+  }
+
+  function menuIndex() {
+    if (!onHousePage) return [];
+    return Array.prototype.slice.call(document.querySelectorAll(".menu-item")).map(function (item) {
+      var row = item.closest(".menu-row") || item;
+      var board = item.closest(".board");
+      var section = item.closest(".board-section");
+      var heading = section && section.querySelector("h4");
+      var desc = row.querySelector(".menu-item-desc");
+      var price = item.querySelector(".price");
+      var name = textOf(item.querySelector(".name"));
+      var boardKind = board && board.getAttribute("aria-labelledby") === "sweets-board-title"
+        ? "Sweets"
+        : "Drinks";
+      var sectionName = textOf(heading);
+      return {
+        label: name,
+        href: boardKind === "Sweets" ? "#sweets-board-title" : "#drinks-board-title",
+        hay: [name, textOf(desc), textOf(price), sectionName, boardKind].join(" ").toLowerCase(),
+        kind: boardKind + (sectionName ? " · " + sectionName : ""),
+        meta: textOf(price),
+        row: row,
+        boardKind: boardKind
+      };
+    });
+  }
+
+  function allItems() {
+    return menuIndex().concat(pages);
+  }
+
+  function showList(items) {
+    if (!list) return;
+    list.innerHTML = "";
+    if (!items.length) {
+      list.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      return;
+    }
+    items.slice(0, 8).forEach(function (item, i) {
+      var li = document.createElement("li");
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.setAttribute("role", "option");
+      btn.setAttribute("data-index", String(i));
+      btn.innerHTML =
+        "<span class=\"search-kind\">" +
+        item.kind +
+        "</span><span class=\"search-label\">" +
+        item.label +
+        (item.meta ? " <em>" + item.meta + "</em>" : "") +
+        "</span>";
+      btn.addEventListener("click", function () {
+        go(item);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+    list.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+  }
+
+  function queryItems(q) {
+    var needle = q.toLowerCase().trim();
+    if (needle.length < 1) return [];
+    return allItems().filter(function (item) {
+      return item.hay.indexOf(needle) !== -1 || item.label.toLowerCase().indexOf(needle) !== -1;
+    });
+  }
+
+  function activateBoard(kind) {
+    var tabs = document.querySelectorAll(".menu-tab");
+    tabs.forEach(function (tab) {
+      var sweets = (tab.getAttribute("href") || "").indexOf("sweets") !== -1;
+      tab.classList.toggle("is-active", kind === "Sweets" ? sweets : !sweets);
+    });
+  }
+
+  function go(item) {
+    document.querySelectorAll(".menu-row.is-search-hit").forEach(function (row) {
+      row.classList.remove("is-search-hit");
+    });
+    if (!onHousePage) {
+      window.location.href = "index.html?q=" + encodeURIComponent(input.value.trim() || item.label);
+      return;
+    }
+    if (item.boardKind) activateBoard(item.boardKind);
+    if (item.row) {
+      item.row.classList.add("is-search-hit");
+      item.row.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (item.href.charAt(0) === "#") {
+      var target = document.querySelector(item.href);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.location.href = item.href;
+    }
+    showList([]);
+    input.blur();
+  }
+
+  function render() {
+    showList(queryItems(input.value));
+  }
+
+  input.addEventListener("input", render);
+  input.addEventListener("focus", render);
+
+  input.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      showList([]);
+      input.blur();
+      event.stopPropagation();
+      return;
+    }
+    if (event.key !== "Enter") return;
+    var matches = queryItems(input.value);
+    if (!matches.length) return;
+    event.preventDefault();
+    go(matches[0]);
+  });
+
+  document.addEventListener("pointerdown", function (event) {
+    var box = input.closest(".nav-search");
+    if (box && box.contains(event.target)) return;
+    showList([]);
+  });
+
+  var initial = new URLSearchParams(window.location.search).get("q");
+  if (initial && onHousePage) {
+    input.value = initial;
+    var first = queryItems(initial)[0];
+    if (first) {
+      window.setTimeout(function () {
+        go(first);
+      }, 250);
+    }
+  }
+})();
