@@ -11,4 +11,5 @@ window.HOUSE_SUPABASE_ANON_KEY =
 
 /* Optional public allowlist so the House desk link can show before
    Clerk publicMetadata.role is set. The API still checks ADMIN_EMAILS. */
-window.HOUSE_ADMIN_EMAILS = window.HOUSE_ADMIN_EMAILS || "";
+window.HOUSE_ADMIN_EMAILS =
+  window.HOUSE_ADMIN_EMAILS || "hello@blancocoffeehouse.com";
