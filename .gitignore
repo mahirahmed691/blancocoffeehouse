@@ -22,3 +22,12 @@ dist/
 tmp/
 temp/
 *.local
+
+# Campaign slide photographs (people hanging out, JD bag, mustard sofa,
+# keyboard, parquet floor, etc.) must never be committed. Use the existing
+# Instagram cafe shots in assets/photos/ or solid #E9E1D8 / #503931.
+assets/campaign/
+assets/slides/
+assets/photos/campaign*
+assets/photos/slide*
+**/campaign-slide*

@@ -50,10 +50,11 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 
 ## Logo
 
-- `assets/logo.png` — cream **b.** mark (favicon, apple-touch, JSON-LD, hero panel)
-- `assets/logo-wordmark.png` — espresso **blanco. / COFFEEHOUSE** (header and footer)
+- `assets/logo.png` — cream **b.** mark with circular period. Primary brand image, shown as a circular badge in the header, hero, and footer. Also used for apple-touch and JSON-LD.
+- `assets/favicon.png` — the same mark, circular-cropped with a transparent outside, for the browser tab icon.
+- `assets/logo-wordmark.png` — espresso **blanco. / COFFEEHOUSE** lockup (kept on file, not used as the nav/hero/footer brand image).
 
-Both files are sized for the page (not the original 1024px masters).
+`logo.png` is sized for the page (not the original 1024px master).
 
 ## Project layout
 
@@ -61,7 +62,8 @@ Both files are sized for the page (not the original 1024px masters).
 index.html              # markup (nav, hero, about, two menu boards, visit, footer) + JSON-LD
 styles.css              # design system and layout
 script.js               # mobile nav (hamburger under 760px) + header scroll state
-assets/logo.png         # “b.” logo mark
+assets/logo.png         # cream “b.” mark (circular badge on the page)
+assets/favicon.png      # circular crop of the mark
 assets/logo-wordmark.png
 assets/photos/          # shop photographs saved from Instagram
 ```
