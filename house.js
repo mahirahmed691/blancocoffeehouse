@@ -99,6 +99,11 @@
     document.querySelectorAll("[data-hours-footer]").forEach(function (el) {
       if (days && range) el.textContent = days + ", " + range;
     });
+    var notice = String(settings.notice || "").trim();
+    document.querySelectorAll("[data-house-notice]").forEach(function (el) {
+      el.textContent = notice;
+      el.hidden = !notice;
+    });
     var ld = document.querySelector('script[type="application/ld+json"]');
     if (!ld || !settings.opens || !settings.closes) return;
     try {

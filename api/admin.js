@@ -2,8 +2,7 @@
    Env: CLERK_SECRET_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ADMIN_EMAILS
    Optional: SUPABASE_ANON_KEY is not used here. */
 
-var crypto = require("crypto");
-var jwksCache = { keys: null, at: 0 };
+var clerk = require("../lib/clerk-verify");
 
 function json(res, status, body) {
   res.statusCode = status;
@@ -29,140 +28,6 @@ function readBody(req) {
     });
     req.on("error", reject);
   });
-}
-
-function bearer(req) {
-  var h = req.headers.authorization || req.headers.Authorization || "";
-  var m = String(h).match(/^Bearer\s+(.+)$/i);
-  return m ? m[1].trim() : "";
-}
-
-function emailsOf(user) {
-  var list = (user && user.email_addresses) || [];
-  return list
-    .map(function (row) {
-      return String((row && row.email_address) || "").trim().toLowerCase();
-    })
-    .filter(Boolean);
-}
-
-function isAdmin(user) {
-  var meta = (user && (user.public_metadata || user.publicMetadata)) || {};
-  if (String(meta.role || "").toLowerCase() === "admin") return true;
-  var allowed = String(process.env.ADMIN_EMAILS || "")
-    .split(/[,;\s]+/)
-    .map(function (e) {
-      return e.trim().toLowerCase();
-    })
-    .filter(Boolean);
-  if (!allowed.length) return false;
-  return emailsOf(user).some(function (e) {
-    return allowed.indexOf(e) !== -1;
-  });
-}
-
-function authError(message, status) {
-  var err = new Error(message);
-  err.status = status || 401;
-  return err;
-}
-
-function decodeJwtPart(part) {
-  return JSON.parse(Buffer.from(part, "base64url").toString("utf8"));
-}
-
-function allowedParty(azp) {
-  if (!azp) return true;
-  var origin = String(azp).replace(/\/$/, "").toLowerCase();
-  if (
-    origin === "https://blancocoffeehouse.com" ||
-    origin === "https://www.blancocoffeehouse.com" ||
-    origin === "https://blancocoffeehouse.vercel.app" ||
-    origin === "http://localhost" ||
-    origin.indexOf("http://localhost:") === 0 ||
-    origin.indexOf("http://127.0.0.1") === 0
-  ) {
-    return true;
-  }
-  if (/^https:\/\/blancocoffeehouse-[a-z0-9-]+\.vercel\.app$/.test(origin)) return true;
-  return false;
-}
-
-async function clerkJwks(secret) {
-  if (jwksCache.keys && Date.now() - jwksCache.at < 60 * 60 * 1000) {
-    return jwksCache.keys;
-  }
-  var res = await fetch("https://api.clerk.com/v1/jwks", {
-    headers: { Authorization: "Bearer " + secret }
-  });
-  if (!res.ok) {
-    throw authError("House desk Clerk key does not match this sign-in.", 503);
-  }
-  var data = await res.json();
-  jwksCache = { keys: data.keys || [], at: Date.now() };
-  return jwksCache.keys;
-}
-
-function verifyJwtSig(alg, data, key, sig) {
-  if (alg === "RS256") return crypto.verify("RSA-SHA256", data, key, sig);
-  if (alg === "ES256") {
-    return crypto.verify("SHA256", data, { key: key, dsaEncoding: "ieee-p1363" }, sig);
-  }
-  return false;
-}
-
-async function verifySessionJwt(token, secret) {
-  var parts = String(token || "").split(".");
-  if (parts.length !== 3) throw authError("Sign in again to use the house desk.");
-  var header;
-  var payload;
-  try {
-    header = decodeJwtPart(parts[0]);
-    payload = decodeJwtPart(parts[1]);
-  } catch (err) {
-    throw authError("Sign in again to use the house desk.");
-  }
-  if (header.alg !== "RS256" && header.alg !== "ES256") {
-    throw authError("Sign in again to use the house desk.");
-  }
-  var now = Math.floor(Date.now() / 1000);
-  if (payload.nbf && now < payload.nbf - 5) throw authError("Sign in again to use the house desk.");
-  if (payload.exp && now > payload.exp + 5) throw authError("Sign in again to use the house desk.");
-  if (!payload.sub) throw authError("Sign in again to use the house desk.");
-  if (!allowedParty(payload.azp)) throw authError("Sign in again to use the house desk.");
-
-  var keys = await clerkJwks(secret);
-  var jwk =
-    keys.filter(function (k) {
-      return k.kid === header.kid;
-    })[0] || keys[0];
-  if (!jwk) throw authError("Sign in again to use the house desk.");
-
-  var keyObject = crypto.createPublicKey({ key: jwk, format: "jwk" });
-  var ok = verifyJwtSig(
-    header.alg,
-    Buffer.from(parts[0] + "." + parts[1]),
-    keyObject,
-    Buffer.from(parts[2], "base64url")
-  );
-  if (!ok) throw authError("Sign in again to use the house desk.");
-  return payload;
-}
-
-async function clerkUser(sessionId, token, secret) {
-  var claims = await verifySessionJwt(token, secret);
-  var userId = claims.sub;
-  if (sessionId && claims.sid && sessionId !== claims.sid) {
-    throw authError("Sign in again to use the house desk.");
-  }
-  var userRes = await fetch(
-    "https://api.clerk.com/v1/users/" + encodeURIComponent(userId),
-    { headers: { Authorization: "Bearer " + secret } }
-  );
-  if (!userRes.ok) {
-    throw authError("Clerk user could not be loaded");
-  }
-  return userRes.json();
 }
 
 function supabaseHeaders(key) {
@@ -239,22 +104,22 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  var token = bearer(req);
+  var token = clerk.bearer(req);
   var sessionId = String(req.headers["x-clerk-session"] || "").trim();
-  if (!token || !sessionId) {
+  if (!token) {
     json(res, 401, { error: "Sign in to use the house desk." });
     return;
   }
 
   var user;
   try {
-    user = await clerkUser(sessionId, token, secret);
+    user = await clerk.clerkUser(sessionId, token, secret);
   } catch (err) {
     json(res, err.status || 401, { error: err.message || "Not signed in." });
     return;
   }
 
-  if (!isAdmin(user)) {
+  if (!clerk.isAdmin(user)) {
     json(res, 403, { error: "This desk is for the house." });
     return;
   }
@@ -287,6 +152,7 @@ module.exports = async function handler(req, res) {
         hours_range: String(settings.hours_range || "").trim() || "11am–8pm",
         opens: String(settings.opens || "11:00").trim() || "11:00",
         closes: String(settings.closes || "20:00").trim() || "20:00",
+        notice: String(settings.notice || "").trim(),
         updated_at: new Date().toISOString()
       };
       await sb("/rest/v1/house_settings", {

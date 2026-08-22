@@ -126,6 +126,8 @@
       </div>
     </header>
 
+    <p class="house-notice wrap" data-house-notice hidden></p>
+
     <main id="account-main">
       <section
         class="band band-paper clerk-signed-out"
@@ -202,7 +204,7 @@
             </h1>
             <p class="prose">
               Your blanco account. The public menu stays on the house page.
-              Orders will sit here when the counter is ready for them.
+              Bring this to the counter for stamps.
             </p>
             <div class="account-welcome-tools">
               <div class="clerk-user-button clerk-user-button-lg"></div>
@@ -250,10 +252,10 @@
               <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> rewards</p>
               <h2 id="account-rewards-title">Stamps &amp; the counter</h2>
               <p class="prose">
-                Loyalty, daily spins, and apparel when the drop lands. Empty
-                for now — the house still pours without an account.
+                Bring the account to the counter. Eight stamps, then a drink on
+                the house.
               </p>
-              <ol class="stamp-row" aria-label="Reward stamps, empty">
+              <ol class="stamp-row" id="account-stamps" aria-label="Reward stamps">
                 <li></li>
                 <li></li>
                 <li></li>
@@ -263,7 +265,7 @@
                 <li></li>
                 <li></li>
               </ol>
-              <p class="note">Eight stamps. The first one isn’t in yet.</p>
+              <p class="note" data-stamps-note>Eight stamps. A drink on the house.</p>
             </article>
           </div>
 
@@ -317,9 +319,10 @@
     </footer>
 
     <script src="house-config.js"></script>
-    <script src="clerk-config.js?v=4"></script>
+    <script src="clerk-config.js?v=5"></script>
     <script src="script.js"></script>
     <script src="house.js"></script>
-    <script src="clerk-auth.js?v=4"></script>
+    <script src="account-stamps.js"></script>
+    <script src="clerk-auth.js?v=5"></script>
   </body>
 </html>
