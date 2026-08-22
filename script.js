@@ -87,11 +87,8 @@ var blancoShowBoard = null;
 })();
 
 (function () {
-  var triggers = Array.prototype.slice.call(
-    document.querySelectorAll(".gallery-open")
-  );
   var lightbox = document.getElementById("lightbox");
-  if (!triggers.length || !lightbox) return;
+  if (!lightbox) return;
 
   var img = lightbox.querySelector(".lightbox-image");
   var caption = lightbox.querySelector(".lightbox-caption");
@@ -101,8 +98,12 @@ var blancoShowBoard = null;
   var index = 0;
   var lastFocus = null;
 
+  function allTriggers() {
+    return Array.prototype.slice.call(document.querySelectorAll(".gallery-open"));
+  }
+
   function visibleTriggers() {
-    return triggers.filter(function (button) {
+    return allTriggers().filter(function (button) {
       var host = button.closest("[data-kind], li, figure");
       return !host || !host.hidden;
     });
@@ -111,9 +112,12 @@ var blancoShowBoard = null;
   function photos() {
     return visibleTriggers().map(function (button) {
       var photo = button.querySelector("img");
+      var added = button.getAttribute("data-added") || "";
+      var alt = (photo && photo.getAttribute("alt")) || "";
       return {
-        src: photo.getAttribute("src"),
-        alt: photo.getAttribute("alt") || ""
+        src: photo ? photo.getAttribute("src") : "",
+        alt: alt,
+        caption: [alt, added].filter(Boolean).join(" · ")
       };
     });
   }
@@ -125,12 +129,15 @@ var blancoShowBoard = null;
   }
 
   function show(i) {
-    var items = photos();
+    var items = photos().filter(function (photo) {
+      return photo && photo.src;
+    });
+    if (!items.length) return;
     index = (i + items.length) % items.length;
     var photo = items[index];
     img.src = photo.src;
     img.alt = photo.alt;
-    caption.textContent = photo.alt;
+    caption.textContent = photo.caption || photo.alt;
     var many = items.length > 1;
     btnPrev.hidden = !many;
     btnNext.hidden = !many;
@@ -154,12 +161,12 @@ var blancoShowBoard = null;
     if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
   }
 
-  triggers.forEach(function (button) {
-    button.addEventListener("click", function () {
-      var i = visibleTriggers().indexOf(button);
-      if (i < 0) return;
-      openAt(i);
-    });
+  document.addEventListener("click", function (event) {
+    var button = event.target.closest(".gallery-open");
+    if (!button || lightbox.contains(button)) return;
+    var i = visibleTriggers().indexOf(button);
+    if (i < 0) return;
+    openAt(i);
   });
 
   btnClose.addEventListener("click", close);
@@ -383,9 +390,10 @@ var blancoShowBoard = null;
     { label: "Sit in, pick up, delivery", href: "#ways", hay: "sit in pick up delivery your way", kind: "Your way" },
     { label: "The gallery", href: "gallery.html", hay: "gallery photos house instagram in-store pictures", kind: "The house" },
     { label: "Apparel, coming soon", href: "#wear", hay: "apparel merch merchandise tee hoodie tote wear drop clothing", kind: "The house" },
-    { label: "Rewards & orders", href: "#app", hay: "rewards stamps loyalty account", kind: "Account" },
+    { label: "The app", href: "#app", hay: "app rewards stamps loyalty account pocket phone expo", kind: "Account" },
     { label: "Google reviews", href: "#reviews", hay: "google reviews share", kind: "The house" },
-    { label: "Visit Fiveways Parade", href: "#visit", hay: "visit address hours map stockport hazel grove", kind: "Visit" },
+    { label: "Visit Fiveways Parade", href: "#visit", hay: "visit address hours map stockport hazel grove taxi rank drivers concession", kind: "Visit" },
+    { label: "The rank", href: "account.html", hay: "taxi rank drivers concession the base", kind: "Account" },
     { label: "Your account", href: "account.html", hay: "sign in sign up account login", kind: "Account" }
   ];
 
@@ -545,27 +553,36 @@ var blancoShowBoard = null;
   var tabs = Array.prototype.slice.call(
     document.querySelectorAll("[data-gallery-filter]")
   );
-  var items = Array.prototype.slice.call(
-    document.querySelectorAll(".gallery-bento [data-kind], .gallery-feature[data-kind]")
-  );
-  if (!tabs.length || !items.length) return;
+  if (!tabs.length) return;
 
-  items.forEach(function (item, i) {
-    item.style.setProperty("--d", (i % 9) * 70 + "ms");
-  });
+  var current = "all";
+
+  function galleryItems() {
+    return Array.prototype.slice.call(
+      document.querySelectorAll(
+        ".gallery-bento [data-kind], .gallery-feature[data-kind], .gallery-live [data-kind]"
+      )
+    );
+  }
 
   function setFilter(kind) {
-    items.forEach(function (item) {
+    current = kind || "all";
+    galleryItems().forEach(function (item, i) {
       var kinds = (item.getAttribute("data-kind") || "").split(/\s+/);
-      item.hidden = kind !== "all" && kinds.indexOf(kind) === -1;
+      item.hidden = current !== "all" && kinds.indexOf(current) === -1;
+      item.style.setProperty("--d", (i % 9) * 70 + "ms");
     });
     tabs.forEach(function (tab) {
-      var on = tab.getAttribute("data-gallery-filter") === kind;
+      var on = tab.getAttribute("data-gallery-filter") === current;
       tab.classList.toggle("is-active", on);
       tab.setAttribute("aria-selected", on ? "true" : "false");
       tab.tabIndex = on ? 0 : -1;
     });
   }
+
+  window.blancoRefreshGallery = function () {
+    setFilter(current);
+  };
 
   tabs.forEach(function (tab, index) {
     tab.addEventListener("click", function () {
@@ -583,4 +600,6 @@ var blancoShowBoard = null;
       next.click();
     });
   });
+
+  setFilter("all");
 })();

@@ -82,7 +82,7 @@
             <a href="index.html#cup">In the cup</a>
             <a href="index.html#drinks-board-title">Drinks</a>
             <a href="index.html#sweets-board-title">Sweets</a>
-            <a href="index.html#app">Rewards</a>
+            <a href="index.html#app">The app</a>
           </section>
           <section class="mega-col">
             <p class="eyebrow">your way</p>
@@ -238,13 +238,15 @@
 
             <article class="account-card" aria-labelledby="account-orders-title">
               <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> orders</p>
-              <h2 id="account-orders-title">Your orders</h2>
-              <div class="empty-orders">
-                <p class="empty-orders-kicker">Not yet</p>
-                <p>
-                  Collection and delivery will be kept here. Nothing to show
-                  today — you’ll need to be signed in when ordering opens.
-                </p>
+              <h2 id="account-orders-title">Your collection</h2>
+              <div id="account-orders">
+                <div class="empty-orders">
+                  <p class="empty-orders-kicker">Not yet</p>
+                  <p>
+                    Build a collection from the board. Pay now, or at the
+                    counter. Delivery is still to come.
+                  </p>
+                </div>
               </div>
             </article>
 
@@ -266,6 +268,33 @@
                 <li></li>
               </ol>
               <p class="note" data-stamps-note>Eight stamps. A drink on the house.</p>
+            </article>
+
+            <article class="account-card" id="account-rank" aria-labelledby="account-rank-title">
+              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> the rank</p>
+              <h2 id="account-rank-title">Drivers from the base</h2>
+              <p class="prose">
+                The taxi base next door. A concession on selected drinks, and
+                a scoop from the case. Ask at the counter for the house code.
+              </p>
+              <form id="rank-join">
+                <label>
+                  House code
+                  <input
+                    id="rank-code"
+                    type="text"
+                    maxlength="16"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="RANK-····"
+                  />
+                </label>
+                <button class="btn" type="submit" id="rank-join-btn">Join the rank</button>
+              </form>
+              <ul class="rank-items" id="rank-items"></ul>
+              <p class="note" id="rank-status">
+                Ask at the counter, or at the taxi office, for the house code.
+              </p>
             </article>
           </div>
 
@@ -319,10 +348,12 @@
     </footer>
 
     <script src="house-config.js"></script>
-    <script src="clerk-config.js?v=5"></script>
+    <script src="clerk-config.js?v=6"></script>
     <script src="script.js"></script>
     <script src="house.js"></script>
     <script src="account-stamps.js"></script>
-    <script src="clerk-auth.js?v=5"></script>
+    <script src="account-orders.js"></script>
+    <script src="rank.js"></script>
+    <script src="clerk-auth.js?v=6"></script>
   </body>
 </html>

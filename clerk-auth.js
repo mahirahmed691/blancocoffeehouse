@@ -49,6 +49,7 @@
   }
 
   function setSignedIn(inSession) {
+    document.body.classList.toggle("is-member", !!inSession);
     document.querySelectorAll(".clerk-signed-out").forEach(function (el) {
       el.hidden = !!inSession;
     });
@@ -247,8 +248,17 @@
     setAdminUi();
     mountUserButtons();
     mountAuthForm(false);
+    if (typeof window.blancoLoadRank === "function") {
+      window.blancoLoadRank();
+    }
     if (inSession && typeof window.blancoLoadStamps === "function") {
       window.blancoLoadStamps();
+    }
+    if (inSession && typeof window.blancoLoadOrders === "function") {
+      window.blancoLoadOrders();
+    }
+    if (typeof window.blancoRenderCollection === "function") {
+      window.blancoRenderCollection();
     }
   }
 

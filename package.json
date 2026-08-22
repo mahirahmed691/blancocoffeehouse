@@ -1,0 +1,7 @@
+{
+  "name": "blancocoffeehouse",
+  "private": true,
+  "dependencies": {
+    "stripe": "^22.4.0"
+  }
+}
