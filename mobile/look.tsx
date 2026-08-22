@@ -1,6 +1,8 @@
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
-  Image,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -9,7 +11,15 @@ import {
   useWindowDimensions,
   View
 } from "react-native";
-import { tap } from "./feel";
+import { ok, tap, warn } from "./feel";
+import {
+  dropCheckin,
+  fetchCheckins,
+  postCheckin,
+  type CupBoard,
+  type CupCheckin,
+  type Session
+} from "./house";
 import { INSTAGRAM, openAway, PIECES, type Piece } from "./pieces";
 import { filterShots, fetchShots, type LookBoard, type Shot, type ShotKind } from "./shots";
 import {
@@ -33,16 +43,19 @@ export function LookScreen({
   onBoard,
   piece,
   onOpen,
-  onBackPiece
+  onBackPiece,
+  getSession
 }: {
   board: LookBoard;
   onBoard: (next: LookBoard) => void;
   piece: Piece | null;
   onOpen: (piece: Piece) => void;
   onBackPiece: () => void;
+  getSession: () => Promise<Session>;
 }) {
   if (piece) return <PieceView piece={piece} onBack={onBackPiece} />;
   if (board === "pictures") return <Pictures onBoard={onBoard} />;
+  if (board === "today") return <Today onBoard={onBoard} getSession={getSession} />;
   return <Wear onBoard={onBoard} onOpen={onOpen} />;
 }
 
@@ -63,7 +76,7 @@ function LookHead({
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.prose}>{line}</Text>
       <View style={styles.seg}>
-        {(["pictures", "wear"] as const).map((id) => (
+        {(["pictures", "today", "wear"] as const).map((id) => (
           <Pressable
             key={id}
             onPress={() => {
@@ -159,6 +172,9 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
           ))}
         </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
+        {loading && !shown.length && !error ? (
+          <Text style={styles.prose}>The pictures are coming up.</Text>
+        ) : null}
         {!loading && !shown.length ? (
           <Text style={styles.prose}>The pictures are quiet. Pull to try again.</Text>
         ) : null}
@@ -175,7 +191,13 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
               accessibilityRole="button"
               accessibilityLabel={shot.alt}
             >
-              <Image source={{ uri: shot.uri }} style={styles.tileImage} resizeMode="cover" />
+              <Image
+                source={shot.uri}
+                style={styles.tileImage}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                recyclingKey={shot.id}
+              />
               {shot.added ? <Text style={styles.added}>{shot.added}</Text> : null}
             </Pressable>
           ))}
@@ -201,9 +223,11 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
           </Pressable>
           <View style={styles.viewerFrame}>
             <Image
-              source={{ uri: viewing.uri }}
+              source={viewing.uri}
               style={styles.viewerImage}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              recyclingKey={viewing.id}
               accessibilityLabel={viewing.alt}
             />
           </View>
@@ -232,6 +256,299 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
           </View>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+const PICK = {
+  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  allowsEditing: true,
+  aspect: [3, 4] as [number, number],
+  quality: 0.7,
+  base64: true,
+  exif: false
+};
+
+function Today({
+  onBoard,
+  getSession
+}: {
+  onBoard: (next: LookBoard) => void;
+  getSession: () => Promise<Session>;
+}) {
+  const pad = usePad();
+  const { width } = useWindowDimensions();
+  const [board, setBoard] = useState<CupBoard>({ today: "", mine: null, cups: [] });
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [open, setOpen] = useState<string | null>(null);
+  const tile = (width - 44 - 10) / 2;
+  const cups = board.cups;
+  const shown = open ? cups : [];
+  const current = shown.findIndex((cup) => cup.id === open);
+  const viewing = current >= 0 ? shown[current] : null;
+
+  async function load() {
+    setError("");
+    setLoading(true);
+    try {
+      setBoard(await fetchCheckins(await getSession()));
+    } catch {
+      setError("The cups could not load.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  function show(id: string) {
+    tap();
+    setOpen(id);
+  }
+
+  function step(delta: number) {
+    if (current < 0) return;
+    const next = shown[current + delta];
+    if (!next) return;
+    tap();
+    setOpen(next.id);
+  }
+
+  async function pick(from: "camera" | "roll") {
+    if (busy) return;
+    tap();
+    if (board.mine) {
+      Alert.alert("replace your cup?", "this takes the place of the one already in. it stays up for 24 hours.", [
+        { text: "stay", style: "cancel" },
+        { text: "replace", onPress: () => send(from) }
+      ]);
+      return;
+    }
+    send(from);
+  }
+
+  async function send(from: "camera" | "roll") {
+    setBusy(true);
+    setError("");
+    try {
+      if (from === "camera") {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) {
+          setError("the camera is off for blanco.");
+          return;
+        }
+      } else {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          setError("the roll is off for blanco.");
+          return;
+        }
+      }
+      const result =
+        from === "camera"
+          ? await ImagePicker.launchCameraAsync(PICK)
+          : await ImagePicker.launchImageLibraryAsync(PICK);
+      if (result.canceled) return;
+      const asset = result.assets && result.assets[0];
+      if (!asset || !asset.base64) {
+        setError("that picture could not go up.");
+        return;
+      }
+      const mime =
+        asset.mimeType === "image/png"
+          ? "image/png"
+          : asset.mimeType === "image/webp"
+            ? "image/webp"
+            : "image/jpeg";
+      await postCheckin(await getSession(), "data:" + mime + ";base64," + asset.base64);
+      ok();
+      setOpen(null);
+      setBoard(await fetchCheckins(await getSession()));
+    } catch (err) {
+      warn();
+      setError(err instanceof Error ? err.message : "that picture could not go up.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function letGo(cup: CupCheckin) {
+    if (!cup.mine || busy) return;
+    Alert.alert("let this cup go?", "it comes off the board.", [
+      { text: "stay", style: "cancel" },
+      {
+        text: "let go",
+        style: "destructive",
+        onPress: async () => {
+          setBusy(true);
+          setError("");
+          try {
+            await dropCheckin(await getSession(), cup.id);
+            ok();
+            setOpen(null);
+            setBoard(await fetchCheckins(await getSession()));
+          } catch (err) {
+            warn();
+            setError(err instanceof Error ? err.message : "that cup could not come off.");
+          } finally {
+            setBusy(false);
+          }
+        }
+      }
+    ]);
+  }
+
+  return (
+    <View style={styles.screen}>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: 28 }]}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={load} tintColor={BROWN} />
+        }
+      >
+        <LookHead
+          board="today"
+          onBoard={onBoard}
+          title="today."
+          line="your cup, with the house. it stays on the board for 24 hours — put another up and it takes the place of the last."
+        />
+        <View style={styles.btnRow}>
+          <Pressable
+            onPress={() => pick("camera")}
+            disabled={busy}
+            style={({ pressed }) => [
+              styles.btnHalf,
+              busy && styles.dim,
+              pressed && styles.pressed
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="check in with the camera"
+          >
+            <Text style={styles.btnText}>{busy ? "going up" : "camera"}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => pick("roll")}
+            disabled={busy}
+            style={({ pressed }) => [
+              styles.btnHalfGhost,
+              busy && styles.dim,
+              pressed && styles.pressed
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="check in from the camera roll"
+          >
+            <Text style={styles.btnGhostText}>the roll</Text>
+          </Pressable>
+        </View>
+        {board.mine ? (
+          <Text style={styles.hours}>you’re in.</Text>
+        ) : (
+          <Text style={styles.hours}>not in yet.</Text>
+        )}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {loading && !cups.length && !error ? (
+          <Text style={styles.prose}>the cups are coming up.</Text>
+        ) : null}
+        {!loading && !cups.length && !error ? (
+          <Text style={styles.prose}>no cups in yet. put yours up.</Text>
+        ) : null}
+        {cups.length ? (
+          <>
+            <Text style={styles.closing}>in now.</Text>
+            <CupGrid cups={cups} tile={tile} onOpen={show} />
+          </>
+        ) : null}
+      </ScrollView>
+      {viewing ? (
+        <View style={[styles.viewer, { paddingTop: pad.top }]}>
+          <Pressable
+            onPress={() => {
+              tap();
+              setOpen(null);
+            }}
+            hitSlop={12}
+            accessibilityRole="button"
+          >
+            <Text style={styles.back}>today</Text>
+          </Pressable>
+          <View style={styles.viewerFrame}>
+            <Image
+              source={{ uri: viewing.uri }}
+              style={styles.viewerImage}
+              contentFit="cover"
+              accessibilityLabel={viewing.name + "’s cup"}
+            />
+          </View>
+          <Text style={styles.viewerAlt}>{viewing.name}</Text>
+          {viewing.mine ? (
+            <Pressable
+              onPress={() => letGo(viewing)}
+              disabled={busy}
+              hitSlop={8}
+              accessibilityRole="button"
+            >
+              <Text style={styles.link}>let go</Text>
+            </Pressable>
+          ) : null}
+          <View style={styles.viewerNav}>
+            <Pressable
+              onPress={() => step(-1)}
+              disabled={current <= 0}
+              hitSlop={8}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.link, current <= 0 && styles.dim]}>back</Text>
+            </Pressable>
+            <Text style={styles.count}>
+              {current + 1} / {shown.length}
+            </Text>
+            <Pressable
+              onPress={() => step(1)}
+              disabled={current >= shown.length - 1}
+              hitSlop={8}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.link, current >= shown.length - 1 && styles.dim]}>next</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function CupGrid({
+  cups,
+  tile,
+  onOpen
+}: {
+  cups: CupCheckin[];
+  tile: number;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <View style={styles.grid}>
+      {cups.map((cup) => (
+        <Pressable
+          key={cup.id}
+          onPress={() => onOpen(cup.id)}
+          style={({ pressed }) => [
+            styles.tile,
+            { width: tile, height: tile * 1.2 },
+            pressed && styles.pressed
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={cup.name + "’s cup"}
+        >
+          <Image source={{ uri: cup.uri }} style={styles.tileImage} contentFit="cover" />
+          <Text style={styles.added}>{cup.mine ? "you" : cup.name}</Text>
+        </Pressable>
+      ))}
     </View>
   );
 }
@@ -269,7 +586,7 @@ function Wear({
             accessibilityLabel={piece.alt}
           >
             <View style={styles.cardFrame}>
-              <Image source={piece.source} style={styles.cardImage} resizeMode="cover" />
+              <Image source={piece.source} style={styles.cardImage} contentFit="cover" />
             </View>
             <Text style={styles.cardName}>{piece.name}</Text>
             <Text style={styles.cardLine}>{piece.line}</Text>
@@ -304,7 +621,7 @@ function PieceView({ piece, onBack }: { piece: Piece; onBack: () => void }) {
         <Image
           source={piece.source}
           style={styles.pieceImage}
-          resizeMode="cover"
+          contentFit="cover"
           accessibilityLabel={piece.alt}
         />
       </View>
@@ -462,6 +779,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: MUTED
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12
+  },
+  btnHalf: {
+    flex: 1,
+    backgroundColor: BROWN,
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999
+  },
+  btnHalfGhost: {
+    flex: 1,
+    backgroundColor: "transparent",
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: BROWN
+  },
+  btnGhostText: {
+    fontFamily: SANS_MED,
+    color: BROWN,
+    fontSize: 15,
+    letterSpacing: 0.4
   },
   btn: {
     marginTop: 10,

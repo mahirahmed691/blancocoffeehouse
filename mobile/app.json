@@ -17,8 +17,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.blancocoffeehouse.app",
       "backgroundColor": "#E9E1D8",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "CFBundleDisplayName": "blanco.",
+        "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -32,8 +34,16 @@
       "intentFilters": [
         {
           "action": "VIEW",
-          "category": ["BROWSABLE", "DEFAULT"],
-          "data": [{ "scheme": "blanco", "host": "pay" }]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "scheme": "blanco",
+              "host": "pay"
+            }
+          ]
         }
       ]
     },
@@ -42,6 +52,7 @@
       "backgroundColor": "#E9E1D8"
     },
     "plugins": [
+      "expo-apple-authentication",
       "expo-web-browser",
       [
         "expo-splash-screen",
@@ -53,7 +64,27 @@
       ],
       "expo-font",
       "@clerk/expo",
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "blanco. uses your photos so you can check in with a cup from the roll.",
+          "cameraPermission": "blanco. uses the camera so you can check in with your cup.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "63024ebc-97ec-4357-8c74-ee9ba8ad0165"
+      }
+    },
+    "owner": "mahir93",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/63024ebc-97ec-4357-8c74-ee9ba8ad0165"
+    }
   }
 }

@@ -26,9 +26,62 @@ export type HouseHours = {
   hours_days: string;
   hours_range: string;
   notice: string;
+  how_busy?: string;
+  how_wait?: string;
+  pace_at?: string;
   opens?: string;
   closes?: string;
 };
+
+export type HowBusy = "quiet" | "easy" | "busy" | "packed";
+export type HowWait = "flowing" | "short" | "queue";
+
+export const HOW_BUSY: { id: HowBusy; label: string; line: string }[] = [
+  { id: "quiet", label: "quiet", line: "quiet. seats are easy." },
+  { id: "easy", label: "easy", line: "a few in. the room is easy." },
+  { id: "busy", label: "busy", line: "busy. a short wait for a seat." },
+  { id: "packed", label: "packed", line: "packed. takeaway is quicker." }
+];
+
+export const HOW_WAIT: { id: HowWait; label: string; line: string }[] = [
+  { id: "flowing", label: "flowing", line: "the counter is flowing." },
+  { id: "short", label: "short", line: "a short wait for a cup." },
+  { id: "queue", label: "queue", line: "a queue at the counter." }
+];
+
+function londonDay(at = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(at);
+}
+
+export function paceStale(hours: HouseHours | null) {
+  if (!hours?.pace_at) return true;
+  const at = new Date(hours.pace_at);
+  if (Number.isNaN(at.getTime())) return true;
+  return londonDay(at) !== londonDay();
+}
+
+export function houseBusyLine(hours: HouseHours | null) {
+  if (!hours || houseState(hours) === "closed") return "";
+  const parts: string[] = [];
+  if (houseState(hours) === "closing") parts.push("closing soon. last cups.");
+  if (!paceStale(hours)) {
+    const room = HOW_BUSY.find((row) => row.id === hours.how_busy);
+    const wait = HOW_WAIT.find((row) => row.id === hours.how_wait);
+    if (room) parts.push(room.line);
+    if (wait) parts.push(wait.line);
+  }
+  return parts.join(" ");
+}
+
+export function counterCue(orders: HouseOrder[]) {
+  if (liveOrders(orders).length >= 3) return "a few collections at the counter.";
+  return "";
+}
 
 function minutesInLondon(at: Date) {
   const parts = new Intl.DateTimeFormat("en-GB", {
@@ -124,7 +177,7 @@ export function recentForReorder(orders: HouseOrder[], limit = 4) {
   const seen: Record<string, true> = {};
   const out: HouseOrder[] = [];
   orders.forEach((order) => {
-    if (order.status === "hold") return;
+    if (order.status !== "collected") return;
     const key = (order.items || [])
       .map((row) => String(row.qty) + ":" + String(row.name).trim().toLowerCase())
       .sort()
@@ -134,6 +187,19 @@ export function recentForReorder(orders: HouseOrder[], limit = 4) {
     out.push(order);
   });
   return out.slice(0, limit);
+}
+
+export function liveOrders(orders: HouseOrder[]) {
+  return orders.filter((order) => order.status === "in" || order.status === "ready");
+}
+
+export function bagHintLine(orders: HouseOrder[]) {
+  const waiting = orders.find((order) => order.status === "hold");
+  if (waiting) return "Waiting to pay";
+  const live = liveOrders(orders)[0];
+  if (live) return orderStatusLine(live);
+  if (recentForReorder(orders, 1).length) return "Order again from the bag";
+  return "Start a collection";
 }
 
 export type HouseOrder = {
@@ -227,7 +293,23 @@ export async function fetchHours(): Promise<HouseHours | null> {
   );
   if (!res.ok) return null;
   const data = await res.json();
-  return (data && data[0]) || null;
+  const row = (data && data[0]) || null;
+  if (!row) return null;
+  const hours: HouseHours = {
+    hours_line: String(row.hours_line || ""),
+    hours_days: String(row.hours_days || ""),
+    hours_range: String(row.hours_range || ""),
+    notice: String(row.notice || ""),
+    how_busy: String(row.how_busy || ""),
+    how_wait: String(row.how_wait || ""),
+    pace_at: row.pace_at ? String(row.pace_at) : "",
+    opens: row.opens ? String(row.opens) : undefined,
+    closes: row.closes ? String(row.closes) : undefined
+  };
+  if (paceStale(hours)) {
+    return { ...hours, how_busy: "", how_wait: "" };
+  }
+  return hours;
 }
 
 export type HouseReview = {
@@ -358,6 +440,145 @@ export async function fetchRank(session: Session): Promise<{
     driver: !!data.driver,
     paused: !!data.paused
   };
+}
+
+export type CupCheckin = {
+  id: string;
+  uri: string;
+  name: string;
+  day: string;
+  mine: boolean;
+  created_at: string;
+};
+
+export type CupBoard = {
+  today: string;
+  mine: CupCheckin | null;
+  cups: CupCheckin[];
+};
+
+function asCup(row: Partial<CupCheckin> | null | undefined): CupCheckin | null {
+  if (!row || !row.id || !row.uri) return null;
+  return {
+    id: String(row.id),
+    uri: String(row.uri),
+    name: String(row.name || "a member"),
+    day: String(row.day || ""),
+    mine: !!row.mine,
+    created_at: String(row.created_at || "")
+  };
+}
+
+export async function fetchCheckins(session: Session): Promise<CupBoard> {
+  const res = await fetch(HOUSE_SITE + "/api/checkins", {
+    headers: clerkHeaders(session)
+  });
+  const data = await readJson(res);
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const cups = (Array.isArray(data.cups) ? data.cups : [])
+    .map((row: Partial<CupCheckin>) => asCup(row))
+    .filter((row): row is CupCheckin => !!row && Date.parse(row.created_at) >= cutoff);
+  return {
+    today: String(data.today || ""),
+    mine: cups.find((cup) => cup.mine) || null,
+    cups
+  };
+}
+
+export async function postCheckin(session: Session, image: string) {
+  const res = await fetch(HOUSE_SITE + "/api/checkins", {
+    method: "POST",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({ image })
+  });
+  const data = await readJson(res);
+  return asCup(data.cup);
+}
+
+export async function dropCheckin(session: Session, id: string) {
+  const res = await fetch(HOUSE_SITE + "/api/checkins", {
+    method: "DELETE",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({ id })
+  });
+  return readJson(res);
+}
+
+export type HouseHandle = {
+  handle: string;
+  suggestions: string[];
+};
+
+export async function fetchHandle(session: Session): Promise<HouseHandle> {
+  const res = await fetch(HOUSE_SITE + "/api/handle", {
+    headers: clerkHeaders(session)
+  });
+  const data = await readJson(res);
+  const suggestions = Array.isArray(data.suggestions) ? data.suggestions : [];
+  return {
+    handle: String(data.handle || ""),
+    suggestions: suggestions.map((row: string) => String(row || "")).filter(Boolean)
+  };
+}
+
+export async function pickHandle(session: Session, handle: string) {
+  const res = await fetch(HOUSE_SITE + "/api/handle", {
+    method: "POST",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({ handle })
+  });
+  const data = await readJson(res);
+  const suggestions = Array.isArray(data.suggestions) ? data.suggestions : [];
+  return {
+    handle: String(data.handle || handle),
+    suggestions: suggestions.map((row: string) => String(row || "")).filter(Boolean)
+  };
+}
+
+export async function moreHandles(session: Session) {
+  const res = await fetch(HOUSE_SITE + "/api/handle", {
+    method: "POST",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({ more: true })
+  });
+  const data = await readJson(res);
+  const suggestions = Array.isArray(data.suggestions) ? data.suggestions : [];
+  return {
+    handle: String(data.handle || ""),
+    suggestions: suggestions.map((row: string) => String(row || "")).filter(Boolean)
+  };
+}
+
+export async function fetchPace(session: Session): Promise<{
+  how_busy: string;
+  how_wait: string;
+  pace_at: string;
+  admin: boolean;
+  stale: boolean;
+}> {
+  const res = await fetch(HOUSE_SITE + "/api/pace", {
+    headers: clerkHeaders(session)
+  });
+  const data = await readJson(res);
+  return {
+    how_busy: String(data.how_busy || ""),
+    how_wait: String(data.how_wait || ""),
+    pace_at: String(data.pace_at || ""),
+    admin: !!data.admin,
+    stale: !!data.stale
+  };
+}
+
+export async function postPace(
+  session: Session,
+  patch: { how_busy?: string; how_wait?: string }
+) {
+  const res = await fetch(HOUSE_SITE + "/api/pace", {
+    method: "POST",
+    headers: clerkHeaders(session),
+    body: JSON.stringify(patch)
+  });
+  return readJson(res);
 }
 
 export async function joinRank(session: Session, code: string) {

@@ -260,6 +260,26 @@
                     placeholder="Optional — matcha is off, kitchen closes 7."
                   />
                 </label>
+                <div class="admin-hours-line">
+                  <p class="admin-pace-label">How busy the room is</p>
+                  <div class="admin-pace" id="pace-row">
+                    <button type="button" data-pace="quiet">quiet</button>
+                    <button type="button" data-pace="easy">easy</button>
+                    <button type="button" data-pace="busy">busy</button>
+                    <button type="button" data-pace="packed">packed</button>
+                    <button type="button" data-pace="">clear</button>
+                  </div>
+                  <p class="admin-pace-label">The counter</p>
+                  <div class="admin-pace" id="wait-row">
+                    <button type="button" data-wait="flowing">flowing</button>
+                    <button type="button" data-wait="short">short</button>
+                    <button type="button" data-wait="queue">queue</button>
+                    <button type="button" data-wait="">clear</button>
+                  </div>
+                  <p class="admin-hint" id="pace-status">
+                    Customers see this on the site and in the app while the house is open. It is for today — it drops off overnight.
+                  </p>
+                </div>
               </div>
               <p class="admin-hint">
                 Opens and closes write the range (11am–8pm). The line is the

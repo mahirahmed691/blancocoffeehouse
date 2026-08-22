@@ -1,6 +1,8 @@
 import { isClerkAPIResponseError, useSignIn, useSignUp } from "@clerk/expo";
+import { useSignInWithApple } from "@clerk/expo/apple";
 import { useSSO } from "@clerk/expo/experimental";
-import { useState } from "react";
+import * as AppleAuthentication from "expo-apple-authentication";
+import { useEffect, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -43,11 +45,23 @@ function missingAccount(error: { code?: string } | null | undefined) {
   return false;
 }
 
+function cancelledAuth(err: unknown) {
+  const code = String((err as { code?: string | number })?.code || "");
+  return (
+    code === "ERR_REQUEST_CANCELED" ||
+    code === "ERR_CANCELED" ||
+    code === "SIGN_IN_CANCELLED" ||
+    code === "-5"
+  );
+}
+
 export function Gate() {
   const pad = usePad();
   const { signIn, errors: inErrors, fetchStatus: inStatus } = useSignIn();
   const { signUp, errors: upErrors, fetchStatus: upStatus } = useSignUp();
   const { startSSOFlow } = useSSO();
+  const { startAppleAuthenticationFlow } = useSignInWithApple();
+  const [appleOn, setAppleOn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -57,6 +71,13 @@ export function Gate() {
   const [ssoBusy, setSsoBusy] = useState(false);
 
   const busy = inStatus === "fetching" || upStatus === "fetching" || ssoBusy;
+
+  useEffect(() => {
+    if (Platform.OS !== "ios") return;
+    AppleAuthentication.isAvailableAsync()
+      .then(setAppleOn)
+      .catch(() => setAppleOn(false));
+  }, []);
   const emailLine = fieldLine(inErrors.fields.identifier) || fieldLine(upErrors.fields.emailAddress);
   const passLine = fieldLine(inErrors.fields.password) || fieldLine(upErrors.fields.password);
   const codeLine = fieldLine(inErrors.fields.code) || fieldLine(upErrors.fields.code);
@@ -112,34 +133,83 @@ export function Gate() {
     setNote("We sent a code to your email.");
   }
 
+  async function finishSocial(
+    createdSessionId: string | null | undefined,
+    up: unknown,
+    authType?: string
+  ) {
+    const social = up as {
+      status?: string | null;
+      unverifiedFields?: string[] | null;
+      verifications?: {
+        sendEmailCode?: () => Promise<{ error?: { longMessage?: string; message?: string } | null } | null>;
+      };
+    } | null | undefined;
+    if (createdSessionId) return true;
+    if (authType === "cancel" || authType === "dismiss") return true;
+    if (social?.status === "missing_requirements") {
+      if (social.unverifiedFields?.includes("email_address") && social.verifications?.sendEmailCode) {
+        const sent = await social.verifications.sendEmailCode();
+        if (!sent?.error) {
+          setKind("signup");
+          setStep("verify");
+          setCode("");
+          setNote("We sent a code to your email.");
+          return true;
+        }
+      }
+      setNote("That sign-in needs another step we cannot finish here.");
+      return true;
+    }
+    return false;
+  }
+
   async function onSocial(strategy: "oauth_apple" | "oauth_google") {
+    const { createdSessionId, signUp: up, authSessionResult } = await startSSOFlow({
+      strategy
+    });
+    const done = await finishSocial(createdSessionId, up, authSessionResult?.type);
+    if (!done) setNote("That sign-in could not finish.");
+  }
+
+  async function onApple() {
     if (busy) return;
     tap();
     setNote("");
     setSsoBusy(true);
     try {
-      const { createdSessionId, signUp: up, authSessionResult } = await startSSOFlow({
-        strategy
-      });
-      if (createdSessionId) return;
-      const result = authSessionResult?.type;
-      if (result === "cancel" || result === "dismiss") return;
-      if (up?.status === "missing_requirements") {
-        if (up.unverifiedFields?.includes("email_address")) {
-          const sent = await up.verifications.sendEmailCode();
-          if (!sent.error) {
-            setKind("signup");
-            setStep("verify");
-            setCode("");
-            setNote("We sent a code to your email.");
+      if (Platform.OS === "ios" && appleOn) {
+        try {
+          const { createdSessionId, setActive, signUp: up } = await startAppleAuthenticationFlow();
+          if (createdSessionId && setActive) {
+            await setActive({ session: createdSessionId });
             return;
           }
+          const done = await finishSocial(createdSessionId, up);
+          if (done) return;
+        } catch (err) {
+          if (cancelledAuth(err)) return;
         }
-        setNote("That sign-in needs another step we cannot finish here.");
-        return;
       }
-      setNote("That sign-in could not finish.");
+      await onSocial("oauth_apple");
     } catch (err) {
+      if (cancelledAuth(err)) return;
+      const error = err as { longMessage?: string; message?: string };
+      setNote(error.longMessage || error.message || "That sign-in could not finish.");
+    } finally {
+      setSsoBusy(false);
+    }
+  }
+
+  async function onGoogle() {
+    if (busy) return;
+    tap();
+    setNote("");
+    setSsoBusy(true);
+    try {
+      await onSocial("oauth_google");
+    } catch (err) {
+      if (cancelledAuth(err)) return;
       const error = err as { longMessage?: string; message?: string };
       setNote(error.longMessage || error.message || "That sign-in could not finish.");
     } finally {
@@ -239,18 +309,28 @@ export function Gate() {
 
         {step === "enter" ? (
           <>
-            <Pressable
-              style={({ pressed }) => [styles.btnGhost, { marginTop: 22 }, pressed && styles.pressed, busy && styles.dim]}
-              onPress={() => onSocial("oauth_apple")}
-              disabled={busy}
-            >
-              <Text style={styles.btnGhostText}>
-                {ssoBusy ? "one moment…" : "continue with Apple."}
-              </Text>
-            </Pressable>
+            {appleOn ? (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE}
+                cornerRadius={999}
+                style={[styles.appleBtn, { marginTop: 22 }, busy ? styles.dim : null]}
+                onPress={onApple}
+              />
+            ) : (
+              <Pressable
+                style={({ pressed }) => [styles.btnGhost, { marginTop: 22 }, pressed && styles.pressed, busy && styles.dim]}
+                onPress={onApple}
+                disabled={busy}
+              >
+                <Text style={styles.btnGhostText}>
+                  {ssoBusy ? "one moment…" : "continue with Apple."}
+                </Text>
+              </Pressable>
+            )}
             <Pressable
               style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed, busy && styles.dim]}
-              onPress={() => onSocial("oauth_google")}
+              onPress={onGoogle}
               disabled={busy}
             >
               <Text style={styles.btnGhostText}>
@@ -447,6 +527,10 @@ const styles = StyleSheet.create({
     color: BEIGE,
     fontSize: 15,
     letterSpacing: 0.4
+  },
+  appleBtn: {
+    width: "100%",
+    height: 48
   },
   btnGhost: {
     marginTop: 10,
