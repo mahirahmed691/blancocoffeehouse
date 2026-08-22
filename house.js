@@ -42,6 +42,23 @@
     return sections;
   }
 
+  function priceOf(item) {
+    var rank = Number(item.driver_price_gbp);
+    if (window.blancoIsDriver && isFinite(rank) && rank >= 0 && item.driver_price_gbp !== "" && item.driver_price_gbp != null) {
+      return rank;
+    }
+    return Number(item.price_gbp);
+  }
+
+  function onRank(item) {
+    return (
+      window.blancoIsDriver &&
+      item.driver_price_gbp !== "" &&
+      item.driver_price_gbp != null &&
+      isFinite(Number(item.driver_price_gbp))
+    );
+  }
+
   function renderBoard(root, sections) {
     if (!root) return;
     root.innerHTML = sections
@@ -51,20 +68,25 @@
             var sold = item.sold_out
               ? '<span class="sold-mark">Sold out</span>'
               : "";
+            var rank = onRank(item)
+              ? '<span class="rank-mark">rank</span>'
+              : "";
             var desc = item.description
               ? '<p class="menu-item-desc">' + escapeHtml(item.description) + "</p>"
               : "";
             return (
               '<div class="menu-item' +
               (item.sold_out ? " is-sold-out" : "") +
+              (onRank(item) ? " is-rank" : "") +
               '">' +
               '<span class="name">' +
               escapeHtml(item.name) +
               "</span>" +
               '<span class="leader" aria-hidden="true"></span>' +
               '<span class="price">' +
-              formatPrice(item.price_gbp) +
+              formatPrice(priceOf(item)) +
               "</span>" +
+              rank +
               sold +
               "</div>" +
               desc
@@ -133,6 +155,19 @@
     });
   }
 
+  var menuItems = [];
+
+  function paintMenu() {
+    if (!menuItems.length) return;
+    var drinksRoot = document.querySelector("#drinks-board .board-cols");
+    var sweetsRoot = document.querySelector("#sweets-board .board-cols");
+    if (drinksRoot) renderBoard(drinksRoot, groupBoard(menuItems, "drinks"));
+    if (sweetsRoot) renderBoard(sweetsRoot, groupBoard(menuItems, "sweets"));
+    if (typeof window.blancoBindMenuRows === "function") {
+      window.blancoBindMenuRows();
+    }
+  }
+
   var cfg = supabaseConfig();
   if (!cfg) return;
 
@@ -141,19 +176,14 @@
     restGet(cfg, "/rest/v1/house_settings?id=eq.1&select=*")
   ])
     .then(function (parts) {
-      var items = parts[0] || [];
+      menuItems = parts[0] || [];
       var settings = (parts[1] && parts[1][0]) || null;
       applyHours(settings);
-      if (!items.length) return;
-      var drinksRoot = document.querySelector("#drinks-board .board-cols");
-      var sweetsRoot = document.querySelector("#sweets-board .board-cols");
-      if (drinksRoot) renderBoard(drinksRoot, groupBoard(items, "drinks"));
-      if (sweetsRoot) renderBoard(sweetsRoot, groupBoard(items, "sweets"));
-      if (typeof window.blancoBindMenuRows === "function") {
-        window.blancoBindMenuRows();
-      }
+      paintMenu();
     })
     .catch(function () {
       /* Printed boards stay put. */
     });
+
+  window.blancoPaintMenu = paintMenu;
 })();

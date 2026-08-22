@@ -22,10 +22,18 @@ create table if not exists public.menu_items (
   price_gbp numeric(6,2) not null check (price_gbp >= 0),
   sort int not null default 0,
   sold_out boolean not null default false,
+  photo text not null default '',
+  driver_price_gbp numeric(6,2),
   updated_at timestamptz not null default now()
 );
 
 create index if not exists menu_items_board_sort on public.menu_items (board, sort, name);
+
+alter table public.menu_items
+  add column if not exists photo text not null default '';
+
+alter table public.menu_items
+  add column if not exists driver_price_gbp numeric(6,2);
 
 alter table public.house_settings enable row level security;
 alter table public.menu_items enable row level security;
@@ -115,3 +123,141 @@ on conflict (id) do update set
 
 grant select on table public.house_settings to anon, authenticated;
 grant select on table public.menu_items to anon, authenticated;
+
+-- Click-and-collect. Service role only; members go through /api/orders.
+create table if not exists public.collection_orders (
+  id uuid primary key default gen_random_uuid(),
+  clerk_user_id text not null,
+  email text,
+  name text,
+  status text not null default 'in',
+  items jsonb not null default '[]'::jsonb,
+  note text not null default '',
+  total_gbp numeric not null default 0,
+  paid boolean not null default false,
+  pay_at text not null default 'counter',
+  stripe_session_id text,
+  rank boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint collection_orders_status check (
+    status = any (array['hold'::text, 'in'::text, 'ready'::text, 'collected'::text, 'cancelled'::text])
+  ),
+  constraint collection_orders_pay_at check (
+    pay_at = any (array['counter'::text, 'stripe'::text])
+  )
+);
+
+create index if not exists collection_orders_user_idx
+  on public.collection_orders (clerk_user_id, created_at desc);
+
+create index if not exists collection_orders_status_idx
+  on public.collection_orders (status, created_at desc);
+
+alter table public.collection_orders enable row level security;
+
+revoke all on table public.collection_orders from anon, authenticated;
+grant all on table public.collection_orders to service_role;
+
+-- Desk photo drop. Public read; writes go through /api/gallery.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'gallery',
+  'gallery',
+  true,
+  5242880,
+  array['image/jpeg', 'image/jpg', 'image/png', 'image/webp']::text[]
+)
+on conflict (id) do update set
+  public = true,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+create table if not exists public.gallery_shots (
+  id uuid primary key default gen_random_uuid(),
+  path text not null unique,
+  alt text not null default '',
+  kind text not null default 'house',
+  caption text not null default '',
+  sort int not null default 0,
+  created_at timestamptz not null default now(),
+  constraint gallery_shots_kind check (
+    kind = any (array['cup'::text, 'sweets'::text, 'house'::text])
+  )
+);
+
+create index if not exists gallery_shots_sort_idx
+  on public.gallery_shots (sort desc, created_at desc);
+
+alter table public.gallery_shots enable row level security;
+
+drop policy if exists gallery_shots_public_read on public.gallery_shots;
+create policy gallery_shots_public_read
+  on public.gallery_shots for select
+  using (true);
+
+grant select on table public.gallery_shots to anon, authenticated;
+grant all on table public.gallery_shots to service_role;
+
+-- Taxi rank concession. Service role only; members go through /api/drivers.
+alter table public.collection_orders
+  add column if not exists rank boolean not null default false;
+
+create table if not exists public.rank_settings (
+  id int primary key default 1 check (id = 1),
+  join_code text not null default 'RANK-4W7K',
+  updated_at timestamptz not null default now()
+);
+
+insert into public.rank_settings (id, join_code)
+values (1, 'RANK-4W7K')
+on conflict (id) do nothing;
+
+alter table public.rank_settings enable row level security;
+revoke all on table public.rank_settings from anon, authenticated;
+grant all on table public.rank_settings to service_role;
+
+create table if not exists public.rank_drivers (
+  id uuid primary key default gen_random_uuid(),
+  clerk_user_id text unique,
+  email text not null,
+  name text,
+  status text not null default 'in',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint rank_drivers_status check (
+    status = any (array['in'::text, 'paused'::text])
+  )
+);
+
+create unique index if not exists rank_drivers_email_idx
+  on public.rank_drivers (lower(email));
+
+create index if not exists rank_drivers_status_idx
+  on public.rank_drivers (status, created_at desc);
+
+alter table public.rank_drivers enable row level security;
+revoke all on table public.rank_drivers from anon, authenticated;
+grant all on table public.rank_drivers to service_role;
+
+update public.menu_items set driver_price_gbp = 2.00
+where name in ('Espresso', 'Americano', 'English', 'Earl Grey', 'Chamomile', 'Peppermint')
+  and driver_price_gbp is null;
+
+update public.menu_items set driver_price_gbp = 3.00
+where name in (
+  'Signature Blanco Latte',
+  'Cappuccino',
+  'Signature Blanco Tea',
+  'Mocha',
+  'Signature Blanco Hot Choc'
+) and driver_price_gbp is null;
+
+update public.menu_items set driver_price_gbp = 3.50
+where name = 'Iced Latte' and driver_price_gbp is null;
+
+update public.menu_items set driver_price_gbp = 1.00
+where name = 'Water' and driver_price_gbp is null;
+
+update public.menu_items set driver_price_gbp = 1.50
+where name = 'Ice Cream Scoop' and driver_price_gbp is null;

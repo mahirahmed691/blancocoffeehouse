@@ -83,7 +83,7 @@
             <a href="index.html#cup">In the cup</a>
             <a href="index.html#drinks-board-title">Drinks</a>
             <a href="index.html#sweets-board-title">Sweets</a>
-            <a href="index.html#app">Rewards</a>
+            <a href="index.html#app">The app</a>
           </section>
           <section class="mega-col">
             <p class="eyebrow">your way</p>
@@ -298,6 +298,99 @@
               <button class="btn" type="button" id="stamp-give" disabled>Give a stamp</button>
             </article>
 
+            <article class="account-card admin-rank">
+              <div class="admin-card-head">
+                <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> the rank</p>
+                <h2>Taxi concession</h2>
+              </div>
+              <p class="admin-hint">
+                Drivers from the taxi base next door. Share the house code with
+                the office. Pick rank prices on each line below. Put someone
+                on by email if they already have an account.
+              </p>
+              <div class="admin-rank-code">
+                <p>
+                  House code
+                  <strong id="rank-code-value">RANK-····</strong>
+                </p>
+                <button class="btn btn-ghost" type="button" id="rank-rotate">
+                  New code
+                </button>
+              </div>
+              <div class="admin-stamp-row">
+                <label>
+                  Driver email
+                  <input
+                    id="rank-email"
+                    type="email"
+                    autocomplete="off"
+                    enterkeyhint="send"
+                    placeholder="hello@…"
+                  />
+                </label>
+                <button class="btn btn-ghost" type="button" id="rank-add">
+                  Put on the rank
+                </button>
+              </div>
+              <p class="admin-hint" id="rank-desk-status">No drivers on the rank yet.</p>
+              <ul class="desk-rank" id="desk-rank"></ul>
+            </article>
+
+            <article class="account-card admin-collections">
+              <div class="admin-card-head">
+                <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> collections</p>
+                <h2>The counter</h2>
+              </div>
+              <p class="admin-hint">
+                Members place from the board. Pay now on the card, or at the
+                counter. Mark ready when the cup is up. Let go on a paid card
+                refunds it.
+              </p>
+              <p class="admin-hint" id="desk-orders-status">No collections yet.</p>
+              <ul class="desk-orders" id="desk-orders"></ul>
+            </article>
+
+            <article class="account-card admin-shots">
+              <div class="admin-card-head">
+                <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> gallery</p>
+                <h2>A picture for the house</h2>
+              </div>
+              <p class="admin-hint">
+                Drop a shot from the camera roll. It sits on the gallery with
+                the printed photographs.
+              </p>
+              <div class="admin-shot-row">
+                <label>
+                  Kind
+                  <select id="shot-kind">
+                    <option value="house">The house</option>
+                    <option value="cup">In the cup</option>
+                    <option value="sweets">Sweets</option>
+                  </select>
+                </label>
+                <label>
+                  A line under it
+                  <input
+                    id="shot-caption"
+                    type="text"
+                    maxlength="80"
+                    placeholder="Optional — the iced latte, the window."
+                  />
+                </label>
+              </div>
+              <label class="admin-shot-file">
+                Add photographs
+                <input
+                  id="shot-file"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                />
+              </label>
+              <p class="admin-hint" id="shot-status">No new pictures yet.</p>
+              <ul class="desk-shots" id="desk-shots"></ul>
+            </article>
+
             <div class="admin-toolbar">
               <div class="gallery-tabs admin-board-tabs" role="tablist" aria-label="Boards">
                 <button
@@ -350,6 +443,9 @@
 
             <article class="account-card admin-add">
               <h2>Add a line</h2>
+              <p class="admin-hint">
+                Each line gets a picture from the gallery. Tap it to change.
+              </p>
               <div class="admin-add-grid">
                 <label>
                   Board
@@ -435,11 +531,31 @@
       </p>
     </footer>
 
+    <div class="photo-pick" id="photo-pick" hidden>
+      <button class="photo-pick-backdrop" type="button" data-photo-close aria-label="Close pictures"></button>
+      <div
+        class="photo-pick-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="photo-pick-title"
+      >
+        <div class="photo-pick-head">
+          <h2 id="photo-pick-title">A picture for this line</h2>
+          <button class="btn btn-ghost" type="button" data-photo-close>Close</button>
+        </div>
+        <p class="admin-hint">From the house gallery. One picture per line.</p>
+        <ul class="photo-pick-grid" id="photo-pick-grid"></ul>
+        <button class="btn btn-ghost" type="button" id="photo-pick-clear">
+          Use the house default
+        </button>
+      </div>
+    </div>
+
     <script src="house-config.js"></script>
-    <script src="clerk-config.js?v=5"></script>
+    <script src="clerk-config.js?v=6"></script>
     <script src="script.js"></script>
     <script src="house.js"></script>
-    <script src="clerk-auth.js?v=5"></script>
+    <script src="clerk-auth.js?v=6"></script>
     <script src="admin.js"></script>
   </body>
 </html>

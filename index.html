@@ -141,7 +141,7 @@
             <a href="#cup">In the cup</a>
             <a href="#drinks-board-title">Drinks</a>
             <a href="#sweets-board-title">Sweets</a>
-            <a href="#app">Rewards</a>
+            <a href="#app">The app</a>
           </section>
           <section class="mega-col">
             <p class="eyebrow">your way</p>
@@ -418,7 +418,7 @@
                 />
               </button>
               <h3>pick up.</h3>
-              <p>Some orders are made from the counter. Collect in-store or through your blanco account, on the way.</p>
+              <p>Build a collection from the board. Pay now, or at the counter when you collect.</p>
             </li>
             <li class="way-card" id="delivered">
               <button type="button" class="gallery-open" aria-haspopup="dialog">
@@ -1043,47 +1043,54 @@
         <div class="wrap app-grid">
           <div>
             <p class="eyebrow eyebrow-on-dark">
-              <img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> your account
+              <img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> the app
             </p>
-            <h2 class="campaign-title">rewards &amp; orders.</h2>
+            <h2 class="campaign-title">the house in your pocket.</h2>
+            <p class="wear-stamp wear-stamp-on-dark">On the way</p>
             <p class="prose prose-on-dark">
-              Eight stamps at the counter. A drink on the house. Sign in and
-              the card lives on your account.
+              Same board. Same stamps. Same collection. The blanco app is the
+              house, close — on the phone, for Fiveways Parade.
             </p>
             <div class="app-actions clerk-signed-out">
-              <a class="btn btn-on-dark" href="account.html">Sign in</a>
+              <a class="btn btn-on-dark" href="account.html">Keep an account</a>
               <a class="btn btn-ghost-on-dark" href="account.html#sign-up">Create an account</a>
             </div>
             <div class="app-actions clerk-signed-in" hidden>
               <a class="btn btn-on-dark" href="account.html">Your account</a>
             </div>
             <p class="prose prose-on-dark clerk-signed-in" hidden>
-              You’re signed in. Use the profile icon in the header, or open your
-              account here.
+              Your account is ready. The app follows — board, stamps, and
+              collection in the pocket.
             </p>
           </div>
-          <ul class="app-features">
-            <li>
-              <span class="app-feature-name">collection</span>
-              <span>Pick up on the way.</span>
-            </li>
-            <li>
-              <span class="app-feature-name">delivery</span>
-              <span>Brought straight to your door.</span>
-            </li>
-            <li>
-              <span class="app-feature-name">loyalty rewards</span>
-              <span>Eight stamps. A drink on the house.</span>
-            </li>
-            <li>
-              <span class="app-feature-name">daily spins</span>
-              <span>Today’s reward, every day.</span>
-            </li>
-            <li>
-              <span class="app-feature-name">exclusive merchandise</span>
-              <span>Apparel and the house on you. Coming soon.</span>
-            </li>
-          </ul>
+          <div class="app-stage">
+            <div class="app-phone" aria-hidden="true">
+              <span class="app-phone-ear"></span>
+              <div class="app-phone-screen">
+                <img src="assets/logo.png" alt="" width="96" height="96" decoding="async" />
+                <p>blanco.</p>
+                <ul>
+                  <li>the board</li>
+                  <li>stamps</li>
+                  <li>collection</li>
+                </ul>
+              </div>
+            </div>
+            <ul class="app-features">
+              <li>
+                <span class="app-feature-name">collection</span>
+                <span>Add from the board. Pay now, or at the counter.</span>
+              </li>
+              <li>
+                <span class="app-feature-name">loyalty rewards</span>
+                <span>Eight stamps. A drink on the house.</span>
+              </li>
+              <li>
+                <span class="app-feature-name">the desk</span>
+                <span>The same house, on the phone.</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -1222,6 +1229,14 @@
                 </dd>
               </div>
               <div class="visit-card">
+                <dt>The rank</dt>
+                <dd>
+                  Drivers from the taxi base next door: a concession on
+                  selected drinks. Join in your
+                  <a href="account.html">account</a>.
+                </dd>
+              </div>
+              <div class="visit-card">
                 <dt>Contact</dt>
                 <dd>
                   <a href="mailto:hello@blancocoffeehouse.com"
@@ -1244,6 +1259,29 @@
         </div>
       </section>
     </main>
+
+    <aside class="collect-dock" id="collect-dock" hidden>
+      <div class="collect-dock-head">
+        <p class="collect-kicker">your collection.</p>
+        <p class="collect-count" id="collect-count"></p>
+      </div>
+      <ul class="collect-lines" id="collect-lines"></ul>
+      <p class="collect-total" id="collect-total"></p>
+      <label class="collect-note">
+        A note for the counter
+        <input
+          id="collect-note"
+          type="text"
+          maxlength="140"
+          placeholder="Oat milk, extra hot."
+        />
+      </label>
+      <p class="collect-status" id="collect-status" role="status"></p>
+      <div class="collect-actions">
+        <button class="btn" type="button" id="collect-place">Place for collection</button>
+        <button class="btn btn-ghost" type="button" id="collect-counter" hidden>Pay at the counter</button>
+      </div>
+    </aside>
 
     <footer class="site-footer">
       <div class="wrap footer-inner">
@@ -1330,10 +1368,12 @@
     </div>
 
     <script src="house-config.js"></script>
-    <script src="clerk-config.js?v=5"></script>
+    <script src="clerk-config.js?v=6"></script>
     <script src="script.js"></script>
+    <script src="collect.js"></script>
     <script src="house.js"></script>
     <script src="reviews.js"></script>
-    <script src="clerk-auth.js?v=5"></script>
+    <script src="rank.js"></script>
+    <script src="clerk-auth.js?v=6"></script>
   </body>
 </html>

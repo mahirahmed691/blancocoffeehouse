@@ -43,6 +43,142 @@
       .replace(/"/g, "&quot;");
   }
 
+  var HOUSE_PHOTOS = [
+    { src: "assets/photos/oreo-cookie.jpg", label: "Oreo cookie", match: /oreo/i },
+    { src: "assets/photos/pistachio-cookie.jpg", label: "Pistachio cookie", match: /pistachio/i },
+    { src: "assets/photos/biscoff-cookie.jpg", label: "Biscoff cookie", match: /biscoff|lotus/i },
+    { src: "assets/photos/heart-cookie.jpg", label: "Heart cookie", match: /jammie|heart/i },
+    { src: "assets/photos/caramel-cookie.jpg", label: "Caramel cookie", match: /caramel/i },
+    { src: "assets/photos/chocolate-cookie.jpg", label: "Chocolate cookie", match: /chocolate cookie/i },
+    { src: "assets/photos/brownies.jpg", label: "Brownies", match: /brownie/i },
+    { src: "assets/photos/loaf.jpg", label: "Loaf", match: /loaf/i },
+    { src: "assets/photos/matcha.jpg", label: "Iced matcha", match: /matcha/i },
+    { src: "assets/photos/latte-case.jpg", label: "Latte and the case", match: /iced latte|iced blanco/i },
+    { src: "assets/photos/espresso-bar.jpg", label: "Espresso bar", match: /espresso|americano/i },
+    { src: "assets/photos/latte-cookies.jpg", label: "Latte and cookies", match: /latte|cappuccino|mocha|hot choc/i },
+    { src: "assets/photos/house-jars.jpg", label: "House jars", match: /tea|chai|peppermint|chamomile|earl grey|english/i },
+    { src: "assets/photos/sit-in.jpg", label: "The window", match: /smoothie/i },
+    { src: "assets/photos/cookie-gelato.jpg", label: "Cookie and gelato", match: /gelato|sundae|scoop|ice cream|loaded|waffle/i },
+    { src: "assets/photos/gelato-counter.jpg", label: "Gelato counter", match: /shake|milkshake/i },
+    { src: "assets/photos/cookie-case.jpg", label: "The cookie case", match: /cookie/i },
+    { src: "assets/photos/interior.jpg", label: "The house", match: /soft drink|water|house drink/i },
+    { src: "assets/photos/lights.jpg", label: "Under the lights" },
+    { src: "assets/photos/mascot-counter.jpg", label: "The mascot" },
+    { src: "assets/photos/coffee-club-tee.jpg", label: "Coffee club tee" },
+    { src: "assets/photos/coffee-club.jpg", label: "Coffee club" },
+    { src: "assets/photos/soft-life.jpg", label: "Soft life" },
+    { src: "assets/photos/matcha-lover.jpg", label: "Matcha lover" },
+    { src: "assets/photos/matcha-jars.jpg", label: "Matcha jars" },
+    { src: "assets/photos/table-ten.jpg", label: "Table ten" },
+    { src: "assets/photos/storefront.jpg", label: "The shopfront" }
+  ];
+
+  var BOARD_PHOTO = {
+    drinks: "assets/photos/latte-case.jpg",
+    sweets: "assets/photos/cookie-case.jpg"
+  };
+
+  var liveShots = [];
+  var photoPickKey = "";
+  var photoPickEl = document.getElementById("photo-pick");
+  var photoPickGrid = document.getElementById("photo-pick-grid");
+  var photoPickClear = document.getElementById("photo-pick-clear");
+
+  function shotPublicUrl(path) {
+    var url = String(window.HOUSE_SUPABASE_URL || "").replace(/\/$/, "");
+    if (!url || !path) return "";
+    if (/^https?:\/\//i.test(path) || path.indexOf("assets/") === 0) return path;
+    return url + "/storage/v1/object/public/gallery/" + path;
+  }
+
+  function guessPhoto(item) {
+    var blob = String((item && item.name) || "") + " " + String((item && item.section) || "");
+    var i;
+    for (i = 0; i < HOUSE_PHOTOS.length; i++) {
+      if (HOUSE_PHOTOS[i].match && HOUSE_PHOTOS[i].match.test(blob)) {
+        return HOUSE_PHOTOS[i].src;
+      }
+    }
+    return BOARD_PHOTO[(item && item.board) || "drinks"] || BOARD_PHOTO.drinks;
+  }
+
+  function itemPhoto(item) {
+    if (item && item.photo) return shotPublicUrl(item.photo);
+    return guessPhoto(item);
+  }
+
+  function galleryChoices() {
+    var printed = HOUSE_PHOTOS.map(function (photo) {
+      return { src: photo.src, label: photo.label };
+    });
+    var live = liveShots.map(function (shot) {
+      return {
+        src: shotPublicUrl(shot.path),
+        label: shot.caption || shot.alt || "From the desk"
+      };
+    });
+    return live.concat(printed);
+  }
+
+  function paintPhotoPick() {
+    if (!photoPickGrid) return;
+    var item = findItem(photoPickKey);
+    var current = itemPhoto(item);
+    photoPickGrid.innerHTML = galleryChoices()
+      .map(function (photo) {
+        var on = photo.src === current ? " is-on" : "";
+        return (
+          "<li>" +
+          '<button type="button" class="' +
+          on.trim() +
+          '" data-photo-src="' +
+          escapeHtml(photo.src) +
+          '" aria-label="' +
+          escapeHtml(photo.label) +
+          '">' +
+          '<img src="' +
+          escapeHtml(photo.src) +
+          '" alt="" width="160" height="160" loading="lazy" decoding="async" />' +
+          "</button>" +
+          "</li>"
+        );
+      })
+      .join("");
+  }
+
+  function closePhotoPick() {
+    photoPickKey = "";
+    if (photoPickEl) photoPickEl.hidden = true;
+  }
+
+  function openPhotoPick(key) {
+    var item = findItem(key);
+    if (!item || !photoPickEl) return;
+    photoPickKey = key;
+    paintPhotoPick();
+    photoPickEl.hidden = false;
+  }
+
+  function applyItemPhoto(src) {
+    var item = findItem(photoPickKey);
+    if (!item) return;
+    item.photo = src || "";
+    var card = document.querySelector('.admin-item[data-id="' + item._key + '"]');
+    var img = card && card.querySelector(".admin-item-photo img");
+    if (img) img.src = itemPhoto(item);
+    markDirty();
+    setStatus(src ? "Picture set. Save to put it live." : "Back to the house default. Save to put it live.");
+    closePhotoPick();
+  }
+
+  function photoForName(name) {
+    var hit = items.filter(function (row) {
+      return row.name === name;
+    })[0];
+    if (hit) return itemPhoto(hit);
+    return guessPhoto({ name: name || "", board: "sweets" });
+  }
+
   function isSignedIn() {
     if (!window.Clerk) return false;
     if (typeof Clerk.isSignedIn === "boolean") return Clerk.isSignedIn;
@@ -142,7 +278,18 @@
     if (desk) desk.hidden = !(inSession && admin);
     document.body.classList.toggle("admin-desk-open", inSession && admin);
     if (inSession && admin && !loaded) loadDesk();
-    if (inSession && admin) updateChrome();
+    if (inSession && admin) {
+      updateChrome();
+      startDeskOrdersPoll();
+      if (!rankDeskOnce) {
+        rankDeskOnce = true;
+        loadDeskRank();
+      }
+      if (deskShotsEl && deskShotsEl.getAttribute("data-loaded") !== "1") {
+        deskShotsEl.setAttribute("data-loaded", "1");
+        loadDeskShots();
+      }
+    }
   }
 
   async function clerkHeaders() {
@@ -327,9 +474,18 @@
               '" data-id="' +
               item._key +
               '">' +
+              '<button type="button" class="admin-item-photo" data-photo aria-label="Picture for ' +
+              escapeHtml(item.name || "this line") +
+              '">' +
+              '<img src="' +
+              escapeHtml(itemPhoto(item)) +
+              '" alt="" width="92" height="92" loading="lazy" decoding="async" />' +
+              "</button>" +
+              '<div class="admin-item-body">' +
               '<div class="admin-item-row">' +
               '<label class="admin-item-name">Name<input data-field="name" type="text" maxlength="80" autocomplete="off" enterkeyhint="next"></label>' +
               '<label class="admin-item-price">Price<input data-field="price_gbp" type="number" min="0" step="0.01" inputmode="decimal"></label>' +
+              '<label class="admin-item-rank">Rank<input data-field="driver_price_gbp" type="number" min="0" step="0.01" inputmode="decimal" placeholder="—"></label>' +
               "</div>" +
               '<div class="admin-item-bar">' +
               '<button type="button" class="admin-sold-btn" data-sold aria-pressed="false">On the board</button>' +
@@ -340,6 +496,7 @@
               "</div>" +
               "</div>" +
               '<label class="admin-item-note">Note<textarea data-field="description" rows="2" maxlength="280"></textarea></label>' +
+              "</div>" +
               "</article>"
             );
           })
@@ -374,10 +531,17 @@
         if (!card) return;
         var name = card.querySelector('[data-field="name"]');
         var price = card.querySelector('[data-field="price_gbp"]');
+        var rank = card.querySelector('[data-field="driver_price_gbp"]');
         var desc = card.querySelector('[data-field="description"]');
         var sold = card.querySelector("[data-sold]");
         if (name) name.value = item.name || "";
         if (price) price.value = item.price_gbp;
+        if (rank) {
+          rank.value =
+            item.driver_price_gbp === 0 || item.driver_price_gbp
+              ? item.driver_price_gbp
+              : "";
+        }
         if (desc) desc.value = item.description || "";
         if (sold) {
           sold.setAttribute("aria-pressed", item.sold_out ? "true" : "false");
@@ -417,9 +581,14 @@
     if (!item) return;
     var name = card.querySelector('[data-field="name"]');
     var price = card.querySelector('[data-field="price_gbp"]');
+    var rank = card.querySelector('[data-field="driver_price_gbp"]');
     var desc = card.querySelector('[data-field="description"]');
     if (name) item.name = name.value.trim();
     if (price) item.price_gbp = Number(price.value);
+    if (rank) {
+      var rankVal = rank.value.trim();
+      item.driver_price_gbp = rankVal === "" ? null : Number(rankVal);
+    }
     if (desc) item.description = desc.value.trim();
   }
 
@@ -469,7 +638,12 @@
         description: item.description || "",
         price_gbp: Number(item.price_gbp),
         sort: item.sort || 0,
-        sold_out: !!item.sold_out
+        sold_out: !!item.sold_out,
+        photo: item.photo || "",
+        driver_price_gbp:
+          item.driver_price_gbp === 0 || item.driver_price_gbp
+            ? Number(item.driver_price_gbp)
+            : null
       };
     });
   }
@@ -502,8 +676,14 @@
   form.addEventListener("input", function (event) {
     if (event.target.closest("#admin-pick")) return;
     if (event.target.id === "stamp-email") return;
+    if (event.target.id === "rank-email") return;
     var card = event.target.closest(".admin-item");
-    if (card) readItemCard(card);
+    if (card) {
+      readItemCard(card);
+      var live = findItem(card.getAttribute("data-id"));
+      var img = card.querySelector(".admin-item-photo img");
+      if (live && img && !live.photo) img.src = guessPhoto(live);
+    }
     if (event.target.id === "hours-opens" || event.target.id === "hours-closes") {
       syncHoursRange();
     }
@@ -513,6 +693,7 @@
   form.addEventListener("change", function (event) {
     if (event.target.closest("#admin-pick")) return;
     if (event.target.id === "stamp-email") return;
+    if (event.target.id === "rank-email") return;
     if (event.target.getAttribute("data-field") === "name") refreshPick();
     if (event.target.id === "hours-opens" || event.target.id === "hours-closes") {
       syncHoursRange();
@@ -521,6 +702,13 @@
   });
 
   form.addEventListener("click", function (event) {
+    var photoBtn = event.target.closest("[data-photo]");
+    if (photoBtn) {
+      var photoCard = photoBtn.closest(".admin-item");
+      if (photoCard) openPhotoPick(photoCard.getAttribute("data-id"));
+      return;
+    }
+
     var soldBtn = event.target.closest("[data-sold]");
     if (soldBtn) {
       var soldCard = soldBtn.closest(".admin-item");
@@ -604,6 +792,23 @@
     });
   }
 
+  if (photoPickEl) {
+    photoPickEl.addEventListener("click", function (event) {
+      if (event.target.closest("[data-photo-close]")) {
+        closePhotoPick();
+        return;
+      }
+      var choice = event.target.closest("[data-photo-src]");
+      if (choice) applyItemPhoto(choice.getAttribute("data-photo-src") || "");
+    });
+  }
+
+  if (photoPickClear) {
+    photoPickClear.addEventListener("click", function () {
+      applyItemPhoto("");
+    });
+  }
+
   document.addEventListener("pointerdown", function (event) {
     if (!isPickOpen()) return;
     if (pickEl && pickEl.contains(event.target)) return;
@@ -611,7 +816,12 @@
   });
 
   document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") setPickOpen(false);
+    if (event.key !== "Escape") return;
+    if (photoPickEl && !photoPickEl.hidden) {
+      closePhotoPick();
+      return;
+    }
+    setPickOpen(false);
   });
 
   document.querySelectorAll("[data-admin-board]").forEach(function (tab) {
@@ -649,7 +859,9 @@
       description: description,
       price_gbp: price,
       sort: sort,
-      sold_out: false
+      sold_out: false,
+      photo: "",
+      driver_price_gbp: null
     });
     document.getElementById("add-name").value = "";
     document.getElementById("add-price").value = "";
@@ -704,7 +916,12 @@
               description: item.description,
               price_gbp: item.price_gbp,
               sort: item.sort,
-              sold_out: item.sold_out
+              sold_out: item.sold_out,
+              photo: item.photo || "",
+              driver_price_gbp:
+                item.driver_price_gbp === 0 || item.driver_price_gbp
+                  ? item.driver_price_gbp
+                  : null
             };
             if (item.id) row.id = item.id;
             return row;
@@ -848,6 +1065,556 @@
       if (event.key !== "Enter") return;
       event.preventDefault();
       loadStampCard();
+    });
+  }
+
+  var rankCodeValue = document.getElementById("rank-code-value");
+  var rankRotate = document.getElementById("rank-rotate");
+  var rankEmail = document.getElementById("rank-email");
+  var rankAdd = document.getElementById("rank-add");
+  var rankDeskStatus = document.getElementById("rank-desk-status");
+  var deskRankEl = document.getElementById("desk-rank");
+  var rankLoaded = false;
+  var rankDeskOnce = false;
+
+  function setRankDeskStatus(text, kind) {
+    if (!rankDeskStatus) return;
+    rankDeskStatus.textContent = text || "";
+    rankDeskStatus.classList.toggle("is-error", kind === "error");
+  }
+
+  function paintDeskRank(data) {
+    if (rankCodeValue && data.code) rankCodeValue.textContent = data.code;
+    var list = data.drivers || [];
+    var on = Number(data.count) || 0;
+    setRankDeskStatus(
+      on === 1 ? "One driver on the rank." : on ? on + " drivers on the rank." : "No drivers on the rank yet."
+    );
+    if (!deskRankEl) return;
+    deskRankEl.innerHTML = list
+      .map(function (row) {
+        var paused = row.status === "paused";
+        return (
+          '<li class="desk-rank-row' +
+          (paused ? " is-paused" : "") +
+          '">' +
+          "<div>" +
+          '<p class="desk-rank-who">' +
+          escapeHtml(row.name || row.email || "a driver") +
+          (paused ? " · paused" : "") +
+          "</p>" +
+          '<p class="desk-rank-email">' +
+          escapeHtml(row.email || "") +
+          "</p>" +
+          "</div>" +
+          '<button class="btn btn-ghost" type="button" data-rank-email="' +
+          escapeHtml(row.email || "") +
+          '" data-rank-action="' +
+          (paused ? "in" : "pause") +
+          '">' +
+          (paused ? "Put back" : "Pause") +
+          "</button>" +
+          "</li>"
+        );
+      })
+      .join("");
+  }
+
+  function loadDeskRank() {
+    if (!deskRankEl && !rankCodeValue) return;
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/drivers?desk=1", { headers: headers });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "The rank could not open.");
+          return data;
+        });
+      })
+      .then(function (data) {
+        rankLoaded = true;
+        paintDeskRank(data);
+      })
+      .catch(function (err) {
+        if (!rankLoaded) setRankDeskStatus(err.message || "The rank could not open.", "error");
+      });
+  }
+
+  function postRank(payload) {
+    return clerkHeaders().then(function (headers) {
+      return fetch("/api/drivers", {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(payload)
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "The rank could not update.");
+          return data;
+        });
+      });
+    });
+  }
+
+  if (rankRotate) {
+    rankRotate.addEventListener("click", function () {
+      setRankDeskStatus("Making a new code…");
+      postRank({ action: "rotate" })
+        .then(function () {
+          return loadDeskRank();
+        })
+        .then(function () {
+          setRankDeskStatus("New house code. Share it with the office.");
+        })
+        .catch(function (err) {
+          setRankDeskStatus(err.message || "The code could not rotate.", "error");
+        });
+    });
+  }
+
+  function addToRank() {
+    var email = rankEmail ? rankEmail.value.trim().toLowerCase() : "";
+    if (!email) {
+      setRankDeskStatus("Type a driver email.", "error");
+      return;
+    }
+    setRankDeskStatus("Putting them on the rank…");
+    postRank({ action: "add", email: email })
+      .then(function (data) {
+        if (rankEmail) rankEmail.value = "";
+        loadDeskRank();
+        setRankDeskStatus(
+          data.linked
+            ? "On the rank."
+            : "On the rank. They join when they sign in."
+        );
+      })
+      .catch(function (err) {
+        setRankDeskStatus(err.message || "They could not go on the rank.", "error");
+      });
+  }
+
+  if (rankAdd) rankAdd.addEventListener("click", addToRank);
+  if (rankEmail) {
+    rankEmail.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      addToRank();
+    });
+  }
+  if (deskRankEl) {
+    deskRankEl.addEventListener("click", function (event) {
+      var btn = event.target.closest("[data-rank-action]");
+      if (!btn) return;
+      var email = btn.getAttribute("data-rank-email") || "";
+      var action = btn.getAttribute("data-rank-action") || "pause";
+      if (!email) return;
+      postRank({ action: action, email: email })
+        .then(function () {
+          loadDeskRank();
+        })
+        .catch(function (err) {
+          setRankDeskStatus(err.message || "The rank could not update.", "error");
+        });
+    });
+  }
+
+  var deskOrdersEl = document.getElementById("desk-orders");
+  var deskOrdersStatus = document.getElementById("desk-orders-status");
+  var deskOrdersTimer = 0;
+  var deskOrdersBound = false;
+
+  function money(value) {
+    var n = Number(value);
+    if (!isFinite(n)) return "";
+    if (Math.round(n * 100) % 100 === 0) return "£" + String(Math.round(n));
+    return "£" + n.toFixed(2);
+  }
+
+  function ago(iso) {
+    var min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (!isFinite(min) || min < 1) return "just in";
+    if (min === 1) return "1 min";
+    if (min < 60) return min + " min";
+    var hr = Math.floor(min / 60);
+    return hr === 1 ? "1 hr" : hr + " hr";
+  }
+
+  function setDeskOrdersStatus(text, kind) {
+    if (!deskOrdersStatus) return;
+    deskOrdersStatus.textContent = text || "";
+    deskOrdersStatus.classList.toggle("is-error", kind === "error");
+  }
+
+  function paintDeskOrders(orders) {
+    if (!deskOrdersEl) return;
+    if (!orders.length) {
+      deskOrdersEl.innerHTML = "";
+      setDeskOrdersStatus("No collections waiting.");
+      return;
+    }
+    setDeskOrdersStatus(orders.length === 1 ? "One collection." : orders.length + " collections.");
+    deskOrdersEl.innerHTML = orders
+      .map(function (order) {
+        var who = escapeHtml(order.name || order.email || "a member");
+        var items = (order.items || [])
+          .map(function (row) {
+            return escapeHtml(row.qty + " × " + row.name);
+          })
+          .join(" · ");
+        var note = order.note
+          ? '<p class="desk-order-note">' + escapeHtml(order.note) + "</p>"
+          : "";
+        var readyBtn =
+          order.status === "in"
+            ? '<button class="btn" type="button" data-order-id="' +
+              escapeHtml(order.id) +
+              '" data-order-status="ready">Ready</button>'
+            : "";
+        var first = (order.items && order.items[0]) || null;
+        var photo = first
+          ? '<img class="desk-order-photo" src="' +
+            escapeHtml(photoForName(first.name)) +
+            '" alt="" width="72" height="72" loading="lazy" decoding="async" />'
+          : "";
+        return (
+          '<li class="desk-order is-' +
+          escapeHtml(order.status) +
+          '">' +
+          photo +
+          "<div>" +
+          '<p class="desk-order-who">' +
+          who +
+          " · " +
+          ago(order.created_at) +
+          (order.rank ? " · rank" : "") +
+          (order.status === "ready" ? " · ready" : "") +
+          (order.paid ? " · paid" : " · pay at the counter") +
+          "</p>" +
+          '<p class="desk-order-items">' +
+          items +
+          "</p>" +
+          note +
+          '<p class="desk-order-total">' +
+          money(order.total_gbp) +
+          "</p>" +
+          "</div>" +
+          '<div class="desk-order-tools">' +
+          readyBtn +
+          '<button class="btn" type="button" data-order-id="' +
+          escapeHtml(order.id) +
+          '" data-order-status="collected">Collected</button>' +
+          '<button class="btn btn-ghost" type="button" data-order-id="' +
+          escapeHtml(order.id) +
+          '" data-order-status="cancelled">Let go</button>' +
+          "</div>" +
+          "</li>"
+        );
+      })
+      .join("");
+  }
+
+  function loadDeskOrders() {
+    if (!deskOrdersEl) return;
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/orders?desk=1", { headers: headers });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "Collections could not load.");
+          return data;
+        });
+      })
+      .then(function (data) {
+        paintDeskOrders(data.orders || []);
+      })
+      .catch(function (err) {
+        setDeskOrdersStatus(err.message || "Collections could not load.", "error");
+      });
+  }
+
+  function startDeskOrdersPoll() {
+    if (deskOrdersTimer) return;
+    loadDeskOrders();
+    deskOrdersTimer = window.setInterval(loadDeskOrders, 15000);
+  }
+
+  function setDeskOrderStatus(id, status, btn) {
+    if (btn) btn.disabled = true;
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/orders", {
+          method: "PATCH",
+          headers: headers,
+          body: JSON.stringify({ id: id, status: status })
+        });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "That collection could not update.");
+          return data;
+        });
+      })
+      .then(function () {
+        loadDeskOrders();
+      })
+      .catch(function (err) {
+        if (btn) btn.disabled = false;
+        setDeskOrdersStatus(err.message || "That collection could not update.", "error");
+      });
+  }
+
+  if (deskOrdersEl && !deskOrdersBound) {
+    deskOrdersBound = true;
+    deskOrdersEl.addEventListener("click", function (event) {
+      var btn = event.target.closest("[data-order-id]");
+      if (!btn) return;
+      event.preventDefault();
+      setDeskOrderStatus(
+        btn.getAttribute("data-order-id"),
+        btn.getAttribute("data-order-status"),
+        btn
+      );
+    });
+  }
+
+  var shotFile = document.getElementById("shot-file");
+  var shotKind = document.getElementById("shot-kind");
+  var shotCaption = document.getElementById("shot-caption");
+  var shotStatus = document.getElementById("shot-status");
+  var deskShotsEl = document.getElementById("desk-shots");
+
+  function setShotStatus(text, kind) {
+    if (!shotStatus) return;
+    shotStatus.textContent = text || "";
+    shotStatus.classList.toggle("is-error", kind === "error");
+  }
+
+  function shotUrl(path) {
+    var url = String(window.HOUSE_SUPABASE_URL || "").replace(/\/$/, "");
+    return url + "/storage/v1/object/public/gallery/" + path;
+  }
+
+  function addedLine(iso) {
+    var d = new Date(iso);
+    if (!isFinite(d.getTime())) return "";
+    if (d.toDateString() === new Date().toDateString()) return "Added today";
+    return (
+      "Added " +
+      d.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      })
+    );
+  }
+
+  function paintDeskShots(shots) {
+    if (!deskShotsEl) return;
+    if (!shots.length) {
+      deskShotsEl.innerHTML = "";
+      return;
+    }
+    deskShotsEl.innerHTML = shots
+      .map(function (shot) {
+        return (
+          '<li class="desk-shot">' +
+          '<img src="' +
+          escapeHtml(shotUrl(shot.path)) +
+          '" alt="' +
+          escapeHtml(shot.alt || "From the house.") +
+          '" />' +
+          "<div>" +
+          '<p class="desk-shot-kind">' +
+          escapeHtml(shot.kind) +
+          (shot.created_at ? " · " + escapeHtml(addedLine(shot.created_at)) : "") +
+          "</p>" +
+          '<p class="desk-shot-caption">' +
+          escapeHtml(shot.caption || shot.alt || "From the house.") +
+          "</p>" +
+          '<button class="btn btn-ghost" type="button" data-shot-id="' +
+          escapeHtml(shot.id) +
+          '">Take it down</button>' +
+          "</div>" +
+          "</li>"
+        );
+      })
+      .join("");
+  }
+
+  function loadDeskShots() {
+    var url = String(window.HOUSE_SUPABASE_URL || "").replace(/\/$/, "");
+    var key = String(window.HOUSE_SUPABASE_ANON_KEY || "").trim();
+    if (!url || !key || !deskShotsEl) return;
+    fetch(url + "/rest/v1/gallery_shots?select=*&order=created_at.desc", {
+      headers: { apikey: key, Authorization: "Bearer " + key }
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("Pictures could not load.");
+        return res.json();
+      })
+      .then(function (rows) {
+        liveShots = rows || [];
+        paintDeskShots(liveShots);
+        if (photoPickKey) paintPhotoPick();
+        if (!liveShots.length && shotStatus && !shotStatus.classList.contains("is-error")) {
+          setShotStatus("No new pictures yet.");
+        }
+      })
+      .catch(function (err) {
+        setShotStatus(err.message || "Pictures could not load.", "error");
+      });
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        resolve(reader.result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function compressFile(file) {
+    var decode = window.createImageBitmap
+      ? createImageBitmap(file)
+      : Promise.reject(new Error("no bitmap"));
+    return decode
+      .catch(function () {
+        return new Promise(function (resolve, reject) {
+          var img = new Image();
+          var href = URL.createObjectURL(file);
+          img.onload = function () {
+            URL.revokeObjectURL(href);
+            resolve(img);
+          };
+          img.onerror = function () {
+            URL.revokeObjectURL(href);
+            reject(new Error("That picture could not open."));
+          };
+          img.src = href;
+        });
+      })
+      .then(function (src) {
+        var max = 1600;
+        var scale = Math.min(1, max / Math.max(src.width, src.height));
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(src.width * scale));
+        canvas.height = Math.max(1, Math.round(src.height * scale));
+        canvas.getContext("2d").drawImage(src, 0, 0, canvas.width, canvas.height);
+        if (typeof src.close === "function") src.close();
+        return new Promise(function (resolve, reject) {
+          canvas.toBlob(
+            function (blob) {
+              if (!blob) reject(new Error("That picture could not go up."));
+              else resolve(blob);
+            },
+            "image/jpeg",
+            0.82
+          );
+        });
+      });
+  }
+
+  function uploadShot(file) {
+    var kind = shotKind ? shotKind.value : "house";
+    var caption = shotCaption ? shotCaption.value.trim() : "";
+    return compressFile(file)
+      .then(blobToDataUrl)
+      .then(function (image) {
+        return clerkHeaders().then(function (headers) {
+          return fetch("/api/gallery", {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify({
+              image: image,
+              kind: kind,
+              caption: caption,
+              alt: caption || "From the house."
+            })
+          });
+        });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "That picture could not go up.");
+          return data;
+        });
+      });
+  }
+
+  function uploadShotFiles(files) {
+    var list = Array.prototype.slice.call(files || []);
+    if (!list.length) return;
+    setShotStatus("Sending to the gallery…");
+    if (shotFile) shotFile.disabled = true;
+    var chain = Promise.resolve();
+    var ok = 0;
+    list.forEach(function (file) {
+      chain = chain.then(function () {
+        return uploadShot(file).then(function () {
+          ok += 1;
+        });
+      });
+    });
+    chain
+      .then(function () {
+        if (shotFile) {
+          shotFile.disabled = false;
+          shotFile.value = "";
+        }
+        loadDeskShots();
+        setShotStatus(
+          ok === 1 ? "On the gallery." : ok + " on the gallery."
+        );
+      })
+      .catch(function (err) {
+        if (shotFile) shotFile.disabled = false;
+        loadDeskShots();
+        setShotStatus(err.message || "That picture could not go up.", "error");
+      });
+  }
+
+  if (shotFile) {
+    shotFile.addEventListener("change", function () {
+      uploadShotFiles(shotFile.files);
+    });
+  }
+  if (shotCaption) {
+    shotCaption.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") event.preventDefault();
+    });
+  }
+  if (deskShotsEl) {
+    deskShotsEl.addEventListener("click", function (event) {
+      var btn = event.target.closest("[data-shot-id]");
+      if (!btn) return;
+      btn.disabled = true;
+      clerkHeaders()
+        .then(function (headers) {
+          return fetch("/api/gallery", {
+            method: "DELETE",
+            headers: headers,
+            body: JSON.stringify({ id: btn.getAttribute("data-shot-id") })
+          });
+        })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) throw new Error(data.error || "That picture could not come down.");
+            return data;
+          });
+        })
+        .then(function () {
+          loadDeskShots();
+          setShotStatus("Taken down.");
+        })
+        .catch(function (err) {
+          btn.disabled = false;
+          setShotStatus(err.message || "That picture could not come down.", "error");
+        });
     });
   }
 

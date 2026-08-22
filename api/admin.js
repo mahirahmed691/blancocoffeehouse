@@ -69,6 +69,25 @@ function asPrice(value) {
   return Math.round(n * 100) / 100;
 }
 
+function asDriverPrice(value) {
+  if (value === "" || value === undefined || value === null) return null;
+  return asPrice(value);
+}
+
+function asPhoto(value) {
+  var raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^assets\/photos\/[a-z0-9][a-z0-9._-]*\.(jpg|jpeg|png|webp)$/i.test(raw)) return raw;
+  if (
+    /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/gallery\/[a-z0-9._/-]+\.(jpg|jpeg|png|webp)$/i.test(
+      raw
+    )
+  ) {
+    return raw.slice(0, 400);
+  }
+  return "";
+}
+
 function asItem(row) {
   var price = asPrice(row.price_gbp);
   var board = row.board === "sweets" ? "sweets" : "drinks";
@@ -81,7 +100,9 @@ function asItem(row) {
     description: String(row.description || "").trim(),
     price_gbp: price,
     sort: parseInt(row.sort, 10) || 0,
-    sold_out: !!row.sold_out
+    sold_out: !!row.sold_out,
+    photo: asPhoto(row.photo),
+    driver_price_gbp: asDriverPrice(row.driver_price_gbp)
   };
   if (row.id) item.id = String(row.id);
   return item;
