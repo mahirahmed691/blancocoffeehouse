@@ -18,6 +18,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   AppState,
+  BackHandler,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -58,7 +59,6 @@ import {
   collectionStepIndex,
   CUP_STEPS,
   linesFromOrder,
-  liveOrders,
   watchingOrders,
   canLetGo,
   isLiveOrder,
@@ -66,7 +66,6 @@ import {
   moreHandles,
   onRankPrice,
   orderItemsLine,
-  orderStatusLine,
   pickHandle,
   placeOrder,
   postPace,
@@ -80,7 +79,7 @@ import {
   type Session
 } from "./house";
 import { type Piece } from "./pieces";
-import { DEFAULT_PREFS, loadPrefs, type PayPref, type Prefs } from "./prefs";
+import { DEFAULT_PREFS, loadHeld, loadPrefs, saveHeld, type Prefs } from "./prefs";
 import { LookScreen } from "./look";
 import { type LookBoard } from "./shots";
 import {
@@ -100,7 +99,7 @@ import {
 } from "./theme";
 import { Back, Kicker, Mark, Stick } from "./ui";
 import { YouStack, type YouPage } from "./you";
-import { Pop, Rise } from "./motion";
+import { Pop, Pulse, Rise, useToTop } from "./motion";
 
 type Tab = "menu" | "look" | "bag" | "you";
 type Board = "drinks" | "sweets";
@@ -139,7 +138,8 @@ function MenuScreen({
   onRefresh,
   onAdd,
   onQty,
-  onHouse
+  onHouse,
+  topAt
 }: {
   items: MenuItem[];
   hours: HouseHours | null;
@@ -151,11 +151,34 @@ function MenuScreen({
   onAdd: (item: MenuItem) => void;
   onQty: (id: string, delta: number) => void;
   onHouse: () => void;
+  topAt: number;
 }) {
   const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
+  const list = useRef<ScrollView>(null);
+  const find = useRef<TextInput>(null);
   const [board, setBoard] = useState<Board>("drinks");
-  const sections = groupBoard(items, board);
+  const [q, setQ] = useState("");
+  const [findOn, setFindOn] = useState(false);
+  const shown = useMemo(() => {
+    const sections = groupBoard(items, board);
+    const needle = q.trim().toLowerCase();
+    if (!needle) return sections;
+    return sections
+      .map((section) => ({
+        title: section.title,
+        items: section.items.filter((item) =>
+          (item.name + " " + (item.description || "")).toLowerCase().includes(needle)
+        )
+      }))
+      .filter((section) => section.items.length);
+  }, [items, board, q]);
+  const shut = houseState(hours) === "closed";
+  useToTop(topAt, list);
+
+  useEffect(() => {
+    if (findOn) find.current?.focus();
+  }, [findOn]);
 
   return (
     <View style={styles.screen}>
@@ -171,32 +194,73 @@ function MenuScreen({
           accessibilityRole="button"
           accessibilityLabel="The house hours"
         >
-          <Text style={styles.hours}>{houseOpenLine(hours)}</Text>
+          <Text style={shut ? styles.notice : styles.hours}>{houseOpenLine(hours)}</Text>
         </Pressable>
         {houseBusyLine(hours) ? <Text style={styles.notice}>{houseBusyLine(hours)}</Text> : null}
         {hours?.notice ? <Text style={styles.notice}>{hours.notice}</Text> : null}
         <Stick
           value={board}
           options={["drinks", "sweets"] as const}
-          onChange={setBoard}
+          onChange={(next) => {
+            setBoard(next);
+            setQ("");
+            setFindOn(false);
+            list.current?.scrollTo({ y: 0, animated: false });
+          }}
         />
+        {findOn ? (
+          <TextInput
+            ref={find}
+            value={q}
+            onChangeText={setQ}
+            placeholder="find a cup"
+            placeholderTextColor={t.MUTED}
+            keyboardAppearance={t.night ? "dark" : "light"}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            onBlur={() => {
+              if (!q.trim()) setFindOn(false);
+            }}
+            style={styles.search}
+          />
+        ) : (
+          <Pressable
+            onPress={() => {
+              tap();
+              setFindOn(true);
+            }}
+            hitSlop={8}
+            accessibilityRole="search"
+            accessibilityLabel="Find a cup"
+          >
+            <Text style={styles.findCue}>find a cup</Text>
+          </Pressable>
+        )}
       </View>
       <ScrollView
+        ref={list}
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: 12, paddingBottom: 28 }]}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={t.BROWN} />
         }
       >
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {loading && !sections.length && !error ? (
+      {loading && !shown.length && !error && !q.trim() ? (
         <Text style={styles.prose}>The board is coming up.</Text>
       ) : null}
-      {!loading && !error && !sections.length ? (
+      {!loading && !error && !shown.length && !q.trim() ? (
         <Text style={styles.prose}>The board is quiet. Pull to try again.</Text>
       ) : null}
+      {!loading && !error && !shown.length && q.trim() ? (
+        <Text style={styles.prose}>Nothing on the board matches.</Text>
+      ) : null}
       <Rise key={board} shift={false}>
-      {sections.map((section) => (
+      {shown.map((section) => (
         <View key={section.title} style={styles.section}>
           <Text style={styles.sectionTitle}>{section.title}</Text>
           {section.items.map((item) => {
@@ -216,6 +280,7 @@ function MenuScreen({
                     <View style={styles.qty}>
                       <Pressable
                         onPress={() => onQty(id, -1)}
+                        hitSlop={10}
                         style={styles.qtyBtn}
                         accessibilityRole="button"
                         accessibilityLabel={"Fewer " + item.name}
@@ -225,7 +290,8 @@ function MenuScreen({
                       <Text style={styles.qtyCount}>{heldQty}</Text>
                       <Pressable
                         onPress={() => onAdd(item)}
-                        style={styles.qtyBtn}
+                        hitSlop={10}
+                        style={[styles.qtyBtn, heldQty >= BAG_QTY_MAX && styles.dim]}
                         accessibilityRole="button"
                         accessibilityLabel={"More " + item.name}
                       >
@@ -326,7 +392,6 @@ function BagScreen({
   bag,
   note,
   stripe,
-  prefer,
   status,
   busy,
   items,
@@ -341,12 +406,12 @@ function BagScreen({
   onMenu,
   onReorder,
   onCancelOrder,
-  onRefresh
+  onRefresh,
+  topAt
 }: {
   bag: Line[];
   note: string;
   stripe: boolean;
-  prefer: PayPref;
   status: string;
   busy: boolean;
   items: MenuItem[];
@@ -357,19 +422,20 @@ function BagScreen({
   onNote: (next: string) => void;
   onQty: (id: string, delta: number) => void;
   onClear: () => void;
-  onPay: (pay: "stripe" | "counter") => void;
+  onPay: () => void;
   onMenu: () => void;
   onReorder: (order: HouseOrder) => void;
   onCancelOrder: (id: string) => void;
   onRefresh: () => void;
+  topAt: number;
 }) {
   const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
+  const list = useRef<ScrollView>(null);
+  useToTop(topAt, list);
   const empty = bag.length === 0;
   const total = formatPrice(bagTotal(bag));
-  const cardFirst = stripe && prefer !== "counter";
   const closed = houseState(hours) === "closed";
-  const live = liveOrders(orders);
   const watching = watchingOrders(orders);
   const recent = recentForReorder(orders).filter(
     (order) => linesFromOrder(order, items, onRank).length > 0
@@ -395,20 +461,24 @@ function BagScreen({
       style={styles.screen}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView
-        style={styles.screen}
-        contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: empty ? 36 : 24 }]}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.BROWN} />
-        }
-      >
+      <View style={[styles.sticky, { paddingTop: pad.top }]}>
         <Kicker label="collection" />
         <Text style={styles.title}>the bag.</Text>
         {houseBusyLine(hours) ? <Text style={styles.notice}>{houseBusyLine(hours)}</Text> : null}
         {!closed && counterCue(orders) ? (
           <Text style={styles.notice}>{counterCue(orders)}</Text>
         ) : null}
+      </View>
+      <ScrollView
+        ref={list}
+        style={styles.screen}
+        contentContainerStyle={[styles.screenInner, { paddingTop: 12, paddingBottom: empty ? 36 : 24 }]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.BROWN} />
+        }
+      >
         {watching.map((order) => (
           <CupTrack
             key={order.id}
@@ -419,11 +489,11 @@ function BagScreen({
         {empty ? (
           <>
             <Text style={styles.prose}>
-              {live.length
-                ? "Watch this one. The house moves it from in, to making it, to ready."
+              {watching.length
+                ? "Another? The board is still open."
                 : stripe
-                  ? "Add from the board. Pay now with the card, or at the counter when you collect."
-                  : "Add from the board. Pay at the counter when you collect."}
+                  ? "Add from the board. Pay now with the card."
+                  : "Add from the board. The card is not open on this phone yet."}
             </Text>
             {status ? <Text style={styles.status}>{status}</Text> : null}
             <Pressable
@@ -476,6 +546,7 @@ function BagScreen({
                 <View style={styles.qty} collapsable={false}>
                   <Pressable
                     onPress={() => onQty(row.id, -1)}
+                    hitSlop={10}
                     style={styles.qtyBtn}
                     accessibilityRole="button"
                     accessibilityLabel={"Fewer " + row.name}
@@ -485,7 +556,8 @@ function BagScreen({
                   <Text style={styles.qtyCount}>{row.qty}</Text>
                   <Pressable
                     onPress={() => onQty(row.id, 1)}
-                    style={styles.qtyBtn}
+                    hitSlop={10}
+                    style={[styles.qtyBtn, row.qty >= BAG_QTY_MAX && styles.dim]}
                     accessibilityRole="button"
                     accessibilityLabel={"More " + row.name}
                   >
@@ -512,6 +584,7 @@ function BagScreen({
               onChangeText={onNote}
               placeholder="No oat, extra hot…"
               placeholderTextColor={t.MUTED}
+              keyboardAppearance={t.night ? "dark" : "light"}
               style={styles.input}
               maxLength={140}
             />
@@ -536,61 +609,19 @@ function BagScreen({
             </Text>
           ) : (
             <Text style={styles.payHint}>
-              The card is not open on this phone yet. Pay at the counter.
+              The card is not open on this phone yet.
             </Text>
           )}
-          {stripe && cardFirst ? (
-            <>
-              <Pressable
-                disabled={busy}
-                onPress={() => onPay("stripe")}
-                style={({ pressed }) => [styles.btn, { marginTop: 8 }, pressed && styles.pressed, busy && styles.dim]}
-              >
-                <Mark name="card" size={18} color={t.BEIGE} />
-                <Text style={styles.btnText}>{busy ? "Opening the card…" : "Pay now · " + total}</Text>
-              </Pressable>
-              <Pressable
-                disabled={busy}
-                onPress={() => onPay("counter")}
-                style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed, busy && styles.dim]}
-              >
-                <Mark name="counter" size={18} />
-                <Text style={styles.btnGhostText}>Pay at the counter</Text>
-              </Pressable>
-            </>
-          ) : stripe ? (
-            <>
-              <Pressable
-                disabled={busy}
-                onPress={() => onPay("counter")}
-                style={({ pressed }) => [styles.btn, { marginTop: 8 }, pressed && styles.pressed, busy && styles.dim]}
-              >
-                <Mark name="counter" size={18} color={t.BEIGE} />
-                <Text style={styles.btnText}>
-                  {busy ? "Sending to the counter…" : "Pay at the counter · " + total}
-                </Text>
-              </Pressable>
-              <Pressable
-                disabled={busy}
-                onPress={() => onPay("stripe")}
-                style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed, busy && styles.dim]}
-              >
-                <Mark name="card" size={18} />
-                <Text style={styles.btnGhostText}>Pay now with the card</Text>
-              </Pressable>
-            </>
-          ) : (
+          {stripe ? (
             <Pressable
               disabled={busy}
-              onPress={() => onPay("counter")}
+              onPress={onPay}
               style={({ pressed }) => [styles.btn, { marginTop: 8 }, pressed && styles.pressed, busy && styles.dim]}
             >
-              <Mark name="bag" size={18} color={t.BEIGE} />
-              <Text style={styles.btnText}>
-                {busy ? "Sending to the counter…" : "Place for collection · " + total}
-              </Text>
+              <Mark name="card" size={18} color={t.BEIGE} />
+              <Text style={styles.btnText}>{busy ? "Opening the card…" : "Pay now · " + total}</Text>
             </Pressable>
-          )}
+          ) : null}
         </View>
       ) : null}
     </KeyboardAvoidingView>
@@ -600,10 +631,14 @@ function BagScreen({
 function Tabs({
   tab,
   bagCount,
+  bagLive,
+  bagReady,
   onTab
 }: {
   tab: Tab;
   bagCount: number;
+  bagLive: boolean;
+  bagReady: boolean;
   onTab: (next: Tab) => void;
 }) {
   const { t, styles } = useStyles(makeStyles);
@@ -619,6 +654,8 @@ function Tabs({
         ] as const
       ).map(([id, label]) => {
         const on = tab === id;
+        const insist = id === "bag" && (bagLive || bagReady);
+        const markOn = on || insist;
         return (
           <Pressable
             key={id}
@@ -629,19 +666,27 @@ function Tabs({
             style={styles.tab}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
-            accessibilityLabel={label}
+            accessibilityLabel={
+              id === "bag" && bagReady
+                ? "bag, ready for you"
+                : id === "bag" && bagLive
+                  ? "bag, the house has it"
+                  : label
+            }
           >
             <View>
-              <Pop on={on}>
-                <Mark name={id} on={on} size={22} color={on ? t.BROWN : t.MUTED} />
+              <Pop on={markOn}>
+                <Mark name={id} on={markOn} size={22} color={markOn ? t.BROWN : t.MUTED} />
               </Pop>
               {id === "bag" && bagCount ? (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{bagCount > 9 ? "9+" : String(bagCount)}</Text>
                 </View>
+              ) : id === "bag" && bagLive ? (
+                <Pulse on={bagReady} style={[styles.live, bagReady && styles.liveReady]} />
               ) : null}
             </View>
-            <Text style={[styles.tabText, on && styles.tabTextOn]}>{label}</Text>
+            <Text style={[styles.tabText, (on || insist) && styles.tabTextOn]}>{label}</Text>
           </Pressable>
         );
       })}
@@ -697,6 +742,7 @@ function House() {
   const [youPage, setYouPage] = useState<YouPage>("home");
   const [lookBoard, setLookBoard] = useState<LookBoard>("pictures");
   const [piece, setPiece] = useState<Piece | null>(null);
+  const [topAt, setTopAt] = useState(0);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [hours, setHours] = useState<HouseHours | null>(null);
   const [menuError, setMenuError] = useState("");
@@ -725,6 +771,8 @@ function House() {
   const styles = useMemo(() => makeStyles(t), [t]);
   const settleRef = useRef<(kind: "paid" | "cancel" | "unknown") => void>(() => {});
   const payDone = useRef(false);
+  const heldReady = useRef(false);
+  const [lookViewing, setLookViewing] = useState(false);
 
   async function liveSession(fresh?: boolean): Promise<Session> {
     const token = await getToken(fresh ? { skipCache: true } : undefined);
@@ -802,6 +850,8 @@ function House() {
       setBagStatus("");
       setToast("");
       setYouPage("home");
+      heldReady.current = false;
+      saveHeld([], "").catch(() => {});
     }
     wasIn.current = !!isSignedIn;
   }, [isLoaded, isSignedIn]);
@@ -819,8 +869,33 @@ function House() {
   }, []);
 
   useEffect(() => {
+    if (!isSignedIn) return;
+    let on = true;
+    loadHeld().then((held) => {
+      if (!on) return;
+      if (held.lines.length) {
+        setBag((current) => (current.length ? current : held.lines));
+      }
+      if (held.note) setNote(held.note);
+      heldReady.current = true;
+    });
+    return () => {
+      on = false;
+    };
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    if (!isSignedIn || !heldReady.current) return;
+    const id = setTimeout(() => {
+      saveHeld(bag, note).catch(() => {});
+    }, 280);
+    return () => clearTimeout(id);
+  }, [bag, note, isSignedIn]);
+
+  useEffect(() => {
     if (!toast) return;
-    const id = setTimeout(() => setToast(""), 2400);
+    const hold = toast === "ready for you." || toast === "collected.";
+    const id = setTimeout(() => setToast(""), hold ? 5600 : 2400);
     return () => clearTimeout(id);
   }, [toast]);
 
@@ -855,8 +930,14 @@ function House() {
     orders.forEach((order) => {
       const was = seenStatus.current[order.id];
       if (was && was !== order.status) {
-        if (order.status === "ready") ok();
-        else if (isLiveOrder(order.status)) tap();
+        if (order.status === "ready") {
+          ok();
+          setToast("ready for you.");
+        } else if (order.status === "collected") {
+          ok();
+          setToast("collected.");
+          setBagStatus("Collected. See you.");
+        } else if (isLiveOrder(order.status)) tap();
       }
       seenStatus.current[order.id] = order.status;
     });
@@ -864,19 +945,38 @@ function House() {
 
   useEffect(() => {
     if (!items.length) return;
+    const gone = bag.filter((row) => {
+      const item = items.find((it) => String(it.id || it.name) === row.id);
+      return !item || item.sold_out;
+    });
     setBag((prev) => {
       let changed = false;
-      const next = prev.map((row) => {
+      const next: Line[] = [];
+      prev.forEach((row) => {
         const item = items.find((it) => String(it.id || it.name) === row.id);
-        if (!item) return row;
+        if (!item || item.sold_out) {
+          changed = true;
+          return;
+        }
         const price = priceOf(item, onRank);
         const rank = onRankPrice(item, onRank);
-        if (row.price_gbp === price && row.rank === rank && row.name === item.name) return row;
+        if (row.price_gbp === price && row.rank === rank && row.name === item.name) {
+          next.push(row);
+          return;
+        }
         changed = true;
-        return { ...row, name: item.name, price_gbp: price, rank };
+        next.push({ ...row, name: item.name, price_gbp: price, rank });
       });
       return changed ? next : prev;
     });
+    if (gone.length) {
+      warn();
+      setToast(
+        gone.length === 1
+          ? gone[0].name + " is off the board."
+          : "Some of the bag is off the board."
+      );
+    }
   }, [items, onRank]);
 
   function addItem(item: MenuItem) {
@@ -905,7 +1005,6 @@ function House() {
       }
       return [...prev, { id, name: item.name, price_gbp: price, qty: 1, rank }];
     });
-    setToast("Added " + item.name + (rank ? " on the rank." : "."));
   }
 
   function changeQty(id: string, delta: number) {
@@ -990,20 +1089,18 @@ function House() {
     void settlePay(kind);
   };
 
-  async function pay(method: "stripe" | "counter") {
+  async function pay() {
     if (!bag.length) return;
+    if (!stripe) {
+      setBagStatus("The card is not open on this phone yet.");
+      return;
+    }
     tap();
     setBusy(true);
-    setBagStatus(method === "stripe" ? "Opening the card…" : "Sending to the counter…");
+    setBagStatus("Opening the card…");
     try {
       const live = await liveSession(true);
-      const data = await placeOrder(
-        live,
-        bag,
-        note,
-        method,
-        method === "stripe" ? Linking.createURL("pay") : ""
-      );
+      const data = await placeOrder(live, bag, note, Linking.createURL("pay"));
       if (data.url) {
         pendingPayId.current = String((data.order && data.order.id) || "");
         payDone.current = false;
@@ -1036,16 +1133,13 @@ function House() {
         }
         return;
       }
-      ok();
-      setBag([]);
-      setNote(prefsRef.current.bagNote);
-      setBagStatus("At the counter. Pay when you collect.");
-      loadHouse(live);
+      warn();
+      setBagStatus("The card did not open.");
     } catch (err) {
       warn();
       pendingPayId.current = "";
       setPaying(false);
-      setBagStatus(err instanceof Error ? err.message : "The counter could not take that.");
+      setBagStatus(err instanceof Error ? err.message : "The card could not take that.");
     } finally {
       setBusy(false);
     }
@@ -1120,6 +1214,49 @@ function House() {
     }
   }
 
+  useEffect(() => {
+    if (!isSignedIn || !heldReady.current) return;
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "background") saveHeld(bag, note).catch(() => {});
+    });
+    return () => sub.remove();
+  }, [bag, note, isSignedIn]);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (paying) {
+        settleRef.current("cancel");
+        return true;
+      }
+      if (tab === "look" && (piece || lookViewing)) {
+        tap();
+        if (piece) setPiece(null);
+        else setTopAt((n) => n + 1);
+        return true;
+      }
+      if (tab === "look" && lookBoard !== "pictures") {
+        tap();
+        setLookBoard("pictures");
+        return true;
+      }
+      if (tab === "you" && youPage !== "home") {
+        tap();
+        setYouPage("home");
+        return true;
+      }
+      if (tab !== "menu") {
+        tap();
+        setPiece(null);
+        setLookViewing(false);
+        setTab("menu");
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [isSignedIn, paying, tab, piece, lookViewing, lookBoard, youPage]);
+
   if (!isLoaded) {
     return (
       <HouseProvider night={!!prefs.night}>
@@ -1165,6 +1302,7 @@ function House() {
               onRefresh={() => loadHouse()}
               onAdd={addItem}
               onQty={changeQty}
+              topAt={topAt}
               onHouse={() => {
                 setYouPage("house");
                 setTab("you");
@@ -1179,6 +1317,8 @@ function House() {
               onOpen={setPiece}
               onBackPiece={() => setPiece(null)}
               getSession={liveSession}
+              topAt={topAt}
+              onViewing={setLookViewing}
             />
           ) : null}
           {tab === "bag" ? (
@@ -1186,7 +1326,6 @@ function House() {
               bag={bag}
               note={note}
               stripe={stripe}
-              prefer={prefs.pay}
               status={bagStatus}
               busy={busy}
               items={items}
@@ -1237,6 +1376,7 @@ function House() {
                   });
               }}
               onRefresh={() => loadHouse()}
+              topAt={topAt}
             />
           ) : null}
           {tab === "you" ? (
@@ -1253,6 +1393,7 @@ function House() {
               stamps={stamps}
               cardsDone={cardsDone}
               bagHint={bagHintLine(orders)}
+              bagReady={orders.some((order) => order.status === "ready")}
               onBag={() => setTab("bag")}
               onRank={onRank}
               desk={desk}
@@ -1280,6 +1421,7 @@ function House() {
                 setLookBoard("today");
                 setTab("look");
               }}
+              topAt={topAt}
               onSignOut={() => {
                 Alert.alert(
                   "Leave the house?",
@@ -1312,30 +1454,55 @@ function House() {
         </View>
       ) : null}
 
-      {toast && tab !== "bag" ? (
+      {toast && tab !== "bag" && !(toast === "collected." && tab === "you") ? (
         <Rise key={toast} style={[styles.toastLift, { bottom: pad.toast }]}>
           <Pressable
             onPress={() => {
               tap();
+              const go = toast === "collected." ? "you" : "bag";
               setToast("");
-              setTab("bag");
+              if (go === "you") setYouPage("home");
+              setTab(go);
             }}
             style={styles.toast}
           >
             <Text style={styles.toastText}>{toast}</Text>
-            <Text style={styles.toastGo}>the bag</Text>
+            <Text style={styles.toastGo}>{toast === "collected." ? "you" : "the bag"}</Text>
           </Pressable>
         </Rise>
       ) : null}
 
       {paying ? null : (
-        <Tabs tab={tab} bagCount={bagQty(bag)} onTab={(next) => {
-          setPiece(null);
-          setToast("");
-          if (next === "you" && tab === "you") setYouPage("home");
-          if (next === "look" && tab === "look") setLookBoard("pictures");
-          setTab(next);
-        }} />
+        <Tabs
+          tab={tab}
+          bagCount={bagQty(bag)}
+          bagLive={watchingCup && bagQty(bag) === 0}
+          bagReady={orders.some((order) => order.status === "ready")}
+          onTab={(next) => {
+            const keep = toast === "ready for you." || toast === "collected.";
+            if (next === "bag" || next === "you" || !keep) setToast("");
+            if (next === tab) {
+              if (next === "you") {
+                if (youPage !== "home") setYouPage("home");
+                else setTopAt((n) => n + 1);
+                return;
+              }
+              if (next === "look") {
+                if (piece) {
+                  setPiece(null);
+                  return;
+                }
+                if (lookBoard !== "pictures") setLookBoard("pictures");
+                else setTopAt((n) => n + 1);
+                return;
+              }
+              setTopAt((n) => n + 1);
+              return;
+            }
+            setPiece(null);
+            setTab(next);
+          }}
+        />
       )}
       <Grain />
     </View>
@@ -1760,6 +1927,25 @@ function makeStyles(t: Palette) {
     borderRadius: 2,
     marginBottom: 8
   },
+  search: {
+    borderWidth: 1,
+    borderColor: t.LINE,
+    backgroundColor: t.PAPER,
+    color: t.BROWN,
+    fontFamily: SANS,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    borderRadius: 2,
+    marginTop: 10
+  },
+  findCue: {
+    marginTop: 10,
+    paddingVertical: 4,
+    fontFamily: SERIF_ITALIC,
+    fontSize: 17,
+    color: t.MUTED
+  },
   status: {
     marginTop: 10,
     marginBottom: 8,
@@ -1962,6 +2148,22 @@ function makeStyles(t: Palette) {
     fontFamily: SANS_MED,
     fontSize: 10,
     color: t.BEIGE
+  },
+  live: {
+    position: "absolute",
+    top: -1,
+    right: -3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: t.BROWN,
+    borderWidth: 1.5,
+    borderColor: t.PAPER
+  },
+  liveReady: {
+    width: 9,
+    height: 9,
+    borderRadius: 5
   },
   toastLift: {
     position: "absolute",

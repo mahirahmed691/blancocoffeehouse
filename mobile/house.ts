@@ -435,13 +435,12 @@ export async function placeOrder(
   session: Session,
   items: Line[],
   note: string,
-  pay: "stripe" | "counter",
   returnUrl?: string
 ) {
   const res = await fetch(HOUSE_SITE + "/api/orders", {
     method: "POST",
     headers: clerkHeaders(session),
-    body: JSON.stringify({ items, note, pay, return_url: returnUrl || "" })
+    body: JSON.stringify({ items, note, pay: "stripe", return_url: returnUrl || "" })
   });
   return readJson(res);
 }

@@ -4,6 +4,7 @@ import { useSSO } from "@clerk/expo/experimental";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { useEffect, useState } from "react";
 import {
+  BackHandler,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -280,6 +281,17 @@ export function Gate() {
     await signUp.reset();
   }
 
+  useEffect(() => {
+    if (step !== "verify") return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (busy) return true;
+      tap();
+      onStartOver();
+      return true;
+    });
+    return () => sub.remove();
+  }, [step, busy]);
+
   return (
     <KeyboardAvoidingView
       style={styles.root}
@@ -291,6 +303,7 @@ export function Gate() {
           { paddingTop: pad.top, paddingBottom: 40 + pad.bottom }
         ]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         <View nativeID="clerk-captcha" style={styles.captcha} />
         <Image

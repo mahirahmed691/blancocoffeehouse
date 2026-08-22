@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>table card — Blanco Coffee House</title>
+    <meta name="robots" content="noindex" />
+    <meta
+      name="description"
+      content="Print a table card. The phone camera opens the board."
+    />
+    <meta name="theme-color" content="#E9E1D8" />
+    <script src="night.js"></script>
+    <link rel="icon" href="assets/logo.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Nunito:wght@500;600;700;800&family=Work+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=3" />
+  </head>
+  <body class="table-page">
+    <div class="grain" aria-hidden="true"></div>
+    <a class="skip" href="#table-card">Skip to the card</a>
+
+    <header class="site-header">
+      <nav class="nav wrap" aria-label="Primary">
+        <a class="logo" href="index.html">
+          <img
+            class="logo-badge"
+            src="assets/logo.png"
+            alt="blanco."
+            width="512"
+            height="512"
+            decoding="async"
+          />
+        </a>
+        <a class="nav-page" href="admin.html">House desk</a>
+      </nav>
+    </header>
+
+    <main class="wrap">
+      <article class="table-card" id="table-card">
+        <p class="eyebrow">
+          <img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" />
+          the table
+        </p>
+        <h1>the board.</h1>
+        <p class="prose">Point the camera. The menu opens on the phone.</p>
+        <img
+          class="table-qr"
+          src="assets/table-qr.svg"
+          width="370"
+          height="370"
+          alt="QR code for the Blanco Coffee House board."
+        />
+        <p class="closing-line">blanco. · Fiveways Parade</p>
+      </article>
+      <p class="table-print-actions">
+        <button class="btn" type="button" data-print-card>Print this card</button>
+        <a class="btn btn-ghost" href="go.html">Open the board</a>
+      </p>
+    </main>
+    <script>
+      document.querySelector("[data-print-card]").addEventListener("click", function () {
+        window.print();
+      });
+    </script>
+  </body>
+</html>

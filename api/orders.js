@@ -241,9 +241,13 @@ module.exports = async function handler(req, res) {
         json(res, 400, { error: "Add a drink or a sweet first." });
         return;
       }
-      var payAt = String(body.pay || "counter").trim() === "stripe" ? "stripe" : "counter";
-      if (payAt === "stripe" && !stripe.stripeEnabled()) {
-        json(res, 503, { error: "Card is not on yet. Pay at the counter." });
+      var payAt = String(body.pay || "stripe").trim();
+      if (payAt !== "stripe") {
+        json(res, 400, { error: "Pay with the card." });
+        return;
+      }
+      if (!stripe.stripeEnabled()) {
+        json(res, 503, { error: "The card is not on yet." });
         return;
       }
       var created = await sb("/rest/v1/collection_orders", {
@@ -252,7 +256,7 @@ module.exports = async function handler(req, res) {
           clerk_user_id: user.id,
           email: email || null,
           name: name || null,
-          status: payAt === "stripe" ? "hold" : "in",
+          status: "hold",
           items: items,
           note: String(body.note || "").trim().slice(0, 140),
           total_gbp: Math.round(totalOf(items) * 100) / 100,
@@ -264,10 +268,6 @@ module.exports = async function handler(req, res) {
         })
       });
       var orderRow = (created && created[0]) || {};
-      if (payAt !== "stripe") {
-        json(res, 200, { order: asOrder(orderRow) });
-        return;
-      }
       try {
         var session = await stripe.createCollectionCheckout(req, {
           id: orderRow.id,

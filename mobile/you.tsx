@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -46,8 +46,8 @@ import {
   useStyles,
   type Palette
 } from "./theme";
-import { Fill, Rise } from "./motion";
-import { Back, Kicker, Mark, Stick, type MarkName } from "./ui";
+import { Fill, Rise, useToTop } from "./motion";
+import { Back, Kicker, Mark, type MarkName } from "./ui";
 
 export type YouPage = "home" | "house" | "settings";
 
@@ -64,6 +64,7 @@ type YouStackProps = {
   stamps: number;
   cardsDone: number;
   bagHint: string;
+  bagReady: boolean;
   onBag: () => void;
   onRank: boolean;
   desk: boolean;
@@ -83,6 +84,7 @@ type YouStackProps = {
   passwordOn: boolean;
   onPictures: () => void;
   onToday: () => void;
+  topAt: number;
 };
 
 export function YouStack(props: YouStackProps) {
@@ -175,6 +177,7 @@ function YouHome({
   stamps,
   cardsDone,
   bagHint,
+  bagReady,
   onBag,
   onRank,
   desk,
@@ -188,10 +191,13 @@ function YouHome({
   onRefresh,
   onPage,
   onPictures,
-  onToday
+  onToday,
+  topAt
 }: YouStackProps) {
   const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
+  const list = useRef<ScrollView>(null);
+  useToTop(topAt, list);
   const stampNote =
     stamps === 0 && cardsDone
       ? cardsDone === 1
@@ -239,6 +245,7 @@ function YouHome({
         {busyLine ? <Text style={styles.notice}>{busyLine}</Text> : null}
       </View>
       <ScrollView
+        ref={list}
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 36 }]}
         refreshControl={
@@ -344,6 +351,7 @@ function YouHome({
             onChangeText={onRankCode}
             placeholder="RANK-····"
             placeholderTextColor={t.MUTED}
+            keyboardAppearance={t.night ? "dark" : "light"}
             autoCapitalize="characters"
             autoCorrect={false}
             style={styles.input}
@@ -363,6 +371,7 @@ function YouHome({
         mark="bag"
         label="the bag"
         hint={bagHint}
+        hot={bagReady}
         onPress={onBag}
       />
       <Row
@@ -548,7 +557,6 @@ function SettingsScreen({
   const [nextPass, setNextPass] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
-  const payOn = !stripe && prefs.pay === "stripe" ? "ask" : prefs.pay;
 
   useEffect(() => {
     setCalled(name);
@@ -659,6 +667,7 @@ function SettingsScreen({
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 36 }]}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
         <Text style={styles.prose}>
           In the house, others see a handle. Your name and email stay here, and with the desk when a collection needs them.
@@ -703,6 +712,7 @@ function SettingsScreen({
           onChangeText={setCalled}
           placeholder="the name the counter calls"
           placeholderTextColor={t.MUTED}
+          keyboardAppearance={t.night ? "dark" : "light"}
           autoCapitalize="words"
           autoCorrect={false}
           style={styles.input}
@@ -728,6 +738,7 @@ function SettingsScreen({
               onChangeText={setCurrentPass}
               placeholder="current password"
               placeholderTextColor={t.MUTED}
+              keyboardAppearance={t.night ? "dark" : "light"}
               secureTextEntry
               autoComplete="password"
               textContentType="password"
@@ -738,6 +749,7 @@ function SettingsScreen({
               onChangeText={setNextPass}
               placeholder="new password"
               placeholderTextColor={t.MUTED}
+              keyboardAppearance={t.night ? "dark" : "light"}
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
@@ -770,6 +782,7 @@ function SettingsScreen({
           onChangeText={setNote}
           placeholder="Oat milk, extra hot…"
           placeholderTextColor={t.MUTED}
+          keyboardAppearance={t.night ? "dark" : "light"}
           style={styles.input}
           maxLength={140}
           onEndEditing={keepNote}
@@ -781,16 +794,9 @@ function SettingsScreen({
         <Text style={styles.label}>pay</Text>
         <Text style={styles.prose}>
           {stripe
-            ? "Card now, or at the counter when you collect. Delivery is still to come."
-            : "Pay at the counter when you collect. The card is not open on this phone yet."}
+            ? "Pay now with the card. It opens in Safari. Collection at the counter — not to the door. Delivery is still to come."
+            : "The card is not open on this phone yet."}
         </Text>
-        <Stick
-          value={payOn === "stripe" ? "card" : payOn}
-          options={stripe ? (["ask", "card", "counter"] as const) : (["ask", "counter"] as const)}
-          onChange={(id) => {
-            keepPrefs({ ...prefs, pay: id === "card" ? "stripe" : id });
-          }}
-        />
 
         <View style={styles.toggleRow}>
           <View style={styles.toggleCopy}>
@@ -854,11 +860,13 @@ function Row({
   label,
   hint,
   mark,
+  hot,
   onPress
 }: {
   label: string;
   hint?: string;
   mark?: MarkName;
+  hot?: boolean;
   onPress: () => void;
 }) {
   const { t, styles } = useStyles(makeStyles);
@@ -873,14 +881,14 @@ function Row({
     >
       {mark ? (
         <View style={styles.rowMark}>
-          <Mark name={mark} size={18} />
+          <Mark name={mark} on={hot && mark === "bag"} size={18} />
         </View>
       ) : null}
       <View style={styles.rowCopy}>
         <Text style={styles.rowLabel}>{label}</Text>
-        {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
+        {hint ? <Text style={[styles.rowHint, hot && styles.rowHintHot]}>{hint}</Text> : null}
       </View>
-      <Mark name="go" size={16} color={t.MUTED} />
+      <Mark name="go" size={16} color={hot ? t.BROWN : t.MUTED} />
     </Pressable>
   );
 }
@@ -1183,6 +1191,9 @@ function makeStyles(t: Palette) {
     fontSize: 13,
     lineHeight: 18,
     color: t.MUTED
+  },
+  rowHintHot: {
+    color: t.BROWN
   },
   seg: {
     flexDirection: "row",

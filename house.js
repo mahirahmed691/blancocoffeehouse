@@ -78,6 +78,8 @@
               '<div class="menu-item' +
               (item.sold_out ? " is-sold-out" : "") +
               (onRank(item) ? " is-rank" : "") +
+              '" data-id="' +
+              escapeHtml(String(item.id || item.name)) +
               '">' +
               '<span class="name">' +
               escapeHtml(item.name) +

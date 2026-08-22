@@ -1,5 +1,8 @@
 (function () {
-  var KEY = "blanco-collection";
+  var KEY = "blanco.house.held";
+  var OLD_KEY = "blanco-collection";
+  var QTY_MAX = 9;
+  var LINES_MAX = 12;
   var dock = document.getElementById("collect-dock");
   if (!dock) return;
 
@@ -7,8 +10,8 @@
   var totalEl = document.getElementById("collect-total");
   var noteEl = document.getElementById("collect-note");
   var placeBtn = document.getElementById("collect-place");
-  var counterBtn = document.getElementById("collect-counter");
   var letGoBtn = document.getElementById("collect-let-go");
+  var clearBtn = document.getElementById("collect-clear");
   var statusEl = document.getElementById("collect-status");
   var countEl = document.getElementById("collect-count");
   var trackEl = document.getElementById("collect-track");
@@ -47,19 +50,84 @@
     return isFinite(n) ? n : 0;
   }
 
-  function loadBasket() {
-    try {
-      basket = JSON.parse(sessionStorage.getItem(KEY) || "[]");
-      if (!Array.isArray(basket)) basket = [];
-    } catch (err) {
-      basket = [];
+  function lineKey(row) {
+    return String((row && (row.id || row.name)) || "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function cleanLine(row) {
+    if (!row || typeof row !== "object") return null;
+    var name = String(row.name || "").trim();
+    var id = String(row.id || name).trim();
+    var price = Number(row.price_gbp);
+    var qty = Math.min(QTY_MAX, Math.max(1, Math.round(Number(row.qty) || 0)));
+    if (!id || !name || !isFinite(price) || price < 0 || qty < 1) return null;
+    return { id: id, name: name, price_gbp: price, qty: qty, rank: row.rank === true };
+  }
+
+  function bagQty() {
+    return basket.reduce(function (sum, row) {
+      return sum + (Number(row.qty) || 0);
+    }, 0);
+  }
+
+  function findLine(id, name) {
+    var key = String(id || name || "")
+      .trim()
+      .toLowerCase();
+    if (!key) return null;
+    for (var i = 0; i < basket.length; i++) {
+      if (lineKey(basket[i]) === key) return basket[i];
     }
-    if (basket.length > 1) basket = [basket[basket.length - 1]];
-    if (basket[0]) basket[0].qty = 1;
+    return null;
+  }
+
+  function loadBasket() {
+    var raw = null;
+    try {
+      raw = JSON.parse(localStorage.getItem(KEY) || "null");
+    } catch (err) {
+      raw = null;
+    }
+    if (!raw) {
+      try {
+        raw = JSON.parse(sessionStorage.getItem(OLD_KEY) || "null");
+      } catch (err) {
+        raw = null;
+      }
+    }
+    var lines = [];
+    var note = "";
+    if (raw && Array.isArray(raw.lines)) {
+      lines = raw.lines;
+      note = String(raw.note || "");
+    } else if (Array.isArray(raw)) {
+      lines = raw;
+    }
+    basket = [];
+    lines.forEach(function (row) {
+      var next = cleanLine(row);
+      if (!next) return;
+      if (basket.some(function (line) {
+        return lineKey(line) === lineKey(next);
+      })) return;
+      if (basket.length >= LINES_MAX) return;
+      basket.push(next);
+    });
+    if (noteEl && note && !noteEl.value) noteEl.value = note.slice(0, 140);
   }
 
   function saveBasket() {
-    sessionStorage.setItem(KEY, JSON.stringify(basket));
+    var payload = JSON.stringify({
+      lines: basket,
+      note: noteEl ? String(noteEl.value || "").trim().slice(0, 140) : ""
+    });
+    try {
+      if (!basket.length && !(noteEl && noteEl.value.trim())) localStorage.removeItem(KEY);
+      else localStorage.setItem(KEY, payload);
+      sessionStorage.removeItem(OLD_KEY);
+    } catch (err) {}
   }
 
   function total() {
@@ -75,7 +143,7 @@
   }
 
   function tracking() {
-    return !!(liveOrder && cup && cup.watching(liveOrder.status) && !basket.length);
+    return !!(liveOrder && cup && cup.watching(liveOrder.status));
   }
 
   function stopLive() {
@@ -99,7 +167,7 @@
         holdOpen = false;
         renderDock();
       }, 6000);
-    } else {
+    } else if (!liveOrder || liveOrder.status === "cancelled") {
       liveOrder = null;
     }
     renderDock();
@@ -135,28 +203,70 @@
       .catch(function () {});
   }
 
+  function qtyButtons(index, name, qty, where) {
+    var maxed = qty >= QTY_MAX ? " is-dim" : "";
+    return (
+      '<span class="collect-qty collect-qty-' +
+      where +
+      '">' +
+      '<button type="button" class="collect-qty-btn" data-qty="' +
+      index +
+      '" data-delta="-1" aria-label="Fewer ' +
+      escapeHtml(name) +
+      '">−</button>' +
+      "<span>" +
+      qty +
+      "</span>" +
+      '<button type="button" class="collect-qty-btn' +
+      maxed +
+      '" data-qty="' +
+      index +
+      '" data-delta="1" aria-label="More ' +
+      escapeHtml(name) +
+      '">+</button>' +
+      "</span>"
+    );
+  }
+
   function renderDock() {
-    var on = signedIn() && (basket.length > 0 || holdOpen || tracking() || (liveOrder && liveOrder.status === "collected"));
+    var watchingNow = tracking();
+    var collected =
+      liveOrder && liveOrder.status === "collected" && !basket.length;
+    var on =
+      signedIn() &&
+      (basket.length > 0 || holdOpen || watchingNow || collected);
     dock.hidden = !on;
     document.body.classList.toggle("has-collection", on);
-    document.body.classList.toggle("is-watching-cup", tracking() || (liveOrder && liveOrder.status === "collected" && !basket.length));
+    document.body.classList.toggle("is-watching-cup", watchingNow && !basket.length);
     if (countEl) {
-      countEl.textContent =
-        tracking() || (liveOrder && liveOrder.status === "collected")
-          ? cup.line(liveOrder)
+      countEl.textContent = watchingNow
+        ? cup.line(liveOrder)
+        : basket.length
+          ? bagQty() + " in the bag"
           : "";
     }
     if (placeBtn) {
-      placeBtn.hidden = !basket.length;
-      placeBtn.textContent = stripeOn ? "Pay now" : "Place for collection";
+      if (!basket.length) {
+        placeBtn.hidden = true;
+        placeBtn.disabled = false;
+        placeBtn.textContent = "Pay now";
+      } else if (stripeChecked && !stripeOn) {
+        placeBtn.hidden = false;
+        placeBtn.disabled = true;
+        placeBtn.textContent = "The card is not on yet";
+      } else {
+        placeBtn.hidden = false;
+        placeBtn.disabled = false;
+        placeBtn.textContent = "Pay now";
+      }
     }
-    if (counterBtn) counterBtn.hidden = !basket.length || !stripeOn;
     if (letGoBtn) {
-      letGoBtn.hidden = !(tracking() && cup && cup.canLetGo(liveOrder) && !basket.length);
+      letGoBtn.hidden = !(watchingNow && cup && cup.canLetGo(liveOrder));
     }
+    if (clearBtn) clearBtn.hidden = !basket.length;
     if (noteEl && noteEl.parentElement) noteEl.parentElement.hidden = !basket.length;
     if (trackEl) {
-      if ((tracking() || (liveOrder && liveOrder.status === "collected")) && cup && !basket.length) {
+      if ((watchingNow || collected) && cup) {
         trackEl.hidden = false;
         trackEl.innerHTML = cup.railHtml(liveOrder);
       } else {
@@ -164,32 +274,33 @@
         trackEl.innerHTML = "";
       }
     }
+    paintSlots();
     if (!linesEl) return;
-    if (tracking() || (liveOrder && liveOrder.status === "collected" && !basket.length)) {
-      linesEl.innerHTML = (liveOrder.items || [])
-        .map(function (row) {
-          return (
-            "<li><span>" +
-            escapeHtml(row.qty + " × " + row.name) +
-            "</span><span>" +
-            formatPrice(row.price_gbp * row.qty) +
-            "</span></li>"
-          );
-        })
-        .join("");
-      if (totalEl) {
-        totalEl.innerHTML =
-          liveOrder.status === "ready"
-            ? "Come to the counter."
-            : liveOrder.status === "collected"
-              ? '<a href="account.html">See it in your account</a>'
-              : liveOrder.paid
-                ? "Paid."
-                : "Pay when you collect.";
-      }
-      return;
-    }
     if (!basket.length) {
+      if (watchingNow || collected) {
+        linesEl.innerHTML = (liveOrder.items || [])
+          .map(function (row) {
+            return (
+              "<li><span>" +
+              escapeHtml(row.qty + " × " + row.name) +
+              "</span><span></span><span>" +
+              formatPrice(row.price_gbp * row.qty) +
+              "</span></li>"
+            );
+          })
+          .join("");
+        if (totalEl) {
+          totalEl.innerHTML =
+            liveOrder.status === "ready"
+              ? "Come to the counter."
+              : liveOrder.status === "collected"
+                ? '<a href="account.html">See it in your account</a>'
+                : liveOrder.paid
+                  ? "Paid."
+                  : "Pay when you collect.";
+        }
+        return;
+      }
       linesEl.innerHTML = "";
       if (totalEl) {
         totalEl.innerHTML = holdOpen
@@ -198,74 +309,121 @@
       }
       return;
     }
-    var row = basket[0];
-    linesEl.innerHTML =
-      "<li>" +
-      "<span>" +
-      escapeHtml(row.name) +
-      "</span>" +
-      "<span>" +
-      formatPrice(row.price_gbp) +
-      "</span>" +
-      '<button type="button" class="collect-remove" data-remove="0">Remove</button>' +
-      "</li>";
+    linesEl.innerHTML = basket
+      .map(function (row, i) {
+        return (
+          "<li>" +
+          "<span>" +
+          escapeHtml(row.name) +
+          (row.rank ? '<em class="collect-rank"> rank</em>' : "") +
+          "</span>" +
+          qtyButtons(i, row.name, row.qty, "dock") +
+          "<span>" +
+          formatPrice(row.price_gbp * row.qty) +
+          "</span>" +
+          "</li>"
+        );
+      })
+      .join("");
     if (totalEl) {
-      var rankLine = basket[0] && basket[0].rank ? "On the rank · " : "";
+      var rankLine = basket.some(function (row) {
+        return row.rank;
+      })
+        ? "On the rank · "
+        : "";
       totalEl.textContent = stripeOn
-        ? rankLine + "Pay now, or at the counter · " + formatPrice(total())
-        : rankLine + "Pay at the counter · " + formatPrice(total());
+        ? rankLine + "Pay now · " + formatPrice(total())
+        : rankLine + formatPrice(total());
     }
   }
 
-  function addItem(name, price, rank) {
+  function paintSlots() {
+    document.querySelectorAll(".menu-row").forEach(function (row) {
+      if (row.classList.contains("is-sold-out")) return;
+      var item = row.querySelector(".menu-item");
+      var nameEl = item && item.querySelector(".name");
+      if (!nameEl) return;
+      var name = nameEl.textContent.trim();
+      var id = (item && item.getAttribute("data-id")) || name;
+      var held = findLine(id, name);
+      var slot = row.querySelector(".collect-slot");
+      if (!slot) return;
+      if (held) {
+        var index = basket.indexOf(held);
+        slot.innerHTML = qtyButtons(index, name, held.qty, "board");
+        return;
+      }
+      if (slot.querySelector(".collect-add")) return;
+      slot.innerHTML = "";
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "collect-add";
+      btn.textContent = "Add";
+      btn.setAttribute("aria-label", "Add " + name + " to collection");
+      slot.appendChild(btn);
+    });
+  }
+
+  function addItem(name, price, rank, id) {
     if (!signedIn()) {
       window.location.href = "account.html";
       return;
     }
     holdOpen = false;
-    liveOrder = null;
-    stopLive();
-    if (holdTimer) window.clearTimeout(holdTimer);
-    var current = basket[0];
-    if (current && current.name === name && current.price_gbp === price) {
-      setStatus(rank ? "That’s already on the rank." : "That’s already for collection.");
+    var key = String(id || name).trim();
+    var existing = findLine(key, name);
+    if (existing && existing.qty >= QTY_MAX) {
+      setStatus("That’s as many as the counter will take.");
       renderDock();
       return;
     }
-    basket = [{ name: name, price_gbp: price, qty: 1, rank: !!rank }];
+    if (!existing && basket.length >= LINES_MAX) {
+      setStatus("The bag is full.");
+      renderDock();
+      return;
+    }
+    setStatus("");
+    if (existing) existing.qty += 1;
+    else {
+      basket.push({
+        id: key,
+        name: name,
+        price_gbp: price,
+        qty: 1,
+        rank: !!rank
+      });
+    }
     saveBasket();
-    setStatus(
-      current
-        ? "That’s the one. Added " + name + (rank ? " on the rank." : ".")
-        : "Added " + name + (rank ? " on the rank." : ".")
-    );
+    renderDock();
+  }
+
+  function changeQty(index, delta) {
+    var row = basket[index];
+    if (!row) return;
+    if (delta > 0 && row.qty >= QTY_MAX) {
+      setStatus("That’s as many as the counter will take.");
+      return;
+    }
+    setStatus("");
+    row.qty = Math.min(QTY_MAX, Math.max(0, row.qty + delta));
+    if (row.qty < 1) basket.splice(index, 1);
+    saveBasket();
     renderDock();
   }
 
   function bindRows() {
     document.querySelectorAll(".menu-row").forEach(function (row) {
-      if (row.querySelector(".collect-add")) return;
       if (row.classList.contains("is-sold-out")) return;
+      if (row.querySelector(".collect-slot")) return;
       var item = row.querySelector(".menu-item");
       var nameEl = item && item.querySelector(".name");
       var priceEl = item && item.querySelector(".price");
       if (!nameEl || !priceEl) return;
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "collect-add";
-      btn.textContent = "Add";
-      btn.setAttribute("aria-label", "Add " + nameEl.textContent.trim() + " to collection");
-      btn.addEventListener("click", function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        addItem(
-          nameEl.textContent.trim(),
-          parsePrice(priceEl.textContent),
-          !!(item && item.classList.contains("is-rank"))
-        );
-      });
-      row.appendChild(btn);
+      var slot = document.createElement("div");
+      slot.className = "collect-slot";
+      row.appendChild(slot);
     });
+    paintSlots();
   }
 
   async function clerkHeaders() {
@@ -314,11 +472,22 @@
       });
   }
 
-  function place(pay) {
+  function clearBag() {
+    basket = [];
+    if (noteEl) noteEl.value = "";
+    saveBasket();
+    setStatus("");
+    renderDock();
+  }
+
+  function place() {
     if (!basket.length) return;
+    if (!stripeOn) {
+      setStatus("The card is not on yet.", "error");
+      return;
+    }
     if (placeBtn) placeBtn.disabled = true;
-    if (counterBtn) counterBtn.disabled = true;
-    setStatus(pay === "stripe" ? "Opening the card…" : "Sending to the counter…");
+    setStatus("Opening the card…");
     clerkHeaders()
       .then(function (headers) {
         return fetch("/api/orders", {
@@ -327,13 +496,13 @@
           body: JSON.stringify({
             items: basket,
             note: noteEl ? noteEl.value.trim() : "",
-            pay: pay === "stripe" ? "stripe" : "counter"
+            pay: "stripe"
           })
         });
       })
       .then(function (res) {
         return res.json().then(function (data) {
-          if (!res.ok) throw new Error(data.error || "The counter could not take that.");
+          if (!res.ok) throw new Error(data.error || "The card could not take that.");
           return data;
         });
       })
@@ -344,18 +513,12 @@
           window.location.href = data.url;
           return;
         }
-        basket = [];
-        saveBasket();
-        if (noteEl) noteEl.value = "";
         if (placeBtn) placeBtn.disabled = false;
-        if (counterBtn) counterBtn.disabled = false;
-        setStatus("");
-        watchLive(data.order);
+        setStatus("The card did not open.", "error");
       })
       .catch(function (err) {
         if (placeBtn) placeBtn.disabled = false;
-        if (counterBtn) counterBtn.disabled = false;
-        setStatus(err.message || "The counter could not take that.", "error");
+        setStatus(err.message || "The card could not take that.", "error");
       });
   }
 
@@ -384,7 +547,7 @@
         var next = (data.orders || []).filter(function (row) {
           return cup && cup.watching(row.status);
         })[0];
-        if (next && !basket.length) watchLive(next);
+        if (next) watchLive(next);
         else renderDock();
       })
       .catch(function () {
@@ -392,28 +555,60 @@
       });
   }
 
-  if (linesEl) {
-    linesEl.addEventListener("click", function (event) {
-      var btn = event.target.closest("[data-remove]");
-      if (!btn) return;
-      var index = parseInt(btn.getAttribute("data-remove"), 10);
-      basket.splice(index, 1);
-      saveBasket();
-      renderDock();
-    });
-  }
+  dock.addEventListener("click", function (event) {
+    var qtyBtn = event.target.closest("[data-qty]");
+    if (!qtyBtn || !dock.contains(qtyBtn)) return;
+    event.preventDefault();
+    changeQty(
+      parseInt(qtyBtn.getAttribute("data-qty"), 10),
+      parseInt(qtyBtn.getAttribute("data-delta"), 10) || 0
+    );
+  });
+
+  document.addEventListener("click", function (event) {
+    var qtyBtn = event.target.closest("[data-qty]");
+    if (qtyBtn && qtyBtn.closest(".collect-slot")) {
+      event.preventDefault();
+      event.stopPropagation();
+      changeQty(
+        parseInt(qtyBtn.getAttribute("data-qty"), 10),
+        parseInt(qtyBtn.getAttribute("data-delta"), 10) || 0
+      );
+      return;
+    }
+    var add = event.target.closest(".collect-add");
+    if (!add) return;
+    var row = add.closest(".menu-row");
+    if (!row || row.classList.contains("is-sold-out")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    var item = row.querySelector(".menu-item");
+    var nameEl = item && item.querySelector(".name");
+    var priceEl = item && item.querySelector(".price");
+    if (!nameEl || !priceEl) return;
+    addItem(
+      nameEl.textContent.trim(),
+      parsePrice(priceEl.textContent),
+      !!(item && item.classList.contains("is-rank")),
+      item.getAttribute("data-id")
+    );
+  });
+
   if (placeBtn) {
     placeBtn.addEventListener("click", function () {
-      place(stripeOn ? "stripe" : "counter");
-    });
-  }
-  if (counterBtn) {
-    counterBtn.addEventListener("click", function () {
-      place("counter");
+      place();
     });
   }
   if (letGoBtn) {
     letGoBtn.addEventListener("click", letGo);
+  }
+  if (clearBtn) {
+    clearBtn.addEventListener("click", function () {
+      clearBag();
+    });
+  }
+  if (noteEl) {
+    noteEl.addEventListener("input", saveBasket);
   }
 
   var prevBind = window.blancoBindMenuRows;
