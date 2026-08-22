@@ -8,6 +8,7 @@ function json(res, status, body) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.end(JSON.stringify(body));
 }
 
@@ -179,6 +180,7 @@ async function isRankDriver(userId, email) {
 module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
+    res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Clerk-Session");
     res.end();
@@ -270,7 +272,8 @@ module.exports = async function handler(req, res) {
         var session = await stripe.createCollectionCheckout(req, {
           id: orderRow.id,
           email: email,
-          items: items
+          items: items,
+          return_url: body.return_url
         });
         var updated = await sb(
           "/rest/v1/collection_orders?id=eq." + encodeURIComponent(orderRow.id),
