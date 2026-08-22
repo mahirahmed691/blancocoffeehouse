@@ -666,6 +666,7 @@ function CupGrid({
   tile: number;
   onOpen: (id: string) => void;
 }) {
+  const { styles } = useStyles(makeStyles);
   return (
     <View style={styles.grid}>
       {cups.map((cup) => (

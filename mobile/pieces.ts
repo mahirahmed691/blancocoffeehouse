@@ -65,6 +65,7 @@ function resolveHouseUrl() {
 }
 
 export const HOUSE_SITE = resolveHouseUrl();
+export const HOUSE_BOARD = HOUSE_SITE + "/go.html";
 export const ACCOUNT_URL = HOUSE_SITE + "/account.html";
 export const GALLERY_URL = HOUSE_SITE + "/gallery.html";
 export const HOUSE_APP = HOUSE_SITE + "/?app=1";

@@ -9,6 +9,8 @@ export type Prefs = {
   night: boolean;
   pay: PayPref;
   bagNote: string;
+  usualId: string;
+  usualName: string;
 };
 
 export type Held = {
@@ -23,7 +25,9 @@ export const DEFAULT_PREFS: Prefs = {
   haptics: true,
   night: false,
   pay: "ask",
-  bagNote: ""
+  bagNote: "",
+  usualId: "",
+  usualName: ""
 };
 
 function clean(raw: Partial<Prefs> | null | undefined): Prefs {
@@ -32,8 +36,14 @@ function clean(raw: Partial<Prefs> | null | undefined): Prefs {
     haptics: raw?.haptics !== false,
     night: raw?.night === true,
     pay: pay === "stripe" ? pay : "ask",
-    bagNote: String(raw?.bagNote || "").slice(0, 140)
+    bagNote: String(raw?.bagNote || "").slice(0, 140),
+    usualId: String(raw?.usualId || "").trim().slice(0, 80),
+    usualName: String(raw?.usualName || "").trim().slice(0, 80)
   };
+}
+
+export function hasUsual(prefs: Prefs) {
+  return !!(prefs.usualId || prefs.usualName);
 }
 
 function cleanHeld(raw: unknown): Held {
