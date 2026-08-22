@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -35,7 +35,8 @@ import {
   SERIF_ITALIC,
   usePad
 } from "./theme";
-import { Kicker } from "./ui";
+import { Rise } from "./motion";
+import { Back, Kicker, Mark, Stick } from "./ui";
 
 type Filter = "all" | ShotKind;
 
@@ -55,43 +56,40 @@ export function LookScreen({
   getSession: () => Promise<Session>;
 }) {
   if (piece) return <PieceView piece={piece} onBack={onBackPiece} />;
-  if (board === "pictures") return <Pictures onBoard={onBoard} />;
-  if (board === "today") return <Today onBoard={onBoard} getSession={getSession} />;
-  return <Wear onBoard={onBoard} onOpen={onOpen} />;
+  return (
+    <Rise key={board} shift={false} style={styles.screen}>
+      {board === "pictures" ? (
+        <Pictures onBoard={onBoard} />
+      ) : board === "today" ? (
+        <Today onBoard={onBoard} getSession={getSession} />
+      ) : (
+        <Wear onBoard={onBoard} onOpen={onOpen} />
+      )}
+    </Rise>
+  );
 }
 
 function LookHead({
   board,
   onBoard,
   title,
-  line
+  children
 }: {
   board: LookBoard;
   onBoard: (next: LookBoard) => void;
   title: string;
-  line: string;
+  children?: ReactNode;
 }) {
   return (
     <>
       <Kicker label="look" />
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.prose}>{line}</Text>
-      <View style={styles.seg}>
-        {(["pictures", "today", "wear"] as const).map((id) => (
-          <Pressable
-            key={id}
-            onPress={() => {
-              tap();
-              onBoard(id);
-            }}
-            style={[styles.segBtn, board === id && styles.segOn]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: board === id }}
-          >
-            <Text style={[styles.segText, board === id && styles.segTextOn]}>{id}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <Stick
+        value={board}
+        options={["pictures", "today", "wear"] as const}
+        onChange={onBoard}
+      />
+      {children}
     </>
   );
 }
@@ -140,38 +138,43 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
 
   return (
     <View style={styles.screen}>
-      <ScrollView
-        style={styles.screen}
-        contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: 28 }]}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={load} tintColor={BROWN} />
-        }
-      >
+      <View style={[styles.sticky, { paddingTop: pad.top }]}>
         <LookHead
           board="pictures"
           onBoard={onBoard}
           title="the house, in pictures."
-          line="Photographs from Fiveways Parade — the cup, the case, and the room. New shots from the desk sit with the rest."
-        />
-        <View style={styles.seg}>
-          {(["all", "cup", "sweets", "house"] as const).map((id) => (
-            <Pressable
-              key={id}
-              onPress={() => {
-                tap();
-                setFilter(id);
-                setOpen(null);
-              }}
-              style={[styles.filterBtn, filter === id && styles.segOn]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: filter === id }}
-            >
-              <Text style={[styles.filterText, filter === id && styles.segTextOn]}>
-                {id === "all" ? "all" : id === "cup" ? "in the cup" : id}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        >
+          <View style={styles.filterRow}>
+            {(["all", "cup", "sweets", "house"] as const).map((id) => (
+              <Pressable
+                key={id}
+                onPress={() => {
+                  tap();
+                  setFilter(id);
+                  setOpen(null);
+                }}
+                style={[styles.filterBtn, filter === id && styles.segOn]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: filter === id }}
+              >
+                <Text style={[styles.filterText, filter === id && styles.segTextOn]}>
+                  {id === "all" ? "all" : id === "cup" ? "in the cup" : id}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </LookHead>
+      </View>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 28 }]}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={load} tintColor={BROWN} />
+        }
+      >
+        <Text style={styles.prose}>
+          Photographs from Fiveways Parade — the cup, the case, and the room. New shots from the desk sit with the rest.
+        </Text>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {loading && !shown.length && !error ? (
           <Text style={styles.prose}>The pictures are coming up.</Text>
@@ -207,21 +210,13 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
           onPress={() => openAway(INSTAGRAM)}
           style={({ pressed }) => [styles.btn, { marginTop: 22 }, pressed && styles.pressed]}
         >
+          <Mark name="instagram" size={18} color={BEIGE} />
           <Text style={styles.btnText}>Follow on Instagram</Text>
         </Pressable>
       </ScrollView>
       {viewing ? (
         <View style={[styles.viewer, { paddingTop: pad.top }]}>
-          <Pressable
-            onPress={() => {
-              tap();
-              setOpen(null);
-            }}
-            hitSlop={12}
-            accessibilityRole="button"
-          >
-            <Text style={styles.back}>the pictures</Text>
-          </Pressable>
+          <Back label="the pictures" onPress={() => setOpen(null)} />
           <View style={styles.viewerFrame}>
             <Image
               source={viewing.uri}
@@ -431,47 +426,50 @@ function Today({
 
   return (
     <View style={styles.screen}>
+      <View style={[styles.sticky, { paddingTop: pad.top }]}>
+        <LookHead board="today" onBoard={onBoard} title="today.">
+          <View style={styles.btnRow}>
+            <Pressable
+              onPress={() => pick("camera")}
+              disabled={busy}
+              style={({ pressed }) => [
+                styles.btnHalf,
+                busy && styles.dim,
+                pressed && styles.pressed
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="check in with the camera"
+            >
+              <Mark name="camera" size={18} color={BEIGE} />
+              <Text style={styles.btnText}>{busy ? "going up" : "camera"}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => pick("roll")}
+              disabled={busy}
+              style={({ pressed }) => [
+                styles.btnHalfGhost,
+                busy && styles.dim,
+                pressed && styles.pressed
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="check in from the camera roll"
+            >
+              <Mark name="roll" size={18} />
+              <Text style={styles.btnGhostText}>the roll</Text>
+            </Pressable>
+          </View>
+        </LookHead>
+      </View>
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: 28 }]}
+        contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 28 }]}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={load} tintColor={BROWN} />
         }
       >
-        <LookHead
-          board="today"
-          onBoard={onBoard}
-          title="today."
-          line="your cup, with the house. it stays on the board for 24 hours — put another up and it takes the place of the last."
-        />
-        <View style={styles.btnRow}>
-          <Pressable
-            onPress={() => pick("camera")}
-            disabled={busy}
-            style={({ pressed }) => [
-              styles.btnHalf,
-              busy && styles.dim,
-              pressed && styles.pressed
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="check in with the camera"
-          >
-            <Text style={styles.btnText}>{busy ? "going up" : "camera"}</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => pick("roll")}
-            disabled={busy}
-            style={({ pressed }) => [
-              styles.btnHalfGhost,
-              busy && styles.dim,
-              pressed && styles.pressed
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="check in from the camera roll"
-          >
-            <Text style={styles.btnGhostText}>the roll</Text>
-          </Pressable>
-        </View>
+        <Text style={styles.prose}>
+          your cup, with the house. it stays on the board for 24 hours — put another up and it takes the place of the last.
+        </Text>
         {board.mine ? (
           <Text style={styles.hours}>you’re in.</Text>
         ) : (
@@ -493,16 +491,7 @@ function Today({
       </ScrollView>
       {viewing ? (
         <View style={[styles.viewer, { paddingTop: pad.top }]}>
-          <Pressable
-            onPress={() => {
-              tap();
-              setOpen(null);
-            }}
-            hitSlop={12}
-            accessibilityRole="button"
-          >
-            <Text style={styles.back}>today</Text>
-          </Pressable>
+          <Back label="today" onPress={() => setOpen(null)} />
           <View style={styles.viewerFrame}>
             <Image
               source={{ uri: viewing.uri }}
@@ -589,17 +578,18 @@ function Wear({
 }) {
   const pad = usePad();
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: 28 }]}
-    >
-      <LookHead
-        board="wear"
-        onBoard={onBoard}
-        title="wear blanco."
-        line="The geometric b. on a tee, a hoodie, a tote — and the coffee club shirt already behind the counter. Not in the shop yet."
-      />
-      <Text style={styles.closing}>blanco. your way. on you.</Text>
+    <View style={styles.screen}>
+      <View style={[styles.sticky, { paddingTop: pad.top }]}>
+        <LookHead board="wear" onBoard={onBoard} title="wear blanco." />
+      </View>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 28 }]}
+      >
+        <Text style={styles.prose}>
+          The geometric b. on a tee, a hoodie, a tote — and the coffee club shirt already behind the counter. Not in the shop yet.
+        </Text>
+        <Text style={styles.closing}>blanco. your way. on you.</Text>
       <View style={styles.wearGrid}>
         {PIECES.map((piece) => (
           <Pressable
@@ -624,9 +614,11 @@ function Wear({
         onPress={() => openAway(INSTAGRAM)}
         style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
       >
+        <Mark name="instagram" size={18} color={BEIGE} />
         <Text style={styles.btnText}>Follow the drop</Text>
       </Pressable>
     </ScrollView>
+    </View>
   );
 }
 
@@ -634,16 +626,7 @@ function PieceView({ piece, onBack }: { piece: Piece; onBack: () => void }) {
   const pad = usePad();
   return (
     <View style={[styles.piece, { paddingTop: pad.top, paddingBottom: 16 }]}>
-      <Pressable
-        onPress={() => {
-          tap();
-          onBack();
-        }}
-        hitSlop={12}
-        accessibilityRole="button"
-      >
-        <Text style={styles.back}>wear</Text>
-      </Pressable>
+      <Back label="wear" onPress={onBack} />
       <View style={styles.pieceFrame}>
         <Image
           source={piece.source}
@@ -658,6 +641,7 @@ function PieceView({ piece, onBack }: { piece: Piece; onBack: () => void }) {
         onPress={() => openAway(INSTAGRAM)}
         style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
       >
+        <Mark name="instagram" size={18} color={BEIGE} />
         <Text style={styles.btnText}>Follow the drop</Text>
       </Pressable>
     </View>
@@ -672,12 +656,20 @@ const styles = StyleSheet.create({
   screenInner: {
     paddingHorizontal: 22
   },
+  sticky: {
+    zIndex: 2,
+    paddingHorizontal: 22,
+    paddingBottom: 10,
+    backgroundColor: BEIGE,
+    borderBottomWidth: 1,
+    borderBottomColor: LINE
+  },
   title: {
     fontFamily: ROUND,
     fontSize: 40,
     letterSpacing: -1.2,
     color: BROWN,
-    marginBottom: 12,
+    marginBottom: 8,
     textTransform: "lowercase",
     lineHeight: 42
   },
@@ -706,34 +698,21 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     color: BROWN
   },
-  seg: {
+  filterRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 16
-  },
-  segBtn: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 10,
-    borderWidth: 1.5,
-    borderColor: BROWN,
-    borderRadius: 999
+    gap: 6,
+    marginTop: 10
   },
   filterBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1.5,
+    paddingVertical: 7,
+    paddingHorizontal: 11,
+    borderWidth: 1,
     borderColor: BROWN,
-    borderRadius: 999
+    borderRadius: 16
   },
   segOn: {
     backgroundColor: BROWN
-  },
-  segText: {
-    fontFamily: SANS_MED,
-    fontSize: 14,
-    color: BROWN
   },
   filterText: {
     fontFamily: SANS_MED,
@@ -810,46 +789,52 @@ const styles = StyleSheet.create({
   btnRow: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 12
+    marginTop: 10
   },
   btnHalf: {
     flex: 1,
+    flexDirection: "row",
+    gap: 8,
     backgroundColor: BROWN,
-    paddingVertical: 15,
+    paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 999
+    borderRadius: 16
   },
   btnHalfGhost: {
     flex: 1,
+    flexDirection: "row",
+    gap: 8,
     backgroundColor: "transparent",
-    paddingVertical: 15,
+    paddingVertical: 13,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 999,
-    borderWidth: 1.5,
+    borderRadius: 16,
+    borderWidth: 1,
     borderColor: BROWN
   },
   btnGhostText: {
     fontFamily: SANS_MED,
     color: BROWN,
     fontSize: 15,
-    letterSpacing: 0.4
+    letterSpacing: 0.2
   },
   btn: {
     marginTop: 10,
     backgroundColor: BROWN,
-    paddingVertical: 15,
-    paddingHorizontal: 22,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 999
+    gap: 8,
+    borderRadius: 16
   },
   btnText: {
     fontFamily: SANS_MED,
     color: BEIGE,
     fontSize: 15,
-    letterSpacing: 0.4
+    letterSpacing: 0.2
   },
   pressed: {
     opacity: 0.82,
@@ -862,12 +847,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BEIGE,
     paddingHorizontal: 22
-  },
-  back: {
-    fontFamily: SERIF_ITALIC,
-    fontSize: 18,
-    color: BROWN,
-    marginBottom: 12
   },
   pieceFrame: {
     flex: 1,

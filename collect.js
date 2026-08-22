@@ -8,11 +8,16 @@
   var noteEl = document.getElementById("collect-note");
   var placeBtn = document.getElementById("collect-place");
   var counterBtn = document.getElementById("collect-counter");
+  var letGoBtn = document.getElementById("collect-let-go");
   var statusEl = document.getElementById("collect-status");
   var countEl = document.getElementById("collect-count");
+  var trackEl = document.getElementById("collect-track");
+  var cup = window.blancoCup;
   var basket = [];
   var holdOpen = false;
   var holdTimer = 0;
+  var liveOrder = null;
+  var liveTimer = 0;
   var stripeOn = false;
   var stripeChecked = false;
 
@@ -63,30 +68,127 @@
     }, 0);
   }
 
-  function count() {
-    return basket.reduce(function (sum, row) {
-      return sum + row.qty;
-    }, 0);
-  }
-
   function setStatus(text, kind) {
     if (!statusEl) return;
     statusEl.textContent = text || "";
     statusEl.classList.toggle("is-error", kind === "error");
   }
 
+  function tracking() {
+    return !!(liveOrder && cup && cup.watching(liveOrder.status) && !basket.length);
+  }
+
+  function stopLive() {
+    if (liveTimer) window.clearInterval(liveTimer);
+    liveTimer = 0;
+  }
+
+  function watchLive(order) {
+    liveOrder = order || null;
+    stopLive();
+    if (liveOrder && cup && cup.watching(liveOrder.status)) {
+      liveTimer = window.setInterval(refreshLive, 8000);
+      renderDock();
+      return;
+    }
+    if (liveOrder && liveOrder.status === "collected") {
+      holdOpen = true;
+      if (holdTimer) window.clearTimeout(holdTimer);
+      holdTimer = window.setTimeout(function () {
+        liveOrder = null;
+        holdOpen = false;
+        renderDock();
+      }, 6000);
+    } else {
+      liveOrder = null;
+    }
+    renderDock();
+  }
+
+  function refreshLive() {
+    if (!signedIn()) return;
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/orders", { headers: headers });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error("skip");
+          return data;
+        });
+      })
+      .then(function (data) {
+        stripeOn = !!data.stripe;
+        stripeChecked = true;
+        var orders = data.orders || [];
+        var next =
+          (liveOrder &&
+            orders.filter(function (row) {
+              return row.id === liveOrder.id;
+            })[0]) ||
+          orders.filter(function (row) {
+            return cup && cup.watching(row.status);
+          })[0] ||
+          null;
+        watchLive(next);
+      })
+      .catch(function () {});
+  }
+
   function renderDock() {
-    var on = signedIn() && (basket.length > 0 || holdOpen);
+    var on = signedIn() && (basket.length > 0 || holdOpen || tracking() || (liveOrder && liveOrder.status === "collected"));
     dock.hidden = !on;
     document.body.classList.toggle("has-collection", on);
-    if (countEl) countEl.textContent = "";
+    document.body.classList.toggle("is-watching-cup", tracking() || (liveOrder && liveOrder.status === "collected" && !basket.length));
+    if (countEl) {
+      countEl.textContent =
+        tracking() || (liveOrder && liveOrder.status === "collected")
+          ? cup.line(liveOrder)
+          : "";
+    }
     if (placeBtn) {
       placeBtn.hidden = !basket.length;
       placeBtn.textContent = stripeOn ? "Pay now" : "Place for collection";
     }
     if (counterBtn) counterBtn.hidden = !basket.length || !stripeOn;
+    if (letGoBtn) {
+      letGoBtn.hidden = !(tracking() && cup && cup.canLetGo(liveOrder) && !basket.length);
+    }
     if (noteEl && noteEl.parentElement) noteEl.parentElement.hidden = !basket.length;
+    if (trackEl) {
+      if ((tracking() || (liveOrder && liveOrder.status === "collected")) && cup && !basket.length) {
+        trackEl.hidden = false;
+        trackEl.innerHTML = cup.railHtml(liveOrder);
+      } else {
+        trackEl.hidden = true;
+        trackEl.innerHTML = "";
+      }
+    }
     if (!linesEl) return;
+    if (tracking() || (liveOrder && liveOrder.status === "collected" && !basket.length)) {
+      linesEl.innerHTML = (liveOrder.items || [])
+        .map(function (row) {
+          return (
+            "<li><span>" +
+            escapeHtml(row.qty + " × " + row.name) +
+            "</span><span>" +
+            formatPrice(row.price_gbp * row.qty) +
+            "</span></li>"
+          );
+        })
+        .join("");
+      if (totalEl) {
+        totalEl.innerHTML =
+          liveOrder.status === "ready"
+            ? "Come to the counter."
+            : liveOrder.status === "collected"
+              ? '<a href="account.html">See it in your account</a>'
+              : liveOrder.paid
+                ? "Paid."
+                : "Pay when you collect.";
+      }
+      return;
+    }
     if (!basket.length) {
       linesEl.innerHTML = "";
       if (totalEl) {
@@ -121,6 +223,8 @@
       return;
     }
     holdOpen = false;
+    liveOrder = null;
+    stopLive();
     if (holdTimer) window.clearTimeout(holdTimer);
     var current = basket[0];
     if (current && current.name === name && current.price_gbp === price) {
@@ -175,6 +279,41 @@
     };
   }
 
+  function letGo() {
+    if (!liveOrder || !cup || !cup.canLetGo(liveOrder)) return;
+    if (!window.confirm("Let this collection go? It comes off the counter.")) return;
+    if (letGoBtn) letGoBtn.disabled = true;
+    setStatus("Letting this go…");
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/orders", {
+          method: "PATCH",
+          headers: headers,
+          body: JSON.stringify({
+            id: liveOrder.id,
+            status: "cancelled"
+          })
+        });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "That collection could not come off.");
+          return data;
+        });
+      })
+      .then(function () {
+        if (letGoBtn) letGoBtn.disabled = false;
+        liveOrder = null;
+        stopLive();
+        setStatus("Let go. Add another from the board if you like.");
+        renderDock();
+      })
+      .catch(function (err) {
+        if (letGoBtn) letGoBtn.disabled = false;
+        setStatus(err.message || "That collection could not come off.", "error");
+      });
+  }
+
   function place(pay) {
     if (!basket.length) return;
     if (placeBtn) placeBtn.disabled = true;
@@ -210,14 +349,8 @@
         if (noteEl) noteEl.value = "";
         if (placeBtn) placeBtn.disabled = false;
         if (counterBtn) counterBtn.disabled = false;
-        holdOpen = true;
-        if (holdTimer) window.clearTimeout(holdTimer);
-        holdTimer = window.setTimeout(function () {
-          holdOpen = false;
-          renderDock();
-        }, 8000);
-        setStatus("At the counter. Pay when you collect.");
-        renderDock();
+        setStatus("");
+        watchLive(data.order);
       })
       .catch(function (err) {
         if (placeBtn) placeBtn.disabled = false;
@@ -230,10 +363,8 @@
     if (!signedIn()) {
       stripeOn = false;
       stripeChecked = false;
-      renderDock();
-      return;
-    }
-    if (stripeChecked) {
+      liveOrder = null;
+      stopLive();
       renderDock();
       return;
     }
@@ -244,10 +375,17 @@
       .then(function (res) {
         return res.json().then(function (data) {
           if (!res.ok) throw new Error("skip");
-          stripeOn = !!data.stripe;
-          stripeChecked = true;
-          renderDock();
+          return data;
         });
+      })
+      .then(function (data) {
+        stripeOn = !!data.stripe;
+        stripeChecked = true;
+        var next = (data.orders || []).filter(function (row) {
+          return cup && cup.watching(row.status);
+        })[0];
+        if (next && !basket.length) watchLive(next);
+        else renderDock();
       })
       .catch(function () {
         renderDock();
@@ -273,6 +411,9 @@
     counterBtn.addEventListener("click", function () {
       place("counter");
     });
+  }
+  if (letGoBtn) {
+    letGoBtn.addEventListener("click", letGo);
   }
 
   var prevBind = window.blancoBindMenuRows;

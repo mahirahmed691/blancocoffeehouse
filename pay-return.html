@@ -55,7 +55,7 @@
         var href = q ? safe + (safe.indexOf("?") >= 0 ? "&" : "?") + q : safe;
         var line = document.getElementById("line");
         var go = document.getElementById("go");
-        if (params.get("paid") === "1") line.textContent = "Paid. It’s at the counter.";
+        if (params.get("paid") === "1") line.textContent = "Paid. The house has it.";
         else if (params.get("cancel") === "1") line.textContent = "The card was let go.";
         if (go) go.setAttribute("href", href);
         window.location.replace(href);

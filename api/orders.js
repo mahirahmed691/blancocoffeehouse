@@ -1,4 +1,4 @@
-/* Click-and-collect. Members place; the desk marks ready / collected.
+/* Click-and-collect. Members place; the desk marks making it / ready / collected.
    Env: same as /api/admin */
 
 var clerk = require("../lib/clerk-verify");
@@ -310,7 +310,7 @@ module.exports = async function handler(req, res) {
     var patch = await readBody(req);
     var id = String(patch.id || "").trim();
     var status = String(patch.status || "").trim();
-    if (!id || ["ready", "collected", "cancelled"].indexOf(status) === -1) {
+    if (!id || ["preparing", "ready", "collected", "cancelled"].indexOf(status) === -1) {
       json(res, 400, { error: "That collection could not update." });
       return;
     }

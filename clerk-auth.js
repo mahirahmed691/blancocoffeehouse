@@ -113,7 +113,14 @@
     if (!user) return;
     var emailObj = user.primaryEmailAddress || (user.emailAddresses && user.emailAddresses[0]);
     var name = user.fullName || user.firstName || "member";
+    var first =
+      user.firstName ||
+      (user.fullName && String(user.fullName).split(" ")[0]) ||
+      "member";
     var email = (emailObj && emailObj.emailAddress) || "—";
+    document.querySelectorAll("[data-account-first]").forEach(function (el) {
+      el.textContent = first;
+    });
     document.querySelectorAll("[data-account-name]").forEach(function (el) {
       el.textContent = name;
     });
