@@ -14,13 +14,10 @@ import {
 } from "react-native";
 import { ok, tap, warn } from "./feel";
 import {
-  formatPrice,
   fetchReviews,
   houseOpenLine,
   houseState,
-  orderStatusLine,
   type HouseHours,
-  type HouseOrder,
   type HouseReviews
 } from "./house";
 import {
@@ -59,7 +56,6 @@ type YouStackProps = {
   email: string;
   stamps: number;
   cardsDone: number;
-  orders: HouseOrder[];
   onRank: boolean;
   rankNote: string;
   rankCode: string;
@@ -109,7 +105,6 @@ function YouHome({
   email,
   stamps,
   cardsDone,
-  orders,
   onRank,
   rankNote,
   rankCode,
@@ -122,7 +117,6 @@ function YouHome({
   onPictures
 }: YouStackProps) {
   const pad = usePad();
-  const [openOrder, setOpenOrder] = useState<string | null>(null);
   const stampNote =
     stamps === 0 && cardsDone
       ? cardsDone === 1
@@ -164,43 +158,6 @@ function YouHome({
         ))}
       </View>
       <Text style={styles.prose}>{stampNote}</Text>
-
-      <Text style={styles.sectionTitle}>collection.</Text>
-      {!orders.length ? (
-        <Text style={styles.prose}>Nothing at the counter yet.</Text>
-      ) : (
-        orders.map((order) => {
-          const open = openOrder === order.id;
-          return (
-            <Pressable
-              key={order.id}
-              onPress={() => {
-                tap();
-                setOpenOrder(open ? null : order.id);
-              }}
-              style={styles.order}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: open }}
-            >
-              <Text style={styles.orderStatus}>{orderStatusLine(order)}</Text>
-              <Text style={styles.orderItems}>
-                {(order.items || [])
-                  .map((row) => row.qty + " × " + row.name)
-                  .join(" · ")}
-              </Text>
-              <Text style={styles.rowPrice}>{formatPrice(Number(order.total_gbp) || 0)}</Text>
-              {open && order.note ? (
-                <Text style={styles.orderNote}>“{order.note}”</Text>
-              ) : null}
-              {open ? (
-                <Text style={styles.orderNote}>
-                  {order.paid ? "Paid." : "Pay when you collect."} Collection at the counter — not to the door.
-                </Text>
-              ) : null}
-            </Pressable>
-          );
-        })
-      )}
 
       <Text style={styles.sectionTitle}>the rank.</Text>
       {onRank ? (

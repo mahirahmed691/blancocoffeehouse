@@ -11,7 +11,9 @@ import {
 } from "@expo-google-fonts/work-sans";
 import { ClerkProvider, useAuth, useUser } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
+import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
+import * as WebBrowser from "expo-web-browser";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -39,15 +41,21 @@ import {
   fetchHours,
   fetchMenu,
   fetchOrders,
+  fetchPay,
   fetchRank,
   fetchStamps,
   formatPrice,
   groupBoard,
   houseOpenLine,
   joinRank,
+  cancelOrder,
+  linesFromOrder,
   onRankPrice,
+  orderItemsLine,
+  orderStatusLine,
   placeOrder,
   priceOf,
+  recentForReorder,
   type HouseHours,
   type HouseOrder,
   type Line,
@@ -78,6 +86,15 @@ import { YouStack, type YouPage } from "./you";
 
 type Tab = "menu" | "look" | "bag" | "you";
 type Board = "drinks" | "sweets";
+
+WebBrowser.maybeCompleteAuthSession();
+
+function payHrefKind(url: string) {
+  const href = String(url || "").toLowerCase();
+  if (href.indexOf("paid=1") !== -1) return "paid";
+  if (href.indexOf("cancel=1") !== -1) return "cancel";
+  return "";
+}
 
 function Grain() {
   const { width, height } = useWindowDimensions();
@@ -233,11 +250,16 @@ function BagScreen({
   prefer,
   status,
   busy,
+  items,
+  onRank,
+  orders,
   onNote,
   onQty,
   onClear,
   onPay,
-  onMenu
+  onMenu,
+  onReorder,
+  onCancelOrder
 }: {
   bag: Line[];
   note: string;
@@ -245,16 +267,25 @@ function BagScreen({
   prefer: PayPref;
   status: string;
   busy: boolean;
+  items: MenuItem[];
+  onRank: boolean;
+  orders: HouseOrder[];
   onNote: (next: string) => void;
   onQty: (id: string, delta: number) => void;
   onClear: () => void;
   onPay: (pay: "stripe" | "counter") => void;
   onMenu: () => void;
+  onReorder: (order: HouseOrder) => void;
+  onCancelOrder: (id: string) => void;
 }) {
   const pad = usePad();
   const empty = bag.length === 0;
   const total = formatPrice(bagTotal(bag));
   const cardFirst = stripe && prefer !== "counter";
+  const waiting = orders.filter((order) => order.status === "hold");
+  const recent = recentForReorder(orders).filter(
+    (order) => linesFromOrder(order, items, onRank).length > 0
+  );
   return (
     <KeyboardAvoidingView
       style={styles.screen}
@@ -270,8 +301,11 @@ function BagScreen({
         {empty ? (
           <>
             <Text style={styles.prose}>
-              Add from the board. Pay now, or at the counter.
+              {stripe
+                ? "Add from the board. Pay now with the card, or at the counter when you collect."
+                : "Add from the board. Pay at the counter when you collect."}
             </Text>
+            {status ? <Text style={styles.status}>{status}</Text> : null}
             <Pressable
               onPress={() => {
                 tap();
@@ -281,6 +315,48 @@ function BagScreen({
             >
               <Text style={styles.btnText}>The board</Text>
             </Pressable>
+            {waiting.length ? (
+              <>
+                <Text style={styles.sectionTitle}>waiting.</Text>
+                {waiting.map((order) => (
+                  <View key={order.id} style={styles.past}>
+                    <Text style={styles.pastStatus}>{orderStatusLine(order)}</Text>
+                    <Text style={styles.pastItems}>{orderItemsLine(order)}</Text>
+                    <Text style={styles.pastPrice}>{formatPrice(Number(order.total_gbp) || 0)}</Text>
+                    <Pressable
+                      onPress={() => onCancelOrder(order.id)}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Let this collection go"
+                    >
+                      <Text style={styles.link}>Let this go</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </>
+            ) : null}
+            {recent.length ? (
+              <>
+                <Text style={styles.sectionTitle}>again.</Text>
+                {recent.map((order) => {
+                  const lines = linesFromOrder(order, items, onRank);
+                  return (
+                    <View key={order.id} style={styles.past}>
+                      <Text style={styles.pastItems}>{orderItemsLine(order)}</Text>
+                      <Text style={styles.pastPrice}>{formatPrice(bagTotal(lines))}</Text>
+                      <Pressable
+                        onPress={() => onReorder(order)}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={"Order again: " + orderItemsLine(order)}
+                      >
+                        <Text style={styles.link}>Order again</Text>
+                      </Pressable>
+                    </View>
+                  );
+                })}
+              </>
+            ) : null}
           </>
         ) : (
           <>
@@ -342,6 +418,15 @@ function BagScreen({
             <Text style={styles.bagTotalSum}>{total}</Text>
           </View>
           {status ? <Text style={styles.status}>{status}</Text> : null}
+          {stripe ? (
+            <Text style={styles.payHint}>
+              The card opens in Safari, then brings you back here.
+            </Text>
+          ) : (
+            <Text style={styles.payHint}>
+              The card is not open on this phone yet. Pay at the counter.
+            </Text>
+          )}
           {stripe && cardFirst ? (
             <>
               <Pressable
@@ -497,15 +582,21 @@ function House() {
   const [bagStatus, setBagStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [payUrl, setPayUrl] = useState("");
+  const [paying, setPaying] = useState(false);
   const [stamps, setStamps] = useState(0);
   const [cardsDone, setCardsDone] = useState(0);
   const [orders, setOrders] = useState<HouseOrder[]>([]);
   const [rankCode, setRankCode] = useState("");
   const [rankNote, setRankNote] = useState("");
   const [toast, setToast] = useState("");
+  const pendingPayId = useRef("");
+  const prefsRef = useRef(prefs);
+  prefsRef.current = prefs;
+  const settleRef = useRef<(kind: "paid" | "cancel" | "unknown") => void>(() => {});
+  const payDone = useRef(false);
 
-  async function liveSession(): Promise<Session> {
-    const token = await getToken();
+  async function liveSession(fresh?: boolean): Promise<Session> {
+    const token = await getToken(fresh ? { skipCache: true } : undefined);
     if (!isSignedIn || !sessionId || !token) throw new Error("Sign in again.");
     return {
       token,
@@ -520,20 +611,27 @@ function House() {
     setMenuLoading(true);
     setMenuError("");
     try {
-      const [menu, house] = await Promise.all([fetchMenu(), fetchHours()]);
+      const [menu, house, pay] = await Promise.all([
+        fetchMenu(),
+        fetchHours(),
+        fetchPay().catch(() => ({ stripe: false }))
+      ]);
       setItems(menu);
       setHours(house);
+      setStripe(!!pay.stripe);
       if (live) {
         const [rank, stamp, collection] = await Promise.all([
           fetchRank(live).catch(() => ({ driver: false, paused: false })),
           fetchStamps(live).catch(() => ({ stamps: 0, cards_done: 0 })),
-          fetchOrders(live).catch(() => ({ stripe: false, orders: [] as HouseOrder[] }))
+          fetchOrders(live).catch(() => null)
         ]);
         setOnRank(!!rank.driver);
         setStamps(stamp.stamps);
         setCardsDone(stamp.cards_done);
-        setStripe(!!collection.stripe);
-        setOrders(collection.orders);
+        if (collection) {
+          setStripe(!!collection.stripe);
+          setOrders(collection.orders);
+        }
       }
     } catch (err) {
       setMenuError(err instanceof Error ? err.message : "The board could not load.");
@@ -648,44 +746,137 @@ function House() {
     );
   }
 
+  function markPaid() {
+    ok();
+    setBag([]);
+    setNote(prefsRef.current.bagNote);
+    setBagStatus("Paid. It’s at the counter.");
+  }
+
+  async function settlePay(kind: "paid" | "cancel" | "unknown") {
+    if (payDone.current) {
+      if (kind === "paid") {
+        pendingPayId.current = "";
+        markPaid();
+        liveSession().then(loadHouse).catch(() => {});
+      }
+      return;
+    }
+    payDone.current = true;
+    const id = pendingPayId.current;
+    setPayUrl("");
+    setPaying(false);
+
+    if (kind === "paid") {
+      pendingPayId.current = "";
+      markPaid();
+      liveSession().then(loadHouse).catch(() => {});
+      return;
+    }
+
+    if (id) {
+      try {
+        const live = await liveSession();
+        const collection = await fetchOrders(live).catch(() => null);
+        const row = collection?.orders.find((order) => order.id === id);
+        if (row && (row.paid || row.status === "in" || row.status === "ready")) {
+          pendingPayId.current = "";
+          if (collection) {
+            setStripe(!!collection.stripe);
+            setOrders(collection.orders);
+          }
+          markPaid();
+          return;
+        }
+        if (kind === "cancel") {
+          await cancelOrder(live, id).catch(() => {});
+        }
+        await loadHouse(live);
+      } catch {
+        // keep the bag if the house cannot settle yet
+      }
+    }
+
+    pendingPayId.current = "";
+    setBagStatus(
+      kind === "cancel"
+        ? "The card was let go. The bag is still here."
+        : "Come back to the bag if the card is still open."
+    );
+  }
+
+  settleRef.current = (kind) => {
+    void settlePay(kind);
+  };
+
   async function pay(method: "stripe" | "counter") {
     if (!bag.length) return;
     tap();
     setBusy(true);
     setBagStatus(method === "stripe" ? "Opening the card…" : "Sending to the counter…");
     try {
-      const live = await liveSession();
-      const data = await placeOrder(live, bag, note, method);
+      const live = await liveSession(true);
+      const data = await placeOrder(
+        live,
+        bag,
+        note,
+        method,
+        method === "stripe" ? Linking.createURL("pay") : ""
+      );
       if (data.url) {
-        setPayUrl(String(data.url));
+        pendingPayId.current = String((data.order && data.order.id) || "");
+        payDone.current = false;
         setBusy(false);
+        setPaying(true);
+        const redirect = Linking.createURL("pay");
+        try {
+          const result = await WebBrowser.openAuthSessionAsync(String(data.url), redirect);
+          if (result.type !== "success") {
+            await settlePay("cancel");
+            return;
+          }
+          const href = String(result.url || "");
+          const kind = payHrefKind(href);
+          if (kind === "paid") {
+            await settlePay("paid");
+            return;
+          }
+          if (kind === "cancel") {
+            await settlePay("cancel");
+            return;
+          }
+          if (/^(blanco|exp):\/\//i.test(href)) {
+            await settlePay("unknown");
+            return;
+          }
+          setPayUrl(String(data.url));
+        } catch {
+          setPayUrl(String(data.url));
+        }
         return;
       }
       ok();
       setBag([]);
-      setNote(prefs.bagNote);
+      setNote(prefsRef.current.bagNote);
       setBagStatus("At the counter. Pay when you collect.");
       loadHouse(live);
     } catch (err) {
       warn();
+      pendingPayId.current = "";
+      setPaying(false);
       setBagStatus(err instanceof Error ? err.message : "The counter could not take that.");
     } finally {
       setBusy(false);
     }
   }
 
-  function closePay(paid: boolean) {
-    setPayUrl("");
-    if (paid) {
-      ok();
-      setBag([]);
-      setNote(prefs.bagNote);
-      setBagStatus("Paid. It’s at the counter.");
-      setYouPage("home");
-      setTab("you");
-      liveSession().then(loadHouse).catch(() => {});
-    }
-  }
+  useEffect(() => {
+    const sub = Linking.addEventListener("url", (event) => {
+      const kind = payHrefKind(event.url);
+      if (kind === "paid" || kind === "cancel") settleRef.current(kind);
+    });
+    return () => sub.remove();
+  }, []);
 
   async function saveName(next: string) {
     if (!user) throw new Error("Sign in again.");
@@ -766,6 +957,9 @@ function House() {
               prefer={prefs.pay}
               status={bagStatus}
               busy={busy}
+              items={items}
+              onRank={onRank}
+              orders={orders}
               onNote={setNote}
               onQty={changeQty}
               onClear={() => {
@@ -774,6 +968,24 @@ function House() {
               }}
               onPay={pay}
               onMenu={() => setTab("menu")}
+              onReorder={(order) => {
+                const lines = linesFromOrder(order, items, onRank);
+                if (!lines.length) {
+                  warn();
+                  setBagStatus("That’s not on the board today.");
+                  return;
+                }
+                tap();
+                setBag(lines);
+                setNote(order.note || prefs.bagNote);
+                setBagStatus("");
+              }}
+              onCancelOrder={(id) => {
+                tap();
+                liveSession()
+                  .then((live) => cancelOrder(live, id).then(() => loadHouse(live)))
+                  .catch(() => warn());
+              }}
             />
           ) : null}
           {tab === "you" ? (
@@ -785,7 +997,6 @@ function House() {
               email={user?.primaryEmailAddress?.emailAddress || ""}
               stamps={stamps}
               cardsDone={cardsDone}
-              orders={orders}
               onRank={onRank}
               rankNote={rankNote}
               rankCode={rankCode}
@@ -822,10 +1033,25 @@ function House() {
           ) : null}
         </View>
 
+      {paying && !payUrl ? (
+        <View style={styles.pay}>
+          <View style={[styles.payBar, { paddingTop: pad.top }]}>
+            <Pressable onPress={() => settlePay("cancel")} hitSlop={10}>
+              <Text style={styles.back}>let go</Text>
+            </Pressable>
+            <Text style={styles.payTitle}>the card.</Text>
+            <View style={{ width: 52 }} />
+          </View>
+          <View style={styles.payWait}>
+            <Text style={styles.prose}>Safari has the card. Come back here when it’s paid.</Text>
+          </View>
+        </View>
+      ) : null}
+
       {payUrl ? (
         <View style={styles.pay}>
           <View style={[styles.payBar, { paddingTop: pad.top }]}>
-            <Pressable onPress={() => closePay(false)} hitSlop={10}>
+            <Pressable onPress={() => settlePay("cancel")} hitSlop={10}>
               <Text style={styles.back}>let go</Text>
             </Pressable>
             <Text style={styles.payTitle}>the card.</Text>
@@ -834,22 +1060,31 @@ function House() {
           <WebView
             source={{ uri: payUrl }}
             style={styles.web}
-            originWhitelist={["*"]}
+            originWhitelist={["https://*", "http://*", "blanco://*", "exp://*"]}
             sharedCookiesEnabled
             javaScriptEnabled
+            onShouldStartLoadWithRequest={(req) => {
+              const href = String(req.url || "");
+              const kind = payHrefKind(href);
+              if (kind === "paid") {
+                settlePay("paid");
+                return false;
+              }
+              if (kind === "cancel") {
+                settlePay("cancel");
+                return false;
+              }
+              if (/^(blanco|exp):\/\//i.test(href)) {
+                settlePay("unknown");
+                return false;
+              }
+              return true;
+            }}
             onNavigationStateChange={(nav) => {
-              const href = String(nav.url || "").toLowerCase();
-              if (href.indexOf("checkout.stripe.com") !== -1) return;
-              if (href.indexOf("paid=1") !== -1) {
-                closePay(true);
-                return;
-              }
-              if (
-                href.indexOf("blancocoffeehouse.com") !== -1 ||
-                href.indexOf("blancocoffeehouse") !== -1
-              ) {
-                closePay(false);
-              }
+              const href = String(nav.url || "");
+              const kind = payHrefKind(href);
+              if (kind === "paid") settlePay("paid");
+              if (kind === "cancel") settlePay("cancel");
             }}
           />
         </View>
@@ -869,13 +1104,15 @@ function House() {
         </Pressable>
       ) : null}
 
-      <Tabs tab={tab} bagCount={bagQty(bag)} onTab={(next) => {
-        setPiece(null);
-        setToast("");
-        if (next === "you" && tab === "you") setYouPage("home");
-        if (next === "look" && tab === "look") setLookBoard("pictures");
-        setTab(next);
-      }} />
+      {paying || payUrl ? null : (
+        <Tabs tab={tab} bagCount={bagQty(bag)} onTab={(next) => {
+          setPiece(null);
+          setToast("");
+          if (next === "you" && tab === "you") setYouPage("home");
+          if (next === "look" && tab === "look") setLookBoard("pictures");
+          setTab(next);
+        }} />
+      )}
       <Grain />
     </View>
   );
@@ -1147,6 +1384,31 @@ const styles = StyleSheet.create({
     color: BROWN,
     fontVariant: ["tabular-nums"]
   },
+  past: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: LINE
+  },
+  pastStatus: {
+    fontFamily: SANS_MED,
+    fontSize: 11,
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+    color: MUTED,
+    marginBottom: 4
+  },
+  pastItems: {
+    fontFamily: SANS,
+    fontSize: 16,
+    color: BROWN,
+    marginBottom: 4
+  },
+  pastPrice: {
+    fontFamily: SANS_MED,
+    fontSize: 14,
+    color: BROWN,
+    fontVariant: ["tabular-nums"]
+  },
   bagDock: {
     paddingHorizontal: 22,
     paddingTop: 4,
@@ -1244,6 +1506,14 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 15,
     color: BROWN
+  },
+  payHint: {
+    marginTop: 4,
+    marginBottom: 4,
+    fontFamily: SANS,
+    fontSize: 14,
+    lineHeight: 20,
+    color: MUTED
   },
   stamps: {
     flexDirection: "row",
@@ -1464,7 +1734,7 @@ const styles = StyleSheet.create({
   pay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: BEIGE,
-    zIndex: 20
+    zIndex: 60
   },
   payBar: {
     flexDirection: "row",
@@ -1478,5 +1748,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: BROWN,
     letterSpacing: -0.4
+  },
+  payWait: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28
   }
 });

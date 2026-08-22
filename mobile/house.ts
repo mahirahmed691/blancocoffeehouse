@@ -88,6 +88,54 @@ export function bagTotal(bag: Line[]) {
   return bag.reduce((sum, row) => sum + (Number(row.price_gbp) || 0) * (Number(row.qty) || 0), 0);
 }
 
+export function orderItemsLine(order: HouseOrder) {
+  return (order.items || [])
+    .map((row) => row.qty + " × " + row.name)
+    .join(" · ");
+}
+
+export function linesFromOrder(order: HouseOrder, items: MenuItem[], onRank: boolean): Line[] {
+  const out: Line[] = [];
+  (order.items || []).forEach((row) => {
+    const found = items.find(
+      (item) => String(item.name).trim().toLowerCase() === String(row.name).trim().toLowerCase()
+    );
+    if (!found || found.sold_out) return;
+    const id = String(found.id || found.name);
+    const qty = Math.min(BAG_QTY_MAX, Math.max(1, Number(row.qty) || 1));
+    const existing = out.find((line) => line.id === id);
+    if (existing) {
+      existing.qty = Math.min(BAG_QTY_MAX, existing.qty + qty);
+      return;
+    }
+    if (out.length >= BAG_LINES_MAX) return;
+    out.push({
+      id,
+      name: found.name,
+      price_gbp: priceOf(found, onRank),
+      qty,
+      rank: onRankPrice(found, onRank)
+    });
+  });
+  return out;
+}
+
+export function recentForReorder(orders: HouseOrder[], limit = 4) {
+  const seen: Record<string, true> = {};
+  const out: HouseOrder[] = [];
+  orders.forEach((order) => {
+    if (order.status === "hold") return;
+    const key = (order.items || [])
+      .map((row) => String(row.qty) + ":" + String(row.name).trim().toLowerCase())
+      .sort()
+      .join("|");
+    if (!key || seen[key]) return;
+    seen[key] = true;
+    out.push(order);
+  });
+  return out.slice(0, limit);
+}
+
 export type HouseOrder = {
   id: string;
   status: string;
@@ -239,6 +287,12 @@ async function readJson(res: Response) {
   return data;
 }
 
+export async function fetchPay(): Promise<{ stripe: boolean }> {
+  const res = await fetch(HOUSE_SITE + "/api/pay");
+  const data = await res.json().catch(() => ({}));
+  return { stripe: !!data.stripe };
+}
+
 export async function fetchOrders(session: Session): Promise<{
   stripe: boolean;
   orders: HouseOrder[];
@@ -247,9 +301,10 @@ export async function fetchOrders(session: Session): Promise<{
     headers: clerkHeaders(session)
   });
   const data = await readJson(res);
+  const orders = Array.isArray(data.orders) ? data.orders : [];
   return {
     stripe: !!data.stripe,
-    orders: Array.isArray(data.orders) ? data.orders : []
+    orders: orders.filter((row: HouseOrder) => row.status !== "cancelled")
   };
 }
 
@@ -257,12 +312,22 @@ export async function placeOrder(
   session: Session,
   items: Line[],
   note: string,
-  pay: "stripe" | "counter"
+  pay: "stripe" | "counter",
+  returnUrl?: string
 ) {
   const res = await fetch(HOUSE_SITE + "/api/orders", {
     method: "POST",
     headers: clerkHeaders(session),
-    body: JSON.stringify({ items, note, pay })
+    body: JSON.stringify({ items, note, pay, return_url: returnUrl || "" })
+  });
+  return readJson(res);
+}
+
+export async function cancelOrder(session: Session, id: string) {
+  const res = await fetch(HOUSE_SITE + "/api/orders", {
+    method: "PATCH",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({ id, status: "cancelled" })
   });
   return readJson(res);
 }
