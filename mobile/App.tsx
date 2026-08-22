@@ -30,7 +30,6 @@ import {
   View
 } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { WebView } from "react-native-webview";
 import { Gate } from "./auth";
 import { ok, tap, warn } from "./feel";
 import {
@@ -38,24 +37,34 @@ import {
   bagTotal,
   BAG_LINES_MAX,
   BAG_QTY_MAX,
+  fetchHandle,
   fetchHours,
   fetchMenu,
   fetchOrders,
   fetchPay,
+  fetchPace,
   fetchRank,
   fetchStamps,
   formatPrice,
   groupBoard,
+  houseBusyLine,
   houseOpenLine,
+  houseState,
+  counterCue,
   joinRank,
   cancelOrder,
   linesFromOrder,
+  liveOrders,
+  moreHandles,
   onRankPrice,
   orderItemsLine,
   orderStatusLine,
+  pickHandle,
   placeOrder,
+  postPace,
   priceOf,
   recentForReorder,
+  bagHintLine,
   type HouseHours,
   type HouseOrder,
   type Line,
@@ -86,8 +95,6 @@ import { YouStack, type YouPage } from "./you";
 
 type Tab = "menu" | "look" | "bag" | "you";
 type Board = "drinks" | "sweets";
-
-WebBrowser.maybeCompleteAuthSession();
 
 function payHrefKind(url: string) {
   const href = String(url || "").toLowerCase();
@@ -159,6 +166,7 @@ function MenuScreen({
           {houseOpenLine(hours)}
         </Text>
       </Pressable>
+      {houseBusyLine(hours) ? <Text style={styles.notice}>{houseBusyLine(hours)}</Text> : null}
       {hours?.notice ? <Text style={styles.notice}>{hours.notice}</Text> : null}
       <View style={styles.seg}>
         {(["drinks", "sweets"] as const).map((id) => (
@@ -251,15 +259,18 @@ function BagScreen({
   status,
   busy,
   items,
+  hours,
   onRank,
   orders,
+  refreshing,
   onNote,
   onQty,
   onClear,
   onPay,
   onMenu,
   onReorder,
-  onCancelOrder
+  onCancelOrder,
+  onRefresh
 }: {
   bag: Line[];
   note: string;
@@ -268,8 +279,10 @@ function BagScreen({
   status: string;
   busy: boolean;
   items: MenuItem[];
+  hours: HouseHours | null;
   onRank: boolean;
   orders: HouseOrder[];
+  refreshing: boolean;
   onNote: (next: string) => void;
   onQty: (id: string, delta: number) => void;
   onClear: () => void;
@@ -277,12 +290,15 @@ function BagScreen({
   onMenu: () => void;
   onReorder: (order: HouseOrder) => void;
   onCancelOrder: (id: string) => void;
+  onRefresh: () => void;
 }) {
   const pad = usePad();
   const empty = bag.length === 0;
   const total = formatPrice(bagTotal(bag));
   const cardFirst = stripe && prefer !== "counter";
+  const closed = houseState(hours) === "closed";
   const waiting = orders.filter((order) => order.status === "hold");
+  const live = liveOrders(orders);
   const recent = recentForReorder(orders).filter(
     (order) => linesFromOrder(order, items, onRank).length > 0
   );
@@ -295,15 +311,24 @@ function BagScreen({
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: empty ? 36 : 24 }]}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BROWN} />
+        }
       >
         <Kicker label="collection" />
         <Text style={styles.title}>the bag.</Text>
+        {houseBusyLine(hours) ? <Text style={styles.notice}>{houseBusyLine(hours)}</Text> : null}
+        {!closed && counterCue(orders) ? (
+          <Text style={styles.notice}>{counterCue(orders)}</Text>
+        ) : null}
         {empty ? (
           <>
             <Text style={styles.prose}>
-              {stripe
-                ? "Add from the board. Pay now with the card, or at the counter when you collect."
-                : "Add from the board. Pay at the counter when you collect."}
+              {live.length
+                ? "Something is already at the counter. Add more from the board, or order again when this one is collected."
+                : stripe
+                  ? "Add from the board. Pay now with the card, or at the counter when you collect."
+                  : "Add from the board. Pay at the counter when you collect."}
             </Text>
             {status ? <Text style={styles.status}>{status}</Text> : null}
             <Pressable
@@ -335,24 +360,46 @@ function BagScreen({
                 ))}
               </>
             ) : null}
+            {live.length ? (
+              <>
+                <Text style={styles.sectionTitle}>at the counter.</Text>
+                {live.map((order) => (
+                  <View key={order.id} style={styles.past}>
+                    <Text style={styles.pastStatus}>{orderStatusLine(order)}</Text>
+                    <Text style={styles.pastItems}>{orderItemsLine(order)}</Text>
+                    <Text style={styles.pastPrice}>{formatPrice(Number(order.total_gbp) || 0)}</Text>
+                    {order.note ? <Text style={styles.pastNote}>“{order.note}”</Text> : null}
+                    <Text style={styles.pastNote}>
+                      {order.paid ? "Paid." : "Pay when you collect."} Collection at the counter — not to the door.
+                    </Text>
+                  </View>
+                ))}
+              </>
+            ) : null}
             {recent.length ? (
               <>
                 <Text style={styles.sectionTitle}>again.</Text>
                 {recent.map((order) => {
                   const lines = linesFromOrder(order, items, onRank);
+                  const wanted = (order.items || []).reduce(
+                    (sum, row) => sum + (Number(row.qty) || 0),
+                    0
+                  );
+                  const skipped = bagQty(lines) < wanted;
                   return (
-                    <View key={order.id} style={styles.past}>
+                    <Pressable
+                      key={order.id}
+                      onPress={() => onReorder(order)}
+                      style={({ pressed }) => [styles.past, pressed && styles.pressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel={"Order again: " + orderItemsLine(order)}
+                    >
                       <Text style={styles.pastItems}>{orderItemsLine(order)}</Text>
                       <Text style={styles.pastPrice}>{formatPrice(bagTotal(lines))}</Text>
-                      <Pressable
-                        onPress={() => onReorder(order)}
-                        hitSlop={8}
-                        accessibilityRole="button"
-                        accessibilityLabel={"Order again: " + orderItemsLine(order)}
-                      >
-                        <Text style={styles.link}>Order again</Text>
-                      </Pressable>
-                    </View>
+                      <Text style={styles.link}>
+                        {skipped ? "Order what is still on the board" : "Order again"}
+                      </Text>
+                    </Pressable>
                   );
                 })}
               </>
@@ -418,6 +465,11 @@ function BagScreen({
             <Text style={styles.bagTotalSum}>{total}</Text>
           </View>
           {status ? <Text style={styles.status}>{status}</Text> : null}
+          {closed ? (
+            <Text style={styles.payHint}>
+              The house is closed now. We’ll have it at the counter when we open.
+            </Text>
+          ) : null}
           {stripe ? (
             <Text style={styles.payHint}>
               The card opens in Safari, then brings you back here.
@@ -575,13 +627,15 @@ function House() {
   const [menuError, setMenuError] = useState("");
   const [menuLoading, setMenuLoading] = useState(false);
   const [onRank, setOnRank] = useState(false);
+  const [desk, setDesk] = useState(false);
+  const [handle, setHandle] = useState("");
+  const [handlePicks, setHandlePicks] = useState<string[]>([]);
   const [bag, setBag] = useState<Line[]>([]);
   const [note, setNote] = useState("");
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [stripe, setStripe] = useState(false);
   const [bagStatus, setBagStatus] = useState("");
   const [busy, setBusy] = useState(false);
-  const [payUrl, setPayUrl] = useState("");
   const [paying, setPaying] = useState(false);
   const [stamps, setStamps] = useState(0);
   const [cardsDone, setCardsDone] = useState(0);
@@ -620,12 +674,23 @@ function House() {
       setHours(house);
       setStripe(!!pay.stripe);
       if (live) {
-        const [rank, stamp, collection] = await Promise.all([
+        const [rank, stamp, collection, pace, named] = await Promise.all([
           fetchRank(live).catch(() => ({ driver: false, paused: false })),
           fetchStamps(live).catch(() => ({ stamps: 0, cards_done: 0 })),
-          fetchOrders(live).catch(() => null)
+          fetchOrders(live).catch(() => null),
+          fetchPace(live).catch(() => ({
+            how_busy: "",
+            how_wait: "",
+            pace_at: "",
+            admin: false,
+            stale: true
+          })),
+          fetchHandle(live).catch(() => ({ handle: "", suggestions: [] }))
         ]);
         setOnRank(!!rank.driver);
+        setDesk(!!pace.admin);
+        setHandle(named.handle);
+        setHandlePicks(named.suggestions);
         setStamps(stamp.stamps);
         setCardsDone(stamp.cards_done);
         if (collection) {
@@ -650,12 +715,14 @@ function House() {
     }
     if (!isSignedIn && wasIn.current) {
       setOnRank(false);
+      setDesk(false);
+      setHandle("");
+      setHandlePicks([]);
       setBag([]);
       setNote("");
       setOrders([]);
       setStamps(0);
       setBagStatus("");
-      setPayUrl("");
       setToast("");
       setYouPage("home");
     }
@@ -764,7 +831,6 @@ function House() {
     }
     payDone.current = true;
     const id = pendingPayId.current;
-    setPayUrl("");
     setPaying(false);
 
     if (kind === "paid") {
@@ -849,9 +915,9 @@ function House() {
             await settlePay("unknown");
             return;
           }
-          setPayUrl(String(data.url));
+          await settlePay("unknown");
         } catch {
-          setPayUrl(String(data.url));
+          await settlePay("unknown");
         }
         return;
       }
@@ -881,6 +947,46 @@ function House() {
   async function saveName(next: string) {
     if (!user) throw new Error("Sign in again.");
     await user.update({ firstName: next.trim() });
+  }
+
+  async function saveHandle(next: string) {
+    const live = await liveSession();
+    const data = await pickHandle(live, next);
+    setHandle(data.handle);
+    setHandlePicks(data.suggestions);
+  }
+
+  async function shuffleHandles() {
+    const live = await liveSession();
+    const data = await moreHandles(live);
+    if (data.handle) setHandle(data.handle);
+    setHandlePicks(data.suggestions);
+  }
+
+  async function savePace(patch: { how_busy?: string; how_wait?: string }) {
+    const live = await liveSession();
+    const data = await postPace(live, patch);
+    setHours((current) =>
+      current
+        ? {
+            ...current,
+            how_busy: String(data.how_busy || ""),
+            how_wait: String(data.how_wait || ""),
+            pace_at: String(data.pace_at || "")
+          }
+        : current
+    );
+  }
+
+  async function savePassword(current: string, next: string) {
+    if (!user) throw new Error("Sign in again.");
+    const resource = user as {
+      updatePassword?: (args: { currentPassword: string; newPassword: string }) => Promise<unknown>;
+    };
+    if (!resource.updatePassword) {
+      throw new Error("That password cannot be changed in the app yet.");
+    }
+    await resource.updatePassword({ currentPassword: current, newPassword: next });
   }
 
   async function onJoinRank() {
@@ -947,6 +1053,7 @@ function House() {
               piece={piece}
               onOpen={setPiece}
               onBackPiece={() => setPiece(null)}
+              getSession={liveSession}
             />
           ) : null}
           {tab === "bag" ? (
@@ -958,8 +1065,10 @@ function House() {
               status={bagStatus}
               busy={busy}
               items={items}
+              hours={hours}
               onRank={onRank}
               orders={orders}
+              refreshing={menuLoading}
               onNote={setNote}
               onQty={changeQty}
               onClear={() => {
@@ -978,7 +1087,12 @@ function House() {
                 tap();
                 setBag(lines);
                 setNote(order.note || prefs.bagNote);
-                setBagStatus("");
+                setBagStatus(
+                  bagQty(lines) <
+                  (order.items || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0)
+                    ? "Some of that is not on the board today. The rest is in the bag."
+                    : ""
+                );
               }}
               onCancelOrder={(id) => {
                 tap();
@@ -986,6 +1100,7 @@ function House() {
                   .then((live) => cancelOrder(live, id).then(() => loadHouse(live)))
                   .catch(() => warn());
               }}
+              onRefresh={() => loadHouse()}
             />
           ) : null}
           {tab === "you" ? (
@@ -995,9 +1110,17 @@ function House() {
               hours={hours}
               name={user?.firstName || user?.fullName || ""}
               email={user?.primaryEmailAddress?.emailAddress || ""}
+              handle={handle}
+              handlePicks={handlePicks}
+              onSaveHandle={saveHandle}
+              onMoreHandles={shuffleHandles}
               stamps={stamps}
               cardsDone={cardsDone}
+              bagHint={bagHintLine(orders)}
+              onBag={() => setTab("bag")}
               onRank={onRank}
+              desk={desk}
+              onHowLive={savePace}
               rankNote={rankNote}
               rankCode={rankCode}
               refreshing={menuLoading}
@@ -1011,8 +1134,14 @@ function House() {
               onJoinRank={onJoinRank}
               onRefresh={() => loadHouse()}
               onSaveName={saveName}
+              onSavePassword={savePassword}
+              passwordOn={!!user?.passwordEnabled}
               onPictures={() => {
                 setLookBoard("pictures");
+                setTab("look");
+              }}
+              onToday={() => {
+                setLookBoard("today");
                 setTab("look");
               }}
               onSignOut={() => {
@@ -1033,7 +1162,7 @@ function House() {
           ) : null}
         </View>
 
-      {paying && !payUrl ? (
+      {paying ? (
         <View style={styles.pay}>
           <View style={[styles.payBar, { paddingTop: pad.top }]}>
             <Pressable onPress={() => settlePay("cancel")} hitSlop={10}>
@@ -1045,48 +1174,6 @@ function House() {
           <View style={styles.payWait}>
             <Text style={styles.prose}>Safari has the card. Come back here when it’s paid.</Text>
           </View>
-        </View>
-      ) : null}
-
-      {payUrl ? (
-        <View style={styles.pay}>
-          <View style={[styles.payBar, { paddingTop: pad.top }]}>
-            <Pressable onPress={() => settlePay("cancel")} hitSlop={10}>
-              <Text style={styles.back}>let go</Text>
-            </Pressable>
-            <Text style={styles.payTitle}>the card.</Text>
-            <View style={{ width: 52 }} />
-          </View>
-          <WebView
-            source={{ uri: payUrl }}
-            style={styles.web}
-            originWhitelist={["https://*", "http://*", "blanco://*", "exp://*"]}
-            sharedCookiesEnabled
-            javaScriptEnabled
-            onShouldStartLoadWithRequest={(req) => {
-              const href = String(req.url || "");
-              const kind = payHrefKind(href);
-              if (kind === "paid") {
-                settlePay("paid");
-                return false;
-              }
-              if (kind === "cancel") {
-                settlePay("cancel");
-                return false;
-              }
-              if (/^(blanco|exp):\/\//i.test(href)) {
-                settlePay("unknown");
-                return false;
-              }
-              return true;
-            }}
-            onNavigationStateChange={(nav) => {
-              const href = String(nav.url || "");
-              const kind = payHrefKind(href);
-              if (kind === "paid") settlePay("paid");
-              if (kind === "cancel") settlePay("cancel");
-            }}
-          />
         </View>
       ) : null}
 
@@ -1104,7 +1191,7 @@ function House() {
         </Pressable>
       ) : null}
 
-      {paying || payUrl ? null : (
+      {paying ? null : (
         <Tabs tab={tab} bagCount={bagQty(bag)} onTab={(next) => {
           setPiece(null);
           setToast("");
@@ -1165,10 +1252,6 @@ const styles = StyleSheet.create({
   },
   stage: {
     flex: 1
-  },
-  web: {
-    flex: 1,
-    backgroundColor: BEIGE
   },
   gateMark: {
     width: 84,
@@ -1408,6 +1491,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: BROWN,
     fontVariant: ["tabular-nums"]
+  },
+  pastNote: {
+    marginTop: 6,
+    fontFamily: SANS,
+    fontSize: 14,
+    lineHeight: 20,
+    color: MUTED
   },
   bagDock: {
     paddingHorizontal: 22,

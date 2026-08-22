@@ -253,6 +253,7 @@ html.is-app body.account-page .skip,
 html.is-app body.account-page .account-actions,
 html.is-app body.account-page .grain,
 html.is-app body.account-page .house-notice,
+html.is-app body.account-page .house-pace,
 html.is-app body.account-page #account-home,
 html.is-app body.account-page .account-footer-actions {
   display: none;
@@ -287,6 +288,8 @@ html.is-app #wear,
 html.is-app #app,
 html.is-app #reviews,
 html.is-app #visit,
+html.is-app .house-notice,
+html.is-app .house-pace,
 html.is-app .site-header,
 html.is-app .site-footer,
 html.is-app .skip {
@@ -3252,6 +3255,80 @@ body.lightbox-open {
 
 .house-notice[hidden] {
   display: none;
+}
+
+.house-pace {
+  position: sticky;
+  top: 80px;
+  z-index: 69;
+  margin: 0 auto;
+  padding: 0.65rem var(--pad);
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-align: center;
+  color: var(--brown);
+  background: var(--paper);
+  border-bottom: 1px solid color-mix(in srgb, var(--brown) 16%, transparent);
+}
+
+.house-notice:not([hidden]) ~ .house-pace {
+  top: 128px;
+}
+
+.house-pace[hidden] {
+  display: none;
+}
+
+.house-pace-chip {
+  padding-top: 0.45rem;
+  border-top: 0;
+  color: var(--white);
+}
+
+.visit-pace {
+  display: block;
+  margin-top: 0.45rem;
+}
+
+.visit-pace[hidden] {
+  display: none;
+}
+
+.admin-pace-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-pace + .admin-pace-label {
+  margin-top: 1rem;
+}
+
+.admin-pace {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-pace button {
+  min-height: 2.6rem;
+  padding: 0 1rem;
+  border: 1.5px solid var(--brown);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--brown);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.admin-pace button.is-on {
+  background: var(--brown);
+  color: var(--beige);
 }
 
 .collect-add {

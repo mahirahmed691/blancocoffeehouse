@@ -2,7 +2,7 @@ import { SUPABASE_ANON, SUPABASE_URL } from "./house";
 import { HOUSE_SITE } from "./pieces";
 
 export type ShotKind = "cup" | "sweets" | "house";
-export type LookBoard = "pictures" | "wear";
+export type LookBoard = "pictures" | "today" | "wear";
 
 export type Shot = {
   id: string;

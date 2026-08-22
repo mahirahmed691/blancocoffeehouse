@@ -1,4 +1,4 @@
-import { Linking, type ImageSourcePropType } from "react-native";
+import { Linking, Platform, type ImageSourcePropType } from "react-native";
 
 export type Piece = {
   id: string;
@@ -47,6 +47,9 @@ export const HOUSE_ADDRESS =
   "4 Fiveways Parade, Hazel Grove, Stockport, SK7 6DG";
 export const HOUSE_MAPS =
   "https://www.google.com/maps/search/?api=1&query=Blanco+Coffee+House&query_place_id=ChIJA7O_BgBLekgRM6KmmvtDE_k";
+export const HOUSE_APPLE_MAPS =
+  "https://maps.apple.com/?q=" +
+  encodeURIComponent("Blanco Coffee House, " + HOUSE_ADDRESS);
 
 function withWww(url: string) {
   return String(url || "").replace(
@@ -76,4 +79,8 @@ export async function openAway(url: string) {
   } catch {
     /* nothing on the phone can open it */
   }
+}
+
+export async function openHouseMap() {
+  await openAway(Platform.OS === "ios" ? HOUSE_APPLE_MAPS : HOUSE_MAPS);
 }

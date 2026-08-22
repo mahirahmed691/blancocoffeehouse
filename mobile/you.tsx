@@ -15,21 +15,25 @@ import {
 import { ok, tap, warn } from "./feel";
 import {
   fetchReviews,
+  houseBusyLine,
   houseOpenLine,
   houseState,
+  paceStale,
+  HOW_BUSY,
+  HOW_WAIT,
   type HouseHours,
   type HouseReviews
 } from "./house";
 import {
   ACCOUNT_URL,
   HOUSE_ADDRESS,
-  HOUSE_MAPS,
   HOUSE_POST,
   HOUSE_SITE,
   HOUSE_STREET,
   HOUSE_TOWN,
   INSTAGRAM,
-  openAway
+  openAway,
+  openHouseMap
 } from "./pieces";
 import { savePrefs, type PayPref, type Prefs } from "./prefs";
 import {
@@ -54,9 +58,17 @@ type YouStackProps = {
   hours: HouseHours | null;
   name: string;
   email: string;
+  handle: string;
+  handlePicks: string[];
+  onSaveHandle: (next: string) => Promise<void>;
+  onMoreHandles: () => Promise<void>;
   stamps: number;
   cardsDone: number;
+  bagHint: string;
+  onBag: () => void;
   onRank: boolean;
+  desk: boolean;
+  onHowLive: (patch: { how_busy?: string; how_wait?: string }) => Promise<void>;
   rankNote: string;
   rankCode: string;
   refreshing: boolean;
@@ -68,7 +80,10 @@ type YouStackProps = {
   onRefresh: () => void;
   onSignOut: () => void;
   onSaveName: (next: string) => Promise<void>;
+  onSavePassword: (current: string, next: string) => Promise<void>;
+  passwordOn: boolean;
   onPictures: () => void;
+  onToday: () => void;
 };
 
 export function YouStack(props: YouStackProps) {
@@ -86,11 +101,17 @@ export function YouStack(props: YouStackProps) {
       <SettingsScreen
         name={props.name}
         email={props.email}
+        handle={props.handle}
+        handlePicks={props.handlePicks}
+        onSaveHandle={props.onSaveHandle}
+        onMoreHandles={props.onMoreHandles}
         hours={props.hours}
         stripe={props.stripe}
         prefs={props.prefs}
         onPrefs={props.onPrefs}
         onSaveName={props.onSaveName}
+        onSavePassword={props.onSavePassword}
+        passwordOn={props.passwordOn}
         onHouse={() => props.onPage("house")}
         onBack={() => props.onPage("home")}
         onSignOut={props.onSignOut}
@@ -101,11 +122,14 @@ export function YouStack(props: YouStackProps) {
 }
 
 function YouHome({
-  name,
-  email,
+  handle,
   stamps,
   cardsDone,
+  bagHint,
+  onBag,
   onRank,
+  desk,
+  onHowLive,
   rankNote,
   rankCode,
   refreshing,
@@ -114,7 +138,8 @@ function YouHome({
   onJoinRank,
   onRefresh,
   onPage,
-  onPictures
+  onPictures,
+  onToday
 }: YouStackProps) {
   const pad = usePad();
   const stampNote =
@@ -126,6 +151,22 @@ function YouHome({
         ? stamps + " of 8. A drink on the house at eight."
         : "Eight stamps. A drink on the house.";
   const openLine = houseOpenLine(hours);
+  const busyLine = houseBusyLine(hours);
+  const [paceBusy, setPaceBusy] = useState(false);
+
+  async function setPace(patch: { how_busy?: string; how_wait?: string }) {
+    if (paceBusy) return;
+    tap();
+    setPaceBusy(true);
+    try {
+      await onHowLive(patch);
+      ok();
+    } catch {
+      warn();
+    } finally {
+      setPaceBusy(false);
+    }
+  }
 
   return (
     <ScrollView
@@ -137,8 +178,7 @@ function YouHome({
       keyboardShouldPersistTaps="handled"
     >
       <Kicker label="member" />
-      <Text style={styles.title}>{name ? name.toLowerCase() + "." : "you."}</Text>
-      <Text style={styles.hours}>{email}</Text>
+      <Text style={styles.title}>{handle ? handle : "you."}</Text>
       <Pressable
         onPress={() => {
           tap();
@@ -150,9 +190,95 @@ function YouHome({
       >
         <Text style={styles.openLine}>{openLine}</Text>
       </Pressable>
+      {busyLine ? <Text style={styles.notice}>{busyLine}</Text> : null}
+
+      {desk ? (
+        <>
+          <Text style={styles.sectionTitle}>now.</Text>
+          <Text style={styles.prose}>
+            {paceStale(hours)
+              ? "Yesterday’s line is off. Set today’s so the house knows the room."
+              : "How the house feels. Customers see this on the board, the bag, and the site while you’re open. It drops off overnight."}
+          </Text>
+          <Text style={styles.label}>the room</Text>
+          <View style={styles.seg}>
+            {HOW_BUSY.map((row) => (
+              <Pressable
+                key={row.id}
+                onPress={() => setPace({ how_busy: row.id })}
+                disabled={paceBusy}
+                style={[
+                  styles.segBtn,
+                  hours?.how_busy === row.id && styles.segOn,
+                  paceBusy && styles.dim
+                ]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: hours?.how_busy === row.id }}
+              >
+                <Text
+                  style={[
+                    styles.segText,
+                    hours?.how_busy === row.id && styles.segTextOn
+                  ]}
+                >
+                  {row.label}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => setPace({ how_busy: "" })}
+              disabled={paceBusy}
+              style={[styles.segBtn, !hours?.how_busy && styles.segOn, paceBusy && styles.dim]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: !hours?.how_busy }}
+            >
+              <Text style={[styles.segText, !hours?.how_busy && styles.segTextOn]}>clear</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.label}>the counter</Text>
+          <View style={styles.seg}>
+            {HOW_WAIT.map((row) => (
+              <Pressable
+                key={row.id}
+                onPress={() => setPace({ how_wait: row.id })}
+                disabled={paceBusy}
+                style={[
+                  styles.segBtn,
+                  hours?.how_wait === row.id && styles.segOn,
+                  paceBusy && styles.dim
+                ]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: hours?.how_wait === row.id }}
+              >
+                <Text
+                  style={[
+                    styles.segText,
+                    hours?.how_wait === row.id && styles.segTextOn
+                  ]}
+                >
+                  {row.label}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => setPace({ how_wait: "" })}
+              disabled={paceBusy}
+              style={[styles.segBtn, !hours?.how_wait && styles.segOn, paceBusy && styles.dim]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: !hours?.how_wait }}
+            >
+              <Text style={[styles.segText, !hours?.how_wait && styles.segTextOn]}>clear</Text>
+            </Pressable>
+          </View>
+        </>
+      ) : null}
 
       <Text style={styles.sectionTitle}>stamps.</Text>
-      <View style={styles.stamps}>
+      <View
+        style={styles.stamps}
+        accessibilityRole="summary"
+        accessibilityLabel={stamps + " of 8 stamps"}
+      >
         {Array.from({ length: 8 }).map((_, i) => (
           <View key={i} style={[styles.dot, i < stamps && styles.dotOn]} />
         ))}
@@ -188,6 +314,11 @@ function YouHome({
 
       <Text style={styles.sectionTitle}>the house.</Text>
       <Row
+        label="the bag"
+        hint={bagHint}
+        onPress={onBag}
+      />
+      <Row
         label="Fiveways Parade"
         hint={openLine}
         onPress={() => onPage("house")}
@@ -196,6 +327,11 @@ function YouHome({
         label="the pictures"
         hint="the house, in pictures"
         onPress={onPictures}
+      />
+      <Row
+        label="today"
+        hint="your cup, with the house"
+        onPress={onToday}
       />
       <Row
         label="settings"
@@ -259,6 +395,7 @@ function HouseVisit({
         {(hours?.hours_days || "Monday–Sunday") + " · " + (hours?.hours_range || "11am–8pm")}
       </Text>
       {hours?.hours_line ? <Text style={styles.hours}>{hours.hours_line}</Text> : null}
+      {houseBusyLine(hours) ? <Text style={styles.notice}>{houseBusyLine(hours)}</Text> : null}
       {hours?.notice ? <Text style={styles.notice}>{hours.notice}</Text> : null}
       <Text style={styles.address}>
         {HOUSE_STREET}
@@ -270,7 +407,7 @@ function HouseVisit({
       <Pressable
         onPress={() => {
           tap();
-          openAway(HOUSE_MAPS);
+          openHouseMap();
         }}
         style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
       >
@@ -320,22 +457,34 @@ function HouseVisit({
 function SettingsScreen({
   name,
   email,
+  handle,
+  handlePicks,
+  onSaveHandle,
+  onMoreHandles,
   hours,
   stripe,
   prefs,
   onPrefs,
   onSaveName,
+  onSavePassword,
+  passwordOn,
   onHouse,
   onBack,
   onSignOut
 }: {
   name: string;
   email: string;
+  handle: string;
+  handlePicks: string[];
+  onSaveHandle: (next: string) => Promise<void>;
+  onMoreHandles: () => Promise<void>;
   hours: HouseHours | null;
   stripe: boolean;
   prefs: Prefs;
   onPrefs: (next: Prefs) => void;
   onSaveName: (next: string) => Promise<void>;
+  onSavePassword: (current: string, next: string) => Promise<void>;
+  passwordOn: boolean;
   onHouse: () => void;
   onBack: () => void;
   onSignOut: () => void;
@@ -343,6 +492,8 @@ function SettingsScreen({
   const pad = usePad();
   const [called, setCalled] = useState(name);
   const [note, setNote] = useState(prefs.bagNote);
+  const [currentPass, setCurrentPass] = useState("");
+  const [nextPass, setNextPass] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const payOn = !stripe && prefs.pay === "stripe" ? "ask" : prefs.pay;
@@ -355,7 +506,35 @@ function SettingsScreen({
     setNote(prefs.bagNote);
   }, [prefs.bagNote]);
 
-  async function keepName() {
+  async function keepHandle(next: string) {
+    tap();
+    setBusy(true);
+    setStatus("");
+    try {
+      await onSaveHandle(next);
+      ok();
+      setStatus("In the house you’re " + next + ".");
+    } catch (err) {
+      warn();
+      setStatus(err instanceof Error ? err.message : "That name could not be kept.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function moreNames() {
+    tap();
+    setBusy(true);
+    setStatus("");
+    try {
+      await onMoreHandles();
+    } catch (err) {
+      warn();
+      setStatus(err instanceof Error ? err.message : "More names could not come up.");
+    } finally {
+      setBusy(false);
+    }
+  }
     const next = called.trim();
     if (!next) {
       warn();
@@ -389,6 +568,29 @@ function SettingsScreen({
     setStatus("The usual note sits in the bag.");
   }
 
+  async function keepPassword() {
+    if (nextPass.trim().length < 8) {
+      warn();
+      setStatus("A new password needs at least eight characters.");
+      return;
+    }
+    tap();
+    setBusy(true);
+    setStatus("");
+    try {
+      await onSavePassword(currentPass, nextPass);
+      ok();
+      setCurrentPass("");
+      setNextPass("");
+      setStatus("The door has a new password.");
+    } catch (err) {
+      warn();
+      setStatus(err instanceof Error ? err.message : "That password could not be kept.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.screen}
@@ -412,20 +614,54 @@ function SettingsScreen({
         <Kicker label="settings" />
         <Text style={styles.title}>your way.</Text>
         <Text style={styles.prose}>
-          How the house calls you, and how the bag usually goes. Email stays with the sign-in.
+          In the house, others see a handle. Your name and email stay here, and with the desk when a collection needs them.
         </Text>
 
-        <Text style={styles.label}>how you’re called</Text>
+        <Text style={styles.label}>in the house</Text>
+        <Text style={styles.fact}>{handle || "a member"}</Text>
+        <Text style={styles.prose}>
+          The house assigned this. Filter through the names if you want another.
+        </Text>
+        <View style={styles.seg}>
+          {(handle ? [handle, ...handlePicks.filter((row) => row !== handle)] : handlePicks)
+            .slice(0, 8)
+            .map((row) => (
+              <Pressable
+                key={row}
+                onPress={() => keepHandle(row)}
+                disabled={busy}
+                style={[
+                  styles.segBtn,
+                  handle === row && styles.segOn,
+                  busy && styles.dim
+                ]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: handle === row }}
+              >
+                <Text style={[styles.segText, handle === row && styles.segTextOn]}>{row}</Text>
+              </Pressable>
+            ))}
+        </View>
+        <Pressable
+          disabled={busy}
+          onPress={moreNames}
+          style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed, busy && styles.dim]}
+        >
+          <Text style={styles.btnGhostText}>{busy ? "one moment…" : "more names"}</Text>
+        </Pressable>
+
+        <Text style={styles.label}>for the counter</Text>
         <TextInput
           value={called}
           onChangeText={setCalled}
-          placeholder="your name"
+          placeholder="the name the counter calls"
           placeholderTextColor="rgba(80,57,49,0.4)"
           autoCapitalize="words"
           autoCorrect={false}
           style={styles.input}
           maxLength={40}
         />
+        <Text style={styles.prose}>Only you and the desk see this. It is not on today’s cups.</Text>
         <Pressable
           disabled={busy}
           onPress={keepName}
@@ -436,6 +672,41 @@ function SettingsScreen({
 
         <Text style={styles.label}>email</Text>
         <Text style={styles.fact}>{email || "—"}</Text>
+        <Text style={styles.prose}>Stays with the sign-in. The desk uses it for the card and collections.</Text>
+        {passwordOn ? (
+          <>
+            <Text style={styles.label}>password</Text>
+            <TextInput
+              value={currentPass}
+              onChangeText={setCurrentPass}
+              placeholder="current password"
+              placeholderTextColor="rgba(80,57,49,0.4)"
+              secureTextEntry
+              autoComplete="password"
+              textContentType="password"
+              style={styles.input}
+            />
+            <TextInput
+              value={nextPass}
+              onChangeText={setNextPass}
+              placeholder="new password"
+              placeholderTextColor="rgba(80,57,49,0.4)"
+              secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+              style={styles.input}
+            />
+            <Pressable
+              disabled={busy || !currentPass || !nextPass}
+              onPress={keepPassword}
+              style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed, busy && styles.dim]}
+            >
+              <Text style={styles.btnGhostText}>{busy ? "Keeping…" : "Keep this password"}</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Text style={styles.prose}>Apple or Google keeps this door. There is no house password on this account.</Text>
+        )}
         <Pressable
           onPress={() => {
             tap();
@@ -443,7 +714,7 @@ function SettingsScreen({
           }}
           hitSlop={8}
         >
-          <Text style={styles.link}>Change email or password on the house site</Text>
+          <Text style={styles.link}>Change email on the house site</Text>
         </Pressable>
 
         <Text style={styles.label}>a usual note for the counter</Text>
@@ -514,7 +785,7 @@ function SettingsScreen({
 
         <Text style={styles.sectionTitle}>about.</Text>
         <Text style={styles.prose}>
-          blanco. 1.0 · the house on Fiveways Parade. The site is public. The app is the same house in the pocket. Collection at the counter. Not on the App Store yet.
+          blanco. 1.0 · the house on Fiveways Parade. The site is public. The app is the same house in the pocket. Collection at the counter.
         </Text>
 
         {status ? <Text style={styles.status}>{status}</Text> : null}
@@ -786,11 +1057,13 @@ const styles = StyleSheet.create({
   },
   seg: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
-    marginBottom: 8
+    marginBottom: 16
   },
   segBtn: {
-    flex: 1,
+    minWidth: "30%",
+    flexGrow: 1,
     alignItems: "center",
     paddingVertical: 10,
     borderWidth: 1.5,

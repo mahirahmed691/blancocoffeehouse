@@ -13,6 +13,34 @@ create table if not exists public.house_settings (
   updated_at timestamptz not null default now()
 );
 
+alter table public.house_settings
+  add column if not exists notice text not null default '';
+
+alter table public.house_settings
+  add column if not exists how_busy text not null default '';
+
+alter table public.house_settings
+  drop constraint if exists house_settings_how_busy;
+
+alter table public.house_settings
+  add constraint house_settings_how_busy check (
+    how_busy = any (array[''::text, 'quiet'::text, 'easy'::text, 'busy'::text, 'packed'::text])
+  );
+
+alter table public.house_settings
+  add column if not exists how_wait text not null default '';
+
+alter table public.house_settings
+  add column if not exists pace_at timestamptz;
+
+alter table public.house_settings
+  drop constraint if exists house_settings_how_wait;
+
+alter table public.house_settings
+  add constraint house_settings_how_wait check (
+    how_wait = any (array[''::text, 'flowing'::text, 'short'::text, 'queue'::text])
+  );
+
 create table if not exists public.menu_items (
   id uuid primary key default gen_random_uuid(),
   board text not null check (board in ('drinks', 'sweets')),
@@ -261,3 +289,61 @@ where name = 'Water' and driver_price_gbp is null;
 
 update public.menu_items set driver_price_gbp = 1.50
 where name = 'Ice Cream Scoop' and driver_price_gbp is null;
+
+-- Daily cup check-in. Public read of the shot; writes go through /api/checkins.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'checkins',
+  'checkins',
+  true,
+  5242880,
+  array['image/jpeg', 'image/jpg', 'image/png', 'image/webp']::text[]
+)
+on conflict (id) do update set
+  public = true,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+create table if not exists public.cup_checkins (
+  id uuid primary key default gen_random_uuid(),
+  clerk_user_id text not null,
+  display_name text not null default '',
+  path text not null unique,
+  day date not null,
+  created_at timestamptz not null default now(),
+  constraint cup_checkins_user_day unique (clerk_user_id, day)
+);
+
+create index if not exists cup_checkins_day_idx
+  on public.cup_checkins (day desc, created_at desc);
+
+alter table public.cup_checkins enable row level security;
+
+drop policy if exists cup_checkins_public_read on public.cup_checkins;
+create policy cup_checkins_public_read
+  on public.cup_checkins for select
+  using (true);
+
+grant select on table public.cup_checkins to anon, authenticated;
+grant all on table public.cup_checkins to service_role;
+
+-- Public handles. Real names stay with Clerk / the desk.
+create table if not exists public.member_handles (
+  clerk_user_id text primary key,
+  handle text not null unique,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists member_handles_handle_idx
+  on public.member_handles (lower(handle));
+
+alter table public.member_handles enable row level security;
+
+revoke all on table public.member_handles from anon, authenticated;
+grant all on table public.member_handles to service_role;
+
+drop policy if exists checkins_public_read on storage.objects;
+create policy checkins_public_read
+  on storage.objects for select
+  using (bucket_id = 'checkins');

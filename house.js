@@ -104,6 +104,62 @@
       .join("");
   }
 
+  function londonMinutes() {
+    var parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      hour: "numeric",
+      minute: "numeric",
+      hourCycle: "h23"
+    }).formatToParts(new Date());
+    var hour = Number(
+      (parts.filter(function (part) {
+        return part.type === "hour";
+      })[0] || {}).value
+    );
+    var minute = Number(
+      (parts.filter(function (part) {
+        return part.type === "minute";
+      })[0] || {}).value
+    );
+    if (!isFinite(hour) || !isFinite(minute)) return 0;
+    return hour * 60 + minute;
+  }
+
+  function parseMinutes(value) {
+    var match = String(value || "").match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return null;
+    return Number(match[1]) * 60 + Number(match[2]);
+  }
+
+  var PACE = {
+    quiet: "quiet. seats are easy.",
+    easy: "a few in. the room is easy.",
+    busy: "busy. a short wait for a seat.",
+    packed: "packed. takeaway is quicker."
+  };
+
+  var WAIT = {
+    flowing: "the counter is flowing.",
+    short: "a short wait for a cup.",
+    queue: "a queue at the counter."
+  };
+
+  function londonDay(at) {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/London",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(at || new Date());
+  }
+
+  function paceStale(paceAt) {
+    if (!paceAt) return true;
+    var at = new Date(paceAt);
+    if (isNaN(at.getTime())) return true;
+    return londonDay(at) !== londonDay();
+  }
+
   function applyHours(settings) {
     if (!settings) return;
     var line = settings.hours_line || "";
@@ -125,6 +181,27 @@
     document.querySelectorAll("[data-house-notice]").forEach(function (el) {
       el.textContent = notice;
       el.hidden = !notice;
+    });
+    var openAt = parseMinutes(settings.opens);
+    var closeAt = parseMinutes(settings.closes);
+    var now = londonMinutes();
+    var closed =
+      openAt != null && closeAt != null && (now < openAt || now >= closeAt);
+    var closing =
+      !closed && closeAt != null && closeAt - now <= 30;
+    var stale = paceStale(settings.pace_at);
+    var parts = [];
+    if (closing) parts.push("closing soon. last cups.");
+    if (!closed && !stale) {
+      var room = PACE[String(settings.how_busy || "").trim()] || "";
+      var wait = WAIT[String(settings.how_wait || "").trim()] || "";
+      if (room) parts.push(room);
+      if (wait) parts.push(wait);
+    }
+    var pace = closed ? "" : parts.join(" ");
+    document.querySelectorAll("[data-house-pace]").forEach(function (el) {
+      el.textContent = pace;
+      el.hidden = !pace;
     });
     var ld = document.querySelector('script[type="application/ld+json"]');
     if (!ld || !settings.opens || !settings.closes) return;

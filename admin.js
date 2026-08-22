@@ -341,6 +341,84 @@
     if (closes) closes.value = String(settings.closes || "20:00").slice(0, 5);
     var notice = document.getElementById("hours-notice");
     if (notice) notice.value = settings.notice || "";
+    paintPace(settings);
+  }
+
+  function paintPace(settings) {
+    var stale = !settings || !settings.pace_at;
+    if (settings && settings.pace_at) {
+      try {
+        var at = new Date(settings.pace_at);
+        var day = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Europe/London",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        });
+        stale = Number.isNaN(at.getTime()) || day.format(at) !== day.format(new Date());
+      } catch (err) {
+        stale = true;
+      }
+    }
+    var room = stale ? "" : String((settings && settings.how_busy) || "");
+    var wait = stale ? "" : String((settings && settings.how_wait) || "");
+    document.querySelectorAll("[data-pace]").forEach(function (btn) {
+      btn.classList.toggle("is-on", btn.getAttribute("data-pace") === room);
+    });
+    document.querySelectorAll("[data-wait]").forEach(function (btn) {
+      btn.classList.toggle("is-on", btn.getAttribute("data-wait") === wait);
+    });
+  }
+
+  var paceSaving = false;
+  var paceStatus = document.getElementById("pace-status");
+
+  function saveLive(patch) {
+    if (paceSaving) return;
+    paceSaving = true;
+    if (paceStatus) paceStatus.textContent = "Saving…";
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/pace", {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify(patch)
+        });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error((data && data.error) || "The room could not update.");
+          paintPace(data);
+          if (paceStatus) {
+            paceStatus.textContent = data.line
+              ? "On the house: " + data.line
+              : "Cleared. Customers will not see a line until you set today.";
+          }
+        });
+      })
+      .catch(function (err) {
+        if (paceStatus) paceStatus.textContent = err.message || "The room could not update.";
+      })
+      .then(function () {
+        paceSaving = false;
+      });
+  }
+
+  var paceRow = document.getElementById("pace-row");
+  if (paceRow) {
+    paceRow.addEventListener("click", function (event) {
+      var btn = event.target.closest("[data-pace]");
+      if (!btn || paceSaving) return;
+      saveLive({ how_busy: btn.getAttribute("data-pace") || "" });
+    });
+  }
+  var waitRow = document.getElementById("wait-row");
+  if (waitRow) {
+    waitRow.addEventListener("click", function (event) {
+      var btn = event.target.closest("[data-wait]");
+      if (!btn || paceSaving) return;
+      saveLive({ how_wait: btn.getAttribute("data-wait") || "" });
+    });
   }
 
   function matchesFilter(item) {
