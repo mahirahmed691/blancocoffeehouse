@@ -19,6 +19,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
+        "EXPO_PUBLIC_HOUSE_URL": "https://www.blancocoffeehouse.com",
         "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_cHJlY2lzZS1jaXZldC0zMzguY2xlcmsuYWNjb3VudHMuZGV2JA"
       },
       "channel": "production"

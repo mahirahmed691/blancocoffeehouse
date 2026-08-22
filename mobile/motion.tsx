@@ -1,5 +1,24 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { Animated, type StyleProp, type ViewStyle } from "react-native";
+
+type ToTop = { scrollTo: (args: { y: number; animated?: boolean }) => void };
+
+export function useToTop(
+  tick: number,
+  list: RefObject<ToTop | null>,
+  intercept?: () => boolean
+) {
+  const last = useRef(tick);
+  const interceptRef = useRef(intercept);
+  interceptRef.current = intercept;
+
+  useEffect(() => {
+    if (tick === last.current) return;
+    last.current = tick;
+    if (interceptRef.current?.()) return;
+    list.current?.scrollTo({ y: 0, animated: true });
+  }, [tick, list]);
+}
 
 export function Rise({
   children,
@@ -59,6 +78,46 @@ export function Pop({
   }, [on, scale]);
 
   return <Animated.View style={{ transform: [{ scale }] }}>{children}</Animated.View>;
+}
+
+export function Pulse({
+  on,
+  children,
+  style
+}: {
+  on: boolean;
+  children?: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const v = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!on) {
+      v.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(v, {
+          toValue: 0.32,
+          duration: 720,
+          useNativeDriver: true
+        }),
+        Animated.timing(v, {
+          toValue: 1,
+          duration: 720,
+          useNativeDriver: true
+        })
+      ])
+    );
+    loop.start();
+    return () => {
+      loop.stop();
+      v.setValue(1);
+    };
+  }, [on, v]);
+
+  return <Animated.View style={[style, { opacity: v }]}>{children}</Animated.View>;
 }
 
 export function Fill({

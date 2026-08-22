@@ -35,7 +35,7 @@ import {
   useStyles,
   type Palette
 } from "./theme";
-import { Rise } from "./motion";
+import { Rise, useToTop } from "./motion";
 import { Back, Kicker, Mark, Stick } from "./ui";
 
 type Filter = "all" | ShotKind;
@@ -46,7 +46,9 @@ export function LookScreen({
   piece,
   onOpen,
   onBackPiece,
-  getSession
+  getSession,
+  topAt,
+  onViewing
 }: {
   board: LookBoard;
   onBoard: (next: LookBoard) => void;
@@ -54,17 +56,19 @@ export function LookScreen({
   onOpen: (piece: Piece) => void;
   onBackPiece: () => void;
   getSession: () => Promise<Session>;
+  topAt: number;
+  onViewing: (on: boolean) => void;
 }) {
   const { styles } = useStyles(makeStyles);
   if (piece) return <PieceView piece={piece} onBack={onBackPiece} />;
   return (
     <Rise key={board} shift={false} style={styles.screen}>
       {board === "pictures" ? (
-        <Pictures onBoard={onBoard} />
+        <Pictures onBoard={onBoard} topAt={topAt} onViewing={onViewing} />
       ) : board === "today" ? (
-        <Today onBoard={onBoard} getSession={getSession} />
+        <Today onBoard={onBoard} getSession={getSession} topAt={topAt} onViewing={onViewing} />
       ) : (
-        <Wear onBoard={onBoard} onOpen={onOpen} />
+        <Wear onBoard={onBoard} onOpen={onOpen} topAt={topAt} />
       )}
     </Rise>
   );
@@ -222,9 +226,18 @@ function SwipeLook<T extends { id: string }>({
   );
 }
 
-function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
+function Pictures({
+  onBoard,
+  topAt,
+  onViewing
+}: {
+  onBoard: (next: LookBoard) => void;
+  topAt: number;
+  onViewing: (on: boolean) => void;
+}) {
   const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
+  const list = useRef<ScrollView>(null);
   const { width } = useWindowDimensions();
   const [shots, setShots] = useState<Shot[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
@@ -235,6 +248,15 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
   const shown = filterShots(shots, filter);
   const current = shown.findIndex((shot) => shot.id === open);
   const viewing = current >= 0 ? shown[current] : null;
+  useEffect(() => {
+    onViewing(!!viewing);
+    return () => onViewing(false);
+  }, [viewing, onViewing]);
+  useToTop(topAt, list, () => {
+    if (!open) return false;
+    setOpen(null);
+    return true;
+  });
 
   async function load() {
     setError("");
@@ -273,7 +295,9 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
                   tap();
                   setFilter(id);
                   setOpen(null);
+                  list.current?.scrollTo({ y: 0, animated: false });
                 }}
+                hitSlop={6}
                 style={[styles.filterBtn, filter === id && styles.segOn]}
                 accessibilityRole="button"
                 accessibilityState={{ selected: filter === id }}
@@ -287,6 +311,7 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
         </LookHead>
       </View>
       <ScrollView
+        ref={list}
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 28 }]}
         refreshControl={
@@ -397,13 +422,18 @@ async function dataUrlFromAsset(asset: ImagePicker.ImagePickerAsset) {
 
 function Today({
   onBoard,
-  getSession
+  getSession,
+  topAt,
+  onViewing
 }: {
   onBoard: (next: LookBoard) => void;
   getSession: () => Promise<Session>;
+  topAt: number;
+  onViewing: (on: boolean) => void;
 }) {
   const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
+  const list = useRef<ScrollView>(null);
   const { width } = useWindowDimensions();
   const [board, setBoard] = useState<CupBoard>({ today: "", mine: null, cups: [] });
   const [loading, setLoading] = useState(true);
@@ -414,6 +444,15 @@ function Today({
   const cups = board.cups;
   const current = cups.findIndex((cup) => cup.id === open);
   const viewing = current >= 0 ? cups[current] : null;
+  useEffect(() => {
+    onViewing(!!viewing);
+    return () => onViewing(false);
+  }, [viewing, onViewing]);
+  useToTop(topAt, list, () => {
+    if (!open) return false;
+    setOpen(null);
+    return true;
+  });
 
   async function load() {
     setError("");
@@ -556,6 +595,7 @@ function Today({
         </LookHead>
       </View>
       <ScrollView
+        ref={list}
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 28 }]}
         refreshControl={
@@ -650,19 +690,24 @@ function CupGrid({
 
 function Wear({
   onBoard,
-  onOpen
+  onOpen,
+  topAt
 }: {
   onBoard: (next: LookBoard) => void;
   onOpen: (piece: Piece) => void;
+  topAt: number;
 }) {
   const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
+  const list = useRef<ScrollView>(null);
+  useToTop(topAt, list);
   return (
     <View style={styles.screen}>
       <View style={[styles.sticky, { paddingTop: pad.top }]}>
         <LookHead board="wear" onBoard={onBoard} title="wear blanco." />
       </View>
       <ScrollView
+        ref={list}
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 28 }]}
       >

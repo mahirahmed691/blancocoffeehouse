@@ -1,5 +1,16 @@
 /* The house after hours. Cream on espresso. */
 (function () {
+  try {
+    var path = String(location.pathname || "");
+    var search = String(location.search || "");
+    if (
+      /\/go(?:\.html)?\/?$/i.test(path) ||
+      /(?:^|[?&])table=1(?:&|$)/.test(search)
+    ) {
+      document.documentElement.classList.add("is-table");
+    }
+  } catch (err) {}
+
   var KEY = "blanco.night";
   var on = false;
   try {
