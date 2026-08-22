@@ -364,6 +364,9 @@ function clerkHeaders(session: Session) {
 async function readJson(res: Response) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error("The board is not on the house yet.");
+    }
     throw new Error((data && data.error) || "The house could not take that.");
   }
   return data;

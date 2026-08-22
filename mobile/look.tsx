@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
@@ -260,14 +261,41 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
   );
 }
 
-const PICK = {
-  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+const PICK: ImagePicker.ImagePickerOptions = {
+  mediaTypes: ["images"],
   allowsEditing: true,
-  aspect: [3, 4] as [number, number],
-  quality: 0.7,
+  aspect: [3, 4],
+  quality: 0.55,
   base64: true,
-  exif: false
+  exif: false,
+  ...(ImagePicker.UIImagePickerPreferredAssetRepresentationMode
+    ? {
+        preferredAssetRepresentationMode:
+          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible
+      }
+    : {})
 };
+
+async function dataUrlFromAsset(asset: ImagePicker.ImagePickerAsset) {
+  let b64 = asset.base64 || "";
+  if (!b64 && asset.uri) {
+    b64 = await FileSystem.readAsStringAsync(asset.uri, {
+      encoding: "base64"
+    });
+  }
+  if (!b64) throw new Error("that picture could not go up.");
+  const mime =
+    asset.mimeType === "image/png"
+      ? "image/png"
+      : asset.mimeType === "image/webp"
+        ? "image/webp"
+        : "image/jpeg";
+  const url = "data:" + mime + ";base64," + b64;
+  if (url.length > 2.6 * 1024 * 1024) {
+    throw new Error("that picture is too heavy. try a closer shot.");
+  }
+  return url;
+}
 
 function Today({
   onBoard,
@@ -294,8 +322,8 @@ function Today({
     setLoading(true);
     try {
       setBoard(await fetchCheckins(await getSession()));
-    } catch {
-      setError("The cups could not load.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The cups could not load.");
     } finally {
       setLoading(false);
     }
@@ -354,23 +382,22 @@ function Today({
           : await ImagePicker.launchImageLibraryAsync(PICK);
       if (result.canceled) return;
       const asset = result.assets && result.assets[0];
-      if (!asset || !asset.base64) {
+      if (!asset) {
         setError("that picture could not go up.");
         return;
       }
-      const mime =
-        asset.mimeType === "image/png"
-          ? "image/png"
-          : asset.mimeType === "image/webp"
-            ? "image/webp"
-            : "image/jpeg";
-      await postCheckin(await getSession(), "data:" + mime + ";base64," + asset.base64);
+      await postCheckin(await getSession(), await dataUrlFromAsset(asset));
       ok();
       setOpen(null);
       setBoard(await fetchCheckins(await getSession()));
     } catch (err) {
       warn();
-      setError(err instanceof Error ? err.message : "that picture could not go up.");
+      const message = err instanceof Error ? err.message : "that picture could not go up.";
+      setError(
+        /native module|ExponentImagePicker|cannot find/i.test(message)
+          ? "this phone build cannot take a picture yet."
+          : message
+      );
     } finally {
       setBusy(false);
     }
