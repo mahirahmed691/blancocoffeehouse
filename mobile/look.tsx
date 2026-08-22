@@ -1,16 +1,19 @@
 import { Image } from "expo-image";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  FlatList,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
-  View
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent
 } from "react-native";
 import { ok, tap, warn } from "./feel";
 import {
@@ -24,16 +27,13 @@ import {
 import { INSTAGRAM, openAway, PIECES, type Piece } from "./pieces";
 import { filterShots, fetchShots, type LookBoard, type Shot, type ShotKind } from "./shots";
 import {
-  BEIGE,
-  BROWN,
-  LINE,
-  MUTED,
-  PAPER,
   ROUND,
   SANS,
   SANS_MED,
   SERIF_ITALIC,
-  usePad
+  usePad,
+  useStyles,
+  type Palette
 } from "./theme";
 import { Rise } from "./motion";
 import { Back, Kicker, Mark, Stick } from "./ui";
@@ -55,6 +55,7 @@ export function LookScreen({
   onBackPiece: () => void;
   getSession: () => Promise<Session>;
 }) {
+  const { styles } = useStyles(makeStyles);
   if (piece) return <PieceView piece={piece} onBack={onBackPiece} />;
   return (
     <Rise key={board} shift={false} style={styles.screen}>
@@ -80,6 +81,7 @@ function LookHead({
   title: string;
   children?: ReactNode;
 }) {
+  const { styles } = useStyles(makeStyles);
   return (
     <>
       <Kicker label="look" />
@@ -94,7 +96,134 @@ function LookHead({
   );
 }
 
+function SwipeLook<T extends { id: string }>({
+  items,
+  index,
+  onIndex,
+  backLabel,
+  onBack,
+  padTop,
+  pageW,
+  fit,
+  source,
+  caption,
+  extra
+}: {
+  items: T[];
+  index: number;
+  onIndex: (i: number) => void;
+  backLabel: string;
+  onBack: () => void;
+  padTop: number;
+  pageW: number;
+  fit: "contain" | "cover";
+  source: (item: T) => string | { uri: string };
+  caption: (item: T) => string;
+  extra?: (item: T) => ReactNode;
+}) {
+  const { styles } = useStyles(makeStyles);
+  const list = useRef<FlatList<T>>(null);
+  const fromSwipe = useRef(false);
+  const ready = useRef(false);
+
+  useEffect(() => {
+    if (fromSwipe.current) {
+      fromSwipe.current = false;
+      return;
+    }
+    if (index < 0 || index >= items.length) return;
+    if (!ready.current) {
+      ready.current = true;
+      return;
+    }
+    list.current?.scrollToIndex({ index, animated: true });
+  }, [index, items.length]);
+
+  function onScrollEnd(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    const next = Math.round(event.nativeEvent.contentOffset.x / pageW);
+    if (next === index || next < 0 || next >= items.length) return;
+    fromSwipe.current = true;
+    tap();
+    onIndex(next);
+  }
+
+  return (
+    <View style={[styles.viewer, { paddingTop: padTop }]}>
+      <Back label={backLabel} onPress={onBack} />
+      <FlatList
+        ref={list}
+        data={items}
+        horizontal
+        pagingEnabled
+        bounces={false}
+        style={styles.viewerStrip}
+        contentContainerStyle={styles.viewerStripInner}
+        initialScrollIndex={Math.max(0, index)}
+        getItemLayout={(_, i) => ({ length: pageW, offset: pageW * i, index: i })}
+        keyExtractor={(item) => item.id}
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={onScrollEnd}
+        onScrollToIndexFailed={({ index: failed }) => {
+          requestAnimationFrame(() => {
+            list.current?.scrollToIndex({ index: failed, animated: false });
+          });
+        }}
+        renderItem={({ item }) => (
+          <View style={[styles.viewerPage, { width: pageW }]}>
+            <View style={styles.viewerFrame}>
+              <Image
+                source={source(item)}
+                style={styles.viewerImage}
+                contentFit={fit}
+                cachePolicy="memory-disk"
+                recyclingKey={item.id}
+                accessibilityLabel={caption(item)}
+              />
+            </View>
+            <Text style={styles.viewerAlt}>{caption(item)}</Text>
+            {extra ? extra(item) : null}
+          </View>
+        )}
+      />
+      <View style={styles.viewerNav}>
+        <Pressable
+          onPress={() => {
+            if (index <= 0) return;
+            tap();
+            onIndex(index - 1);
+          }}
+          disabled={index <= 0}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="last photograph"
+          style={index <= 0 ? styles.dim : undefined}
+        >
+          <Text style={styles.link}>last</Text>
+        </Pressable>
+        <Text style={styles.count}>
+          {index + 1} / {items.length}
+        </Text>
+        <Pressable
+          onPress={() => {
+            if (index >= items.length - 1) return;
+            tap();
+            onIndex(index + 1);
+          }}
+          disabled={index >= items.length - 1}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="next photograph"
+          style={index >= items.length - 1 ? styles.dim : undefined}
+        >
+          <Text style={styles.link}>next</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const { width } = useWindowDimensions();
   const [shots, setShots] = useState<Shot[]>([]);
@@ -126,14 +255,6 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
   function show(id: string) {
     tap();
     setOpen(id);
-  }
-
-  function step(delta: number) {
-    if (current < 0) return;
-    const next = shown[current + delta];
-    if (!next) return;
-    tap();
-    setOpen(next.id);
   }
 
   return (
@@ -169,7 +290,7 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 28 }]}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={load} tintColor={BROWN} />
+          <RefreshControl refreshing={loading} onRefresh={load} tintColor={t.BROWN} />
         }
       >
         <Text style={styles.prose}>
@@ -210,47 +331,29 @@ function Pictures({ onBoard }: { onBoard: (next: LookBoard) => void }) {
           onPress={() => openAway(INSTAGRAM)}
           style={({ pressed }) => [styles.btn, { marginTop: 22 }, pressed && styles.pressed]}
         >
-          <Mark name="instagram" size={18} color={BEIGE} />
+          <Mark name="instagram" size={18} color={t.BEIGE} />
           <Text style={styles.btnText}>Follow on Instagram</Text>
         </Pressable>
       </ScrollView>
       {viewing ? (
-        <View style={[styles.viewer, { paddingTop: pad.top }]}>
-          <Back label="the pictures" onPress={() => setOpen(null)} />
-          <View style={styles.viewerFrame}>
-            <Image
-              source={viewing.uri}
-              style={styles.viewerImage}
-              contentFit="contain"
-              cachePolicy="memory-disk"
-              recyclingKey={viewing.id}
-              accessibilityLabel={viewing.alt}
-            />
-          </View>
-          <Text style={styles.viewerAlt}>{viewing.alt}</Text>
-          {viewing.added ? <Text style={styles.hours}>{viewing.added}</Text> : null}
-          <View style={styles.viewerNav}>
-            <Pressable
-              onPress={() => step(-1)}
-              disabled={current <= 0}
-              hitSlop={10}
-              style={current <= 0 ? styles.dim : undefined}
-            >
-              <Text style={styles.link}>last</Text>
-            </Pressable>
-            <Text style={styles.count}>
-              {current + 1} / {shown.length}
-            </Text>
-            <Pressable
-              onPress={() => step(1)}
-              disabled={current >= shown.length - 1}
-              hitSlop={10}
-              style={current >= shown.length - 1 ? styles.dim : undefined}
-            >
-              <Text style={styles.link}>next</Text>
-            </Pressable>
-          </View>
-        </View>
+        <SwipeLook
+          items={shown}
+          index={current}
+          onIndex={(i) => {
+            const next = shown[i];
+            if (next) setOpen(next.id);
+          }}
+          backLabel="the pictures"
+          onBack={() => setOpen(null)}
+          padTop={pad.top}
+          pageW={width - 44}
+          fit="contain"
+          source={(shot) => shot.uri}
+          caption={(shot) => shot.alt}
+          extra={(shot) =>
+            shot.added ? <Text style={styles.hours}>{shot.added}</Text> : null
+          }
+        />
       ) : null}
     </View>
   );
@@ -299,6 +402,7 @@ function Today({
   onBoard: (next: LookBoard) => void;
   getSession: () => Promise<Session>;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const { width } = useWindowDimensions();
   const [board, setBoard] = useState<CupBoard>({ today: "", mine: null, cups: [] });
@@ -308,9 +412,8 @@ function Today({
   const [open, setOpen] = useState<string | null>(null);
   const tile = (width - 44 - 10) / 2;
   const cups = board.cups;
-  const shown = open ? cups : [];
-  const current = shown.findIndex((cup) => cup.id === open);
-  const viewing = current >= 0 ? shown[current] : null;
+  const current = cups.findIndex((cup) => cup.id === open);
+  const viewing = current >= 0 ? cups[current] : null;
 
   async function load() {
     setError("");
@@ -331,14 +434,6 @@ function Today({
   function show(id: string) {
     tap();
     setOpen(id);
-  }
-
-  function step(delta: number) {
-    if (current < 0) return;
-    const next = shown[current + delta];
-    if (!next) return;
-    tap();
-    setOpen(next.id);
   }
 
   async function pick(from: "camera" | "roll") {
@@ -440,7 +535,7 @@ function Today({
               accessibilityRole="button"
               accessibilityLabel="check in with the camera"
             >
-              <Mark name="camera" size={18} color={BEIGE} />
+              <Mark name="camera" size={18} color={t.BEIGE} />
               <Text style={styles.btnText}>{busy ? "going up" : "camera"}</Text>
             </Pressable>
             <Pressable
@@ -464,7 +559,7 @@ function Today({
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 28 }]}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={load} tintColor={BROWN} />
+          <RefreshControl refreshing={loading} onRefresh={load} tintColor={t.BROWN} />
         }
       >
         <Text style={styles.prose}>
@@ -490,49 +585,33 @@ function Today({
         ) : null}
       </ScrollView>
       {viewing ? (
-        <View style={[styles.viewer, { paddingTop: pad.top }]}>
-          <Back label="today" onPress={() => setOpen(null)} />
-          <View style={styles.viewerFrame}>
-            <Image
-              source={{ uri: viewing.uri }}
-              style={styles.viewerImage}
-              contentFit="cover"
-              accessibilityLabel={viewing.name + "’s cup"}
-            />
-          </View>
-          <Text style={styles.viewerAlt}>{viewing.name}</Text>
-          {viewing.mine ? (
-            <Pressable
-              onPress={() => letGo(viewing)}
-              disabled={busy}
-              hitSlop={8}
-              accessibilityRole="button"
-            >
-              <Text style={styles.link}>let go</Text>
-            </Pressable>
-          ) : null}
-          <View style={styles.viewerNav}>
-            <Pressable
-              onPress={() => step(-1)}
-              disabled={current <= 0}
-              hitSlop={8}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.link, current <= 0 && styles.dim]}>back</Text>
-            </Pressable>
-            <Text style={styles.count}>
-              {current + 1} / {shown.length}
-            </Text>
-            <Pressable
-              onPress={() => step(1)}
-              disabled={current >= shown.length - 1}
-              hitSlop={8}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.link, current >= shown.length - 1 && styles.dim]}>next</Text>
-            </Pressable>
-          </View>
-        </View>
+        <SwipeLook
+          items={cups}
+          index={current}
+          onIndex={(i) => {
+            const next = cups[i];
+            if (next) setOpen(next.id);
+          }}
+          backLabel="today"
+          onBack={() => setOpen(null)}
+          padTop={pad.top}
+          pageW={width - 44}
+          fit="cover"
+          source={(cup) => ({ uri: cup.uri })}
+          caption={(cup) => cup.name}
+          extra={(cup) =>
+            cup.mine ? (
+              <Pressable
+                onPress={() => letGo(cup)}
+                disabled={busy}
+                hitSlop={8}
+                accessibilityRole="button"
+              >
+                <Text style={styles.link}>let go</Text>
+              </Pressable>
+            ) : null
+          }
+        />
       ) : null}
     </View>
   );
@@ -576,6 +655,7 @@ function Wear({
   onBoard: (next: LookBoard) => void;
   onOpen: (piece: Piece) => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   return (
     <View style={styles.screen}>
@@ -614,7 +694,7 @@ function Wear({
         onPress={() => openAway(INSTAGRAM)}
         style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
       >
-        <Mark name="instagram" size={18} color={BEIGE} />
+        <Mark name="instagram" size={18} color={t.BEIGE} />
         <Text style={styles.btnText}>Follow the drop</Text>
       </Pressable>
     </ScrollView>
@@ -623,6 +703,7 @@ function Wear({
 }
 
 function PieceView({ piece, onBack }: { piece: Piece; onBack: () => void }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   return (
     <View style={[styles.piece, { paddingTop: pad.top, paddingBottom: 16 }]}>
@@ -641,17 +722,18 @@ function PieceView({ piece, onBack }: { piece: Piece; onBack: () => void }) {
         onPress={() => openAway(INSTAGRAM)}
         style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
       >
-        <Mark name="instagram" size={18} color={BEIGE} />
+        <Mark name="instagram" size={18} color={t.BEIGE} />
         <Text style={styles.btnText}>Follow the drop</Text>
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: BEIGE
+    backgroundColor: t.BEIGE
   },
   screenInner: {
     paddingHorizontal: 22
@@ -660,15 +742,15 @@ const styles = StyleSheet.create({
     zIndex: 2,
     paddingHorizontal: 22,
     paddingBottom: 10,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   title: {
     fontFamily: ROUND,
     fontSize: 40,
     letterSpacing: -1.2,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 8,
     textTransform: "lowercase",
     lineHeight: 42
@@ -677,26 +759,26 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 24,
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 16,
     maxWidth: 360
   },
   hours: {
     fontFamily: SANS,
     fontSize: 15,
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 8
   },
   closing: {
     fontFamily: SERIF_ITALIC,
     fontSize: 20,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 18
   },
   error: {
     marginBottom: 12,
     fontFamily: SANS,
-    color: BROWN
+    color: t.BROWN
   },
   filterRow: {
     flexDirection: "row",
@@ -708,19 +790,19 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 11,
     borderWidth: 1,
-    borderColor: BROWN,
+    borderColor: t.BROWN,
     borderRadius: 16
   },
   segOn: {
-    backgroundColor: BROWN
+    backgroundColor: t.BROWN
   },
   filterText: {
     fontFamily: SANS_MED,
     fontSize: 13,
-    color: BROWN
+    color: t.BROWN
   },
   segTextOn: {
-    color: BEIGE
+    color: t.BEIGE
   },
   grid: {
     flexDirection: "row",
@@ -730,9 +812,9 @@ const styles = StyleSheet.create({
   },
   tile: {
     overflow: "hidden",
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE
+    borderColor: t.LINE
   },
   tileImage: {
     width: "100%",
@@ -744,8 +826,8 @@ const styles = StyleSheet.create({
     bottom: 8,
     fontFamily: SANS_MED,
     fontSize: 11,
-    color: BEIGE,
-    backgroundColor: BROWN,
+    color: t.BEIGE,
+    backgroundColor: t.BROWN,
     paddingHorizontal: 8,
     paddingVertical: 4,
     overflow: "hidden"
@@ -764,9 +846,9 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 2 / 3,
     overflow: "hidden",
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE
+    borderColor: t.LINE
   },
   cardImage: {
     width: "100%",
@@ -776,7 +858,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontFamily: ROUND,
     fontSize: 22,
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -0.5
   },
   cardLine: {
@@ -784,7 +866,7 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 13,
     lineHeight: 18,
-    color: MUTED
+    color: t.MUTED
   },
   btnRow: {
     flexDirection: "row",
@@ -795,7 +877,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     gap: 8,
-    backgroundColor: BROWN,
+    backgroundColor: t.BROWN,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
@@ -811,17 +893,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: BROWN
+    borderColor: t.BROWN
   },
   btnGhostText: {
     fontFamily: SANS_MED,
-    color: BROWN,
+    color: t.BROWN,
     fontSize: 15,
     letterSpacing: 0.2
   },
   btn: {
     marginTop: 10,
-    backgroundColor: BROWN,
+    backgroundColor: t.BROWN,
     paddingVertical: 14,
     paddingHorizontal: 20,
     flexDirection: "row",
@@ -832,7 +914,7 @@ const styles = StyleSheet.create({
   },
   btnText: {
     fontFamily: SANS_MED,
-    color: BEIGE,
+    color: t.BEIGE,
     fontSize: 15,
     letterSpacing: 0.2
   },
@@ -845,16 +927,16 @@ const styles = StyleSheet.create({
   },
   piece: {
     flex: 1,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     paddingHorizontal: 22
   },
   pieceFrame: {
     flex: 1,
     minHeight: 280,
     overflow: "hidden",
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE
+    borderColor: t.LINE
   },
   pieceImage: {
     width: "100%",
@@ -864,7 +946,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontFamily: ROUND,
     fontSize: 32,
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -0.8
   },
   pieceLine: {
@@ -873,21 +955,30 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 24,
-    color: MUTED
+    color: t.MUTED
   },
   viewer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     zIndex: 50,
     paddingHorizontal: 22,
     paddingBottom: 16
   },
+  viewerStrip: {
+    flex: 1
+  },
+  viewerStripInner: {
+    flexGrow: 1
+  },
+  viewerPage: {
+    height: "100%"
+  },
   viewerFrame: {
     flex: 1,
     minHeight: 280,
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE
+    borderColor: t.LINE
   },
   viewerImage: {
     width: "100%",
@@ -898,7 +989,7 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 15,
     lineHeight: 22,
-    color: BROWN
+    color: t.BROWN
   },
   viewerNav: {
     marginTop: 10,
@@ -909,12 +1000,14 @@ const styles = StyleSheet.create({
   link: {
     fontFamily: SERIF_ITALIC,
     fontSize: 18,
-    color: BROWN
+    color: t.BROWN
   },
   count: {
     fontFamily: SANS_MED,
     fontSize: 13,
-    color: MUTED,
+    color: t.MUTED,
     fontVariant: ["tabular-nums"]
   }
 });
+}
+

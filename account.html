@@ -9,6 +9,7 @@
       content="Sign in to your Blanco Coffee House account for profile, rewards, and orders."
     />
     <meta name="theme-color" content="#E9E1D8" />
+    <script src="night.js"></script>
     <link rel="canonical" href="https://blancocoffeehouse.com/account.html" />
     <link rel="icon" href="assets/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="assets/favicon.png" />
@@ -211,6 +212,7 @@
               <div class="clerk-user-button clerk-user-button-lg"></div>
               <a class="btn btn-ghost" href="index.html#menu">View menu</a>
               <a class="btn house-admin-only" data-house-desk hidden href="admin.html">House desk</a>
+              <button type="button" class="btn btn-ghost" data-night-toggle aria-pressed="false">the night.</button>
             </div>
           </div>
 
@@ -343,6 +345,8 @@
             <a href="mailto:hello@blancocoffeehouse.com"
               >hello@blancocoffeehouse.com</a
             >
+            ·
+            <button type="button" class="night-toggle" data-night-toggle aria-pressed="false">the night.</button>
           </div>
         </div>
       </div>

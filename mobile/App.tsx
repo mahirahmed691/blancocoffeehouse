@@ -14,7 +14,7 @@ import { tokenCache } from "@clerk/expo/token-cache";
 import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
 import * as WebBrowser from "expo-web-browser";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   AppState,
@@ -84,11 +84,9 @@ import { DEFAULT_PREFS, loadPrefs, type PayPref, type Prefs } from "./prefs";
 import { LookScreen } from "./look";
 import { type LookBoard } from "./shots";
 import {
-  BEIGE,
-  BROWN,
-  LINE,
-  MUTED,
-  PAPER,
+  DARK,
+  HouseProvider,
+  LIGHT,
   ROUND,
   ROUND_BOLD,
   SANS,
@@ -96,7 +94,9 @@ import {
   SANS_SEMI,
   SERIF,
   SERIF_ITALIC,
-  usePad
+  usePad,
+  useStyles,
+  type Palette
 } from "./theme";
 import { Back, Kicker, Mark, Stick } from "./ui";
 import { YouStack, type YouPage } from "./you";
@@ -113,9 +113,13 @@ function payHrefKind(url: string) {
 }
 
 function Grain() {
+  const { t, styles } = useStyles(makeStyles);
   const { width, height } = useWindowDimensions();
   return (
-    <View pointerEvents="none" style={[styles.grain, { width, height }]}>
+    <View
+      pointerEvents="none"
+      style={[styles.grain, { width, height, opacity: t.night ? 0.055 : 0.1 }]}
+    >
       <Image
         source={require("./assets/grain.png")}
         style={{ width, height }}
@@ -148,6 +152,7 @@ function MenuScreen({
   onQty: (id: string, delta: number) => void;
   onHouse: () => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const [board, setBoard] = useState<Board>("drinks");
   const sections = groupBoard(items, board);
@@ -180,7 +185,7 @@ function MenuScreen({
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: 12, paddingBottom: 28 }]}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={BROWN} />
+          <RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={t.BROWN} />
         }
       >
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -260,6 +265,7 @@ function CupTrack({
   order: HouseOrder;
   onCancel?: () => void;
 }) {
+  const { styles } = useStyles(makeStyles);
   const idx = collectionStepIndex(order.status);
   return (
     <View style={[styles.cupTrack, order.status === "ready" && styles.cupTrackReady]}>
@@ -357,6 +363,7 @@ function BagScreen({
   onCancelOrder: (id: string) => void;
   onRefresh: () => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const empty = bag.length === 0;
   const total = formatPrice(bagTotal(bag));
@@ -393,7 +400,7 @@ function BagScreen({
         contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: empty ? 36 : 24 }]}
         keyboardShouldPersistTaps="handled"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BROWN} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.BROWN} />
         }
       >
         <Kicker label="collection" />
@@ -426,7 +433,7 @@ function BagScreen({
               }}
               style={({ pressed }) => [styles.btn, { marginTop: 22 }, pressed && styles.pressed]}
             >
-              <Mark name="menu" size={18} color={BEIGE} />
+              <Mark name="menu" size={18} color={t.BEIGE} />
               <Text style={styles.btnText}>The board</Text>
             </Pressable>
             {recent.length ? (
@@ -504,7 +511,7 @@ function BagScreen({
               value={note}
               onChangeText={onNote}
               placeholder="No oat, extra hot…"
-              placeholderTextColor="rgba(80,57,49,0.4)"
+              placeholderTextColor={t.MUTED}
               style={styles.input}
               maxLength={140}
             />
@@ -539,7 +546,7 @@ function BagScreen({
                 onPress={() => onPay("stripe")}
                 style={({ pressed }) => [styles.btn, { marginTop: 8 }, pressed && styles.pressed, busy && styles.dim]}
               >
-                <Mark name="card" size={18} color={BEIGE} />
+                <Mark name="card" size={18} color={t.BEIGE} />
                 <Text style={styles.btnText}>{busy ? "Opening the card…" : "Pay now · " + total}</Text>
               </Pressable>
               <Pressable
@@ -558,7 +565,7 @@ function BagScreen({
                 onPress={() => onPay("counter")}
                 style={({ pressed }) => [styles.btn, { marginTop: 8 }, pressed && styles.pressed, busy && styles.dim]}
               >
-                <Mark name="counter" size={18} color={BEIGE} />
+                <Mark name="counter" size={18} color={t.BEIGE} />
                 <Text style={styles.btnText}>
                   {busy ? "Sending to the counter…" : "Pay at the counter · " + total}
                 </Text>
@@ -578,7 +585,7 @@ function BagScreen({
               onPress={() => onPay("counter")}
               style={({ pressed }) => [styles.btn, { marginTop: 8 }, pressed && styles.pressed, busy && styles.dim]}
             >
-              <Mark name="bag" size={18} color={BEIGE} />
+              <Mark name="bag" size={18} color={t.BEIGE} />
               <Text style={styles.btnText}>
                 {busy ? "Sending to the counter…" : "Place for collection · " + total}
               </Text>
@@ -599,6 +606,7 @@ function Tabs({
   bagCount: number;
   onTab: (next: Tab) => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   return (
     <View style={[styles.tabs, { paddingBottom: pad.bottom }]}>
@@ -625,7 +633,7 @@ function Tabs({
           >
             <View>
               <Pop on={on}>
-                <Mark name={id} on={on} size={22} color={on ? BROWN : MUTED} />
+                <Mark name={id} on={on} size={22} color={on ? t.BROWN : t.MUTED} />
               </Pop>
               {id === "bag" && bagCount ? (
                 <View style={styles.badge}>
@@ -667,6 +675,7 @@ function AppFonts() {
     WorkSans_600SemiBold
   });
   if (!loaded) {
+    const styles = makeStyles(LIGHT);
     return (
       <View style={styles.bootFull}>
         <Image source={require("./assets/mark.png")} style={styles.gateMark} />
@@ -712,6 +721,8 @@ function House() {
   const pendingPayId = useRef("");
   const prefsRef = useRef(prefs);
   prefsRef.current = prefs;
+  const t = prefs.night ? DARK : LIGHT;
+  const styles = useMemo(() => makeStyles(t), [t]);
   const settleRef = useRef<(kind: "paid" | "cancel" | "unknown") => void>(() => {});
   const payDone = useRef(false);
 
@@ -1111,27 +1122,36 @@ function House() {
 
   if (!isLoaded) {
     return (
-      <View style={styles.bootFull}>
-        <Image source={require("./assets/mark.png")} style={styles.gateMark} />
-        <Text style={styles.bootWord}>blanco.</Text>
-        <Text style={styles.tag}>your way.</Text>
-      </View>
+      <HouseProvider night={!!prefs.night}>
+        <View style={styles.bootFull}>
+          <Image
+            source={require("./assets/mark.png")}
+            style={styles.gateMark}
+            tintColor={t.night ? t.BROWN : undefined}
+          />
+          <Text style={styles.bootWord}>blanco.</Text>
+          <Text style={styles.tag}>your way.</Text>
+        </View>
+      </HouseProvider>
     );
   }
 
   if (!isSignedIn) {
     return (
-      <View style={styles.root}>
-        <StatusBar style="dark" backgroundColor={BEIGE} />
-        <Gate />
-        <Grain />
-      </View>
+      <HouseProvider night={!!prefs.night}>
+        <View style={styles.root}>
+          <StatusBar style={t.night ? "light" : "dark"} backgroundColor={t.BEIGE} />
+          <Gate />
+          <Grain />
+        </View>
+      </HouseProvider>
     );
   }
 
   return (
+    <HouseProvider night={!!prefs.night}>
     <View style={styles.root}>
-      <StatusBar style="dark" backgroundColor={BEIGE} />
+      <StatusBar style={t.night ? "light" : "dark"} backgroundColor={t.BEIGE} />
       <View style={styles.stage}>
           <Rise key={tab} style={styles.stage}>
           {tab === "menu" ? (
@@ -1319,10 +1339,12 @@ function House() {
       )}
       <Grain />
     </View>
+    </HouseProvider>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
   grain: {
     position: "absolute",
     top: 0,
@@ -1347,11 +1369,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 2.6,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   bootFull: {
     flex: 1,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1360,12 +1382,12 @@ const styles = StyleSheet.create({
     fontFamily: "Georgia",
     fontSize: 34,
     fontStyle: "italic",
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -0.8
   },
   root: {
     flex: 1,
-    backgroundColor: BEIGE
+    backgroundColor: t.BEIGE
   },
   stage: {
     flex: 1
@@ -1382,11 +1404,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 3.4,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   screen: {
     flex: 1,
-    backgroundColor: BEIGE
+    backgroundColor: t.BEIGE
   },
   screenInner: {
     paddingHorizontal: 24
@@ -1395,15 +1417,15 @@ const styles = StyleSheet.create({
     zIndex: 2,
     paddingHorizontal: 24,
     paddingBottom: 10,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   title: {
     fontFamily: ROUND,
     fontSize: 38,
     letterSpacing: -1.1,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 8,
     textTransform: "lowercase",
     lineHeight: 42
@@ -1411,20 +1433,20 @@ const styles = StyleSheet.create({
   hours: {
     fontFamily: SANS,
     fontSize: 15,
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 8
   },
   notice: {
     fontFamily: SANS_MED,
     fontSize: 15,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 12
   },
   prose: {
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 26,
-    color: MUTED,
+    color: t.MUTED,
     maxWidth: 420
   },
   closing: {
@@ -1433,7 +1455,7 @@ const styles = StyleSheet.create({
     fontFamily: ROUND,
     fontSize: 22,
     letterSpacing: -0.6,
-    color: BROWN,
+    color: t.BROWN,
     lineHeight: 26
   },
   section: {
@@ -1442,7 +1464,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: SERIF,
     fontSize: 20,
-    color: BROWN,
+    color: t.BROWN,
     marginTop: 22,
     marginBottom: 10,
     letterSpacing: -0.3
@@ -1452,18 +1474,18 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   cupTrackReady: {
     borderLeftWidth: 3,
-    borderLeftColor: BROWN,
+    borderLeftColor: t.BROWN,
     paddingLeft: 12
   },
   cupNow: {
     fontFamily: SERIF_ITALIC,
     fontSize: 26,
     letterSpacing: -0.6,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 16,
     lineHeight: 30
   },
@@ -1476,27 +1498,27 @@ const styles = StyleSheet.create({
   cupLink: {
     flex: 1,
     height: 1,
-    backgroundColor: "rgba(80,57,49,0.16)",
+    backgroundColor: t.LINE,
     marginHorizontal: 4
   },
   cupLinkOn: {
-    backgroundColor: BROWN
+    backgroundColor: t.BROWN
   },
   cupDot: {
     width: 11,
     height: 11,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "rgba(80,57,49,0.32)",
+    borderColor: t.LINE,
     backgroundColor: "transparent"
   },
   cupDotDone: {
-    backgroundColor: BROWN,
-    borderColor: BROWN
+    backgroundColor: t.BROWN,
+    borderColor: t.BROWN
   },
   cupDotNow: {
-    backgroundColor: BROWN,
-    borderColor: BROWN,
+    backgroundColor: t.BROWN,
+    borderColor: t.BROWN,
     transform: [{ scale: 1.18 }]
   },
   cupLabels: {
@@ -1510,10 +1532,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.4,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   cupStepOn: {
-    color: BROWN
+    color: t.BROWN
   },
   item: {
     paddingVertical: 8
@@ -1526,7 +1548,7 @@ const styles = StyleSheet.create({
   leader: {
     flex: 1,
     borderBottomWidth: 1.5,
-    borderBottomColor: "rgba(80,57,49,0.18)",
+    borderBottomColor: t.LINE,
     borderStyle: "dotted",
     transform: [{ translateY: -4 }]
   },
@@ -1536,7 +1558,7 @@ const styles = StyleSheet.create({
   rowName: {
     fontFamily: SANS_MED,
     fontSize: 16,
-    color: BROWN
+    color: t.BROWN
   },
   rowDesc: {
     marginTop: 4,
@@ -1544,13 +1566,13 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 13,
     lineHeight: 18,
-    color: MUTED,
+    color: t.MUTED,
     maxWidth: 360
   },
   rowPrice: {
     fontFamily: SANS_MED,
     fontSize: 14,
-    color: MUTED,
+    color: t.MUTED,
     fontVariant: ["tabular-nums"]
   },
   rankMark: {
@@ -1559,18 +1581,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   soldMark: {
     fontFamily: SANS_SEMI,
     fontSize: 10,
     letterSpacing: 1.4,
     textTransform: "uppercase",
-    color: BROWN
+    color: t.BROWN
   },
   add: {
     borderWidth: 1.5,
-    borderColor: BROWN,
+    borderColor: t.BROWN,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -1578,20 +1600,20 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   addOn: {
-    backgroundColor: BROWN
+    backgroundColor: t.BROWN
   },
   addText: {
     fontFamily: SANS_MED,
-    color: BROWN,
+    color: t.BROWN,
     fontSize: 13
   },
   addTextOn: {
-    color: BEIGE
+    color: t.BEIGE
   },
   error: {
     marginTop: 12,
     fontFamily: SANS,
-    color: BROWN
+    color: t.BROWN
   },
   bagLine: {
     flexDirection: "row",
@@ -1600,7 +1622,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   bagCopy: {
     flex: 1,
@@ -1612,32 +1634,32 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontFamily: SANS_MED,
     fontSize: 14,
-    color: BROWN,
+    color: t.BROWN,
     fontVariant: ["tabular-nums"]
   },
   past: {
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   pastStatus: {
     fontFamily: SANS_MED,
     fontSize: 11,
     letterSpacing: 1.6,
     textTransform: "uppercase",
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 4
   },
   pastItems: {
     fontFamily: SANS,
     fontSize: 16,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 4
   },
   pastPrice: {
     fontFamily: SANS_MED,
     fontSize: 14,
-    color: BROWN,
+    color: t.BROWN,
     fontVariant: ["tabular-nums"]
   },
   pastNote: {
@@ -1645,15 +1667,15 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 14,
     lineHeight: 20,
-    color: MUTED
+    color: t.MUTED
   },
   bagDock: {
     paddingHorizontal: 22,
     paddingTop: 4,
     paddingBottom: 12,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     borderTopWidth: 1,
-    borderTopColor: LINE
+    borderTopColor: t.LINE
   },
   bagTotal: {
     flexDirection: "row",
@@ -1664,7 +1686,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 4,
     borderTopWidth: 1.5,
-    borderTopColor: BROWN
+    borderTopColor: t.BROWN
   },
   dim: {
     opacity: 0.45
@@ -1673,13 +1695,13 @@ const styles = StyleSheet.create({
     fontFamily: ROUND,
     fontSize: 22,
     letterSpacing: -0.5,
-    color: BROWN
+    color: t.BROWN
   },
   bagTotalSum: {
     fontFamily: ROUND,
     fontSize: 28,
     letterSpacing: -0.8,
-    color: BROWN,
+    color: t.BROWN,
     fontVariant: ["tabular-nums"]
   },
   qty: {
@@ -1693,14 +1715,14 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: BROWN,
+    borderColor: t.BROWN,
     alignItems: "center",
     justifyContent: "center"
   },
   qtyMark: {
     fontFamily: SANS_MED,
     fontSize: 16,
-    color: BROWN,
+    color: t.BROWN,
     marginTop: -1
   },
   qtyCount: {
@@ -1708,14 +1730,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: SANS_MED,
     fontSize: 15,
-    color: BROWN,
+    color: t.BROWN,
     fontVariant: ["tabular-nums"]
   },
   link: {
     marginTop: 12,
     fontFamily: SERIF_ITALIC,
     fontSize: 17,
-    color: BROWN
+    color: t.BROWN
   },
   label: {
     marginTop: 22,
@@ -1724,13 +1746,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   input: {
     borderWidth: 1,
-    borderColor: LINE,
-    backgroundColor: PAPER,
-    color: BROWN,
+    borderColor: t.LINE,
+    backgroundColor: t.PAPER,
+    color: t.BROWN,
     fontFamily: SANS,
     paddingHorizontal: 14,
     paddingVertical: 13,
@@ -1743,7 +1765,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontFamily: SANS,
     fontSize: 15,
-    color: BROWN
+    color: t.BROWN
   },
   payHint: {
     marginTop: 4,
@@ -1751,7 +1773,7 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 14,
     lineHeight: 20,
-    color: MUTED
+    color: t.MUTED
   },
   stamps: {
     flexDirection: "row",
@@ -1764,28 +1786,28 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 1.5,
-    borderColor: BROWN
+    borderColor: t.BROWN
   },
   dotOn: {
-    backgroundColor: BROWN
+    backgroundColor: t.BROWN
   },
   order: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   orderStatus: {
     fontFamily: SANS_MED,
     fontSize: 11,
     letterSpacing: 1.6,
     textTransform: "uppercase",
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 4
   },
   orderItems: {
     fontFamily: SANS,
     fontSize: 16,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 4
   },
   grid: {
@@ -1802,9 +1824,9 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 2 / 3,
     overflow: "hidden",
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE
+    borderColor: t.LINE
   },
   pressed: {
     opacity: 0.82,
@@ -1818,7 +1840,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontFamily: ROUND,
     fontSize: 22,
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -0.5
   },
   cardLine: {
@@ -1826,11 +1848,11 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 13,
     lineHeight: 18,
-    color: MUTED
+    color: t.MUTED
   },
   btn: {
     marginTop: 10,
-    backgroundColor: BROWN,
+    backgroundColor: t.BROWN,
     paddingVertical: 14,
     paddingHorizontal: 20,
     flexDirection: "row",
@@ -1841,14 +1863,14 @@ const styles = StyleSheet.create({
   },
   btnText: {
     fontFamily: SANS_MED,
-    color: BEIGE,
+    color: t.BEIGE,
     fontSize: 15,
     letterSpacing: 0.2
   },
   btnGhost: {
     marginTop: 10,
     borderWidth: 1,
-    borderColor: BROWN,
+    borderColor: t.BROWN,
     paddingVertical: 13,
     paddingHorizontal: 20,
     flexDirection: "row",
@@ -1859,28 +1881,28 @@ const styles = StyleSheet.create({
   },
   btnGhostText: {
     fontFamily: SANS_MED,
-    color: BROWN,
+    color: t.BROWN,
     fontSize: 15,
     letterSpacing: 0.4
   },
   piece: {
     flex: 1,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     paddingHorizontal: 22
   },
   back: {
     fontFamily: SERIF_ITALIC,
     fontSize: 18,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 12
   },
   pieceFrame: {
     flex: 1,
     minHeight: 280,
     overflow: "hidden",
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE
+    borderColor: t.LINE
   },
   pieceImage: {
     width: "100%",
@@ -1890,7 +1912,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontFamily: ROUND,
     fontSize: 32,
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -0.8
   },
   pieceLine: {
@@ -1899,15 +1921,15 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 24,
-    color: MUTED
+    color: t.MUTED
   },
   tabs: {
     flexDirection: "row",
     paddingHorizontal: 10,
     paddingTop: 8,
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderTopWidth: 1,
-    borderTopColor: LINE
+    borderTopColor: t.LINE
   },
   tab: {
     flex: 1,
@@ -1916,13 +1938,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6
   },
   tabText: {
-    color: MUTED,
+    color: t.MUTED,
     fontFamily: SANS_MED,
     fontSize: 11,
     letterSpacing: 0.6
   },
   tabTextOn: {
-    color: BROWN
+    color: t.BROWN
   },
   badge: {
     position: "absolute",
@@ -1932,14 +1954,14 @@ const styles = StyleSheet.create({
     height: 16,
     paddingHorizontal: 4,
     borderRadius: 8,
-    backgroundColor: BROWN,
+    backgroundColor: t.BROWN,
     alignItems: "center",
     justifyContent: "center"
   },
   badgeText: {
     fontFamily: SANS_MED,
     fontSize: 10,
-    color: BEIGE
+    color: t.BEIGE
   },
   toastLift: {
     position: "absolute",
@@ -1951,9 +1973,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE,
+    borderColor: t.LINE,
     borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 18
@@ -1962,16 +1984,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: SANS,
     fontSize: 15,
-    color: BROWN
+    color: t.BROWN
   },
   toastGo: {
     fontFamily: SERIF_ITALIC,
     fontSize: 16,
-    color: BROWN
+    color: t.BROWN
   },
   pay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     zIndex: 60
   },
   payBar: {
@@ -1984,7 +2006,7 @@ const styles = StyleSheet.create({
   payTitle: {
     fontFamily: ROUND,
     fontSize: 20,
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -0.4
   },
   payWait: {
@@ -1994,3 +2016,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28
   }
 });
+}
+

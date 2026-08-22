@@ -38,16 +38,13 @@ import {
 } from "./pieces";
 import { savePrefs, type Prefs } from "./prefs";
 import {
-  BEIGE,
-  BROWN,
-  LINE,
-  MUTED,
-  PAPER,
   ROUND,
   SANS,
   SANS_MED,
   SERIF_ITALIC,
-  usePad
+  usePad,
+  useStyles,
+  type Palette
 } from "./theme";
 import { Fill, Rise } from "./motion";
 import { Back, Kicker, Mark, Stick, type MarkName } from "./ui";
@@ -89,6 +86,7 @@ type YouStackProps = {
 };
 
 export function YouStack(props: YouStackProps) {
+  const { styles } = useStyles(makeStyles);
   const page = props.page === "house" ? "house" : props.page === "settings" ? "settings" : "home";
   return (
     <Rise key={page} shift={false} style={styles.screen}>
@@ -131,6 +129,7 @@ function StampCard({
   stamps: number;
   note: string;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   return (
     <View
       style={styles.stampCard}
@@ -138,7 +137,11 @@ function StampCard({
       accessibilityLabel={stamps + " of 8 stamps"}
     >
       <View style={styles.stampCardHead}>
-        <Image source={require("./assets/mark.png")} style={styles.stampSeal} />
+        <Image
+          source={require("./assets/mark.png")}
+          style={styles.stampSeal}
+          tintColor={t.night ? t.BROWN : undefined}
+        />
         <View style={styles.stampCardCopy}>
           <Text style={styles.stampWord}>blanco.</Text>
           <Text style={styles.stampKicker}>your card.</Text>
@@ -149,7 +152,11 @@ function StampCard({
         {Array.from({ length: 8 }).map((_, i) => (
           <View key={i} style={[styles.stampCup, i < stamps && styles.stampCupOn]}>
             <Fill on={i < stamps}>
-              <Image source={require("./assets/mark.png")} style={styles.stampCupMark} />
+              <Image
+                source={require("./assets/mark.png")}
+                style={styles.stampCupMark}
+                tintColor={t.night ? t.BROWN : undefined}
+              />
             </Fill>
           </View>
         ))}
@@ -183,6 +190,7 @@ function YouHome({
   onPictures,
   onToday
 }: YouStackProps) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const stampNote =
     stamps === 0 && cardsDone
@@ -234,7 +242,7 @@ function YouHome({
         style={styles.screen}
         contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 36 }]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BROWN} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.BROWN} />
         }
         keyboardShouldPersistTaps="handled"
       >
@@ -335,7 +343,7 @@ function YouHome({
             value={rankCode}
             onChangeText={onRankCode}
             placeholder="RANK-····"
-            placeholderTextColor="rgba(80,57,49,0.4)"
+            placeholderTextColor={t.MUTED}
             autoCapitalize="characters"
             autoCorrect={false}
             style={styles.input}
@@ -395,6 +403,7 @@ function HouseVisit({
   onBack: () => void;
   onPictures: () => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const state = houseState(hours);
   const openWord = state === "open" ? "open now." : state === "closing" ? "closing soon." : "closed now.";
@@ -449,7 +458,7 @@ function HouseVisit({
         }}
         style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
       >
-        <Mark name="map" size={18} color={BEIGE} />
+        <Mark name="map" size={18} color={t.BEIGE} />
         <Text style={styles.btnText}>Open the map</Text>
       </Pressable>
       <Pressable
@@ -531,6 +540,7 @@ function SettingsScreen({
   onBack: () => void;
   onSignOut: () => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const [called, setCalled] = useState(name);
   const [note, setNote] = useState(prefs.bagNote);
@@ -692,7 +702,7 @@ function SettingsScreen({
           value={called}
           onChangeText={setCalled}
           placeholder="the name the counter calls"
-          placeholderTextColor="rgba(80,57,49,0.4)"
+          placeholderTextColor={t.MUTED}
           autoCapitalize="words"
           autoCorrect={false}
           style={styles.input}
@@ -717,7 +727,7 @@ function SettingsScreen({
               value={currentPass}
               onChangeText={setCurrentPass}
               placeholder="current password"
-              placeholderTextColor="rgba(80,57,49,0.4)"
+              placeholderTextColor={t.MUTED}
               secureTextEntry
               autoComplete="password"
               textContentType="password"
@@ -727,7 +737,7 @@ function SettingsScreen({
               value={nextPass}
               onChangeText={setNextPass}
               placeholder="new password"
-              placeholderTextColor="rgba(80,57,49,0.4)"
+              placeholderTextColor={t.MUTED}
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
@@ -759,7 +769,7 @@ function SettingsScreen({
           value={note}
           onChangeText={setNote}
           placeholder="Oat milk, extra hot…"
-          placeholderTextColor="rgba(80,57,49,0.4)"
+          placeholderTextColor={t.MUTED}
           style={styles.input}
           maxLength={140}
           onEndEditing={keepNote}
@@ -794,10 +804,27 @@ function SettingsScreen({
                 if (on) tap();
               });
             }}
-            trackColor={{ false: "rgba(80,57,49,0.18)", true: BROWN }}
-            thumbColor={BEIGE}
-            ios_backgroundColor="rgba(80,57,49,0.18)"
+            trackColor={{ false: t.LINE, true: t.BROWN }}
+            thumbColor={t.BEIGE}
+            ios_backgroundColor={t.LINE}
             accessibilityLabel="The feel"
+          />
+        </View>
+
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleCopy}>
+            <Text style={styles.toggleLabel}>the night.</Text>
+            <Text style={styles.rowHint}>The house after hours. Cream on espresso.</Text>
+          </View>
+          <Switch
+            value={!!prefs.night}
+            onValueChange={(on) => {
+              keepPrefs({ ...prefs, night: on });
+            }}
+            trackColor={{ false: t.LINE, true: t.BROWN }}
+            thumbColor={t.BEIGE}
+            ios_backgroundColor={t.LINE}
+            accessibilityLabel="The night"
           />
         </View>
 
@@ -834,6 +861,7 @@ function Row({
   mark?: MarkName;
   onPress: () => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   return (
     <Pressable
       onPress={() => {
@@ -852,15 +880,16 @@ function Row({
         <Text style={styles.rowLabel}>{label}</Text>
         {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
       </View>
-      <Mark name="go" size={16} color={MUTED} />
+      <Mark name="go" size={16} color={t.MUTED} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: BEIGE
+    backgroundColor: t.BEIGE
   },
   screenInner: {
     paddingHorizontal: 22
@@ -869,15 +898,15 @@ const styles = StyleSheet.create({
     zIndex: 2,
     paddingHorizontal: 22,
     paddingBottom: 10,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   title: {
     fontFamily: ROUND,
     fontSize: 40,
     letterSpacing: -1.2,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 8,
     textTransform: "lowercase",
     lineHeight: 42
@@ -885,32 +914,32 @@ const styles = StyleSheet.create({
   hours: {
     fontFamily: SANS,
     fontSize: 15,
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 12
   },
   openLine: {
     fontFamily: SERIF_ITALIC,
     fontSize: 18,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 8
   },
   stamp: {
     fontFamily: SERIF_ITALIC,
     fontSize: 22,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 8
   },
   notice: {
     fontFamily: SANS_MED,
     fontSize: 15,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 12
   },
   prose: {
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 24,
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 12,
     maxWidth: 360
   },
@@ -918,7 +947,7 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 24,
-    color: BROWN,
+    color: t.BROWN,
     marginTop: 8,
     marginBottom: 16
   },
@@ -928,7 +957,7 @@ const styles = StyleSheet.create({
     fontFamily: ROUND,
     fontSize: 22,
     letterSpacing: -0.4,
-    color: BROWN
+    color: t.BROWN
   },
   sectionFirst: {
     marginTop: 4
@@ -938,9 +967,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE,
+    borderColor: t.LINE,
     borderRadius: 18
   },
   stampCardHead: {
@@ -962,7 +991,7 @@ const styles = StyleSheet.create({
     fontFamily: SERIF_ITALIC,
     fontSize: 22,
     letterSpacing: -0.4,
-    color: BROWN,
+    color: t.BROWN,
     lineHeight: 24
   },
   stampKicker: {
@@ -971,13 +1000,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   stampCount: {
     fontFamily: ROUND,
     fontSize: 18,
     letterSpacing: -0.4,
-    color: BROWN
+    color: t.BROWN
   },
   stampGrid: {
     flexDirection: "row",
@@ -990,15 +1019,15 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "rgba(80,57,49,0.22)",
-    backgroundColor: BEIGE,
+    borderColor: t.LINE,
+    backgroundColor: t.BEIGE,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center"
   },
   stampCupOn: {
-    borderColor: BROWN,
-    backgroundColor: BROWN
+    borderColor: t.BROWN,
+    backgroundColor: t.BROWN
   },
   stampCupMark: {
     width: "100%",
@@ -1009,25 +1038,25 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 14,
     lineHeight: 20,
-    color: MUTED
+    color: t.MUTED
   },
   order: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   orderStatus: {
     fontFamily: SANS_MED,
     fontSize: 11,
     letterSpacing: 1.6,
     textTransform: "uppercase",
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 4
   },
   orderItems: {
     fontFamily: SANS,
     fontSize: 16,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 4
   },
   orderNote: {
@@ -1035,19 +1064,19 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 14,
     lineHeight: 20,
-    color: MUTED
+    color: t.MUTED
   },
   rowPrice: {
     fontFamily: SANS_MED,
     fontSize: 14,
-    color: BROWN,
+    color: t.BROWN,
     fontVariant: ["tabular-nums"]
   },
   input: {
     borderWidth: 1,
-    borderColor: LINE,
-    backgroundColor: PAPER,
-    color: BROWN,
+    borderColor: t.LINE,
+    backgroundColor: t.PAPER,
+    color: t.BROWN,
     fontFamily: SANS,
     paddingHorizontal: 14,
     paddingVertical: 13,
@@ -1062,31 +1091,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   fact: {
     fontFamily: SANS,
     fontSize: 16,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 4
   },
   link: {
     marginTop: 4,
     fontFamily: SERIF_ITALIC,
     fontSize: 17,
-    color: BROWN
+    color: t.BROWN
   },
   status: {
     marginTop: 10,
     marginBottom: 8,
     fontFamily: SANS,
     fontSize: 15,
-    color: BROWN
+    color: t.BROWN
   },
   btnGhost: {
     marginTop: 10,
     borderWidth: 1,
-    borderColor: BROWN,
+    borderColor: t.BROWN,
     paddingVertical: 13,
     paddingHorizontal: 20,
     flexDirection: "row",
@@ -1097,13 +1126,13 @@ const styles = StyleSheet.create({
   },
   btnGhostText: {
     fontFamily: SANS_MED,
-    color: BROWN,
+    color: t.BROWN,
     fontSize: 15,
     letterSpacing: 0.2
   },
   btn: {
     marginTop: 10,
-    backgroundColor: BROWN,
+    backgroundColor: t.BROWN,
     paddingVertical: 14,
     paddingHorizontal: 20,
     flexDirection: "row",
@@ -1114,7 +1143,7 @@ const styles = StyleSheet.create({
   },
   btnText: {
     fontFamily: SANS_MED,
-    color: BEIGE,
+    color: t.BEIGE,
     fontSize: 15,
     letterSpacing: 0.4
   },
@@ -1131,7 +1160,7 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   rowCopy: {
     flex: 1,
@@ -1145,7 +1174,7 @@ const styles = StyleSheet.create({
     fontFamily: ROUND,
     fontSize: 20,
     letterSpacing: -0.4,
-    color: BROWN,
+    color: t.BROWN,
     textTransform: "lowercase"
   },
   rowHint: {
@@ -1153,7 +1182,7 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 13,
     lineHeight: 18,
-    color: MUTED
+    color: t.MUTED
   },
   seg: {
     flexDirection: "row",
@@ -1167,19 +1196,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: BROWN,
+    borderColor: t.BROWN,
     borderRadius: 16
   },
   segOn: {
-    backgroundColor: BROWN
+    backgroundColor: t.BROWN
   },
   segText: {
     fontFamily: SANS_MED,
     fontSize: 14,
-    color: BROWN
+    color: t.BROWN
   },
   segTextOn: {
-    color: BEIGE
+    color: t.BEIGE
   },
   toggleRow: {
     flexDirection: "row",
@@ -1195,6 +1224,8 @@ const styles = StyleSheet.create({
     fontFamily: ROUND,
     fontSize: 22,
     letterSpacing: -0.4,
-    color: BROWN
+    color: t.BROWN
   }
 });
+}
+

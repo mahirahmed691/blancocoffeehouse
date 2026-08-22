@@ -99,13 +99,15 @@ var blancoShowBoard = null;
   var lightbox = document.getElementById("lightbox");
   if (!lightbox) return;
 
-  var img = lightbox.querySelector(".lightbox-image");
-  var caption = lightbox.querySelector(".lightbox-caption");
+  var track = lightbox.querySelector(".lightbox-track");
   var btnClose = lightbox.querySelector(".lightbox-close");
   var btnPrev = lightbox.querySelector(".lightbox-prev");
   var btnNext = lightbox.querySelector(".lightbox-next");
+  if (!track || !btnClose || !btnPrev || !btnNext) return;
   var index = 0;
   var lastFocus = null;
+  var drag = null;
+  var settle = 0;
 
   function allTriggers() {
     return Array.prototype.slice.call(document.querySelectorAll(".gallery-open"));
@@ -128,6 +130,8 @@ var blancoShowBoard = null;
         alt: alt,
         caption: [alt, added].filter(Boolean).join(" · ")
       };
+    }).filter(function (photo) {
+      return photo && photo.src;
     });
   }
 
@@ -137,26 +141,55 @@ var blancoShowBoard = null;
     });
   }
 
-  function show(i) {
-    var items = photos().filter(function (photo) {
-      return photo && photo.src;
+  function fillTrack(items) {
+    track.innerHTML = "";
+    items.forEach(function (photo) {
+      var fig = document.createElement("figure");
+      fig.className = "lightbox-slide";
+      var image = document.createElement("img");
+      image.className = "lightbox-image";
+      image.src = photo.src;
+      image.alt = photo.alt;
+      image.draggable = false;
+      var cap = document.createElement("figcaption");
+      cap.className = "lightbox-caption";
+      cap.textContent = photo.caption || photo.alt;
+      fig.appendChild(image);
+      fig.appendChild(cap);
+      track.appendChild(fig);
     });
-    if (!items.length) return;
-    index = (i + items.length) % items.length;
-    var photo = items[index];
-    img.src = photo.src;
-    img.alt = photo.alt;
-    caption.textContent = photo.caption || photo.alt;
     var many = items.length > 1;
     btnPrev.hidden = !many;
     btnNext.hidden = !many;
+    track.style.scrollSnapType = many ? "x mandatory" : "none";
+  }
+
+  function go(i, instant) {
+    var slides = track.children;
+    if (!slides.length) return;
+    index = ((i % slides.length) + slides.length) % slides.length;
+    var slide = slides[index];
+    track.scrollTo({
+      left: slide.offsetLeft,
+      behavior: instant ? "auto" : "smooth"
+    });
+  }
+
+  function fromScroll() {
+    var width = track.clientWidth;
+    if (!width) return;
+    var next = Math.round(track.scrollLeft / width);
+    if (next >= 0 && next < track.children.length) index = next;
   }
 
   function openAt(i) {
     lastFocus = document.activeElement;
-    show(i);
+    fillTrack(photos());
     lightbox.hidden = false;
     document.body.classList.add("lightbox-open");
+    requestAnimationFrame(function () {
+      go(i, true);
+    });
     btnClose.focus();
   }
 
@@ -164,10 +197,19 @@ var blancoShowBoard = null;
     if (lightbox.hidden) return;
     lightbox.hidden = true;
     document.body.classList.remove("lightbox-open");
-    img.removeAttribute("src");
-    img.alt = "";
-    caption.textContent = "";
+    track.innerHTML = "";
     if (lastFocus && typeof lastFocus.focus === "function") lastFocus.focus();
+  }
+
+  function refresh() {
+    if (lightbox.hidden) return;
+    var items = photos();
+    if (!items.length) {
+      close();
+      return;
+    }
+    fillTrack(items);
+    go(Math.min(index, items.length - 1), true);
   }
 
   document.addEventListener("click", function (event) {
@@ -180,15 +222,50 @@ var blancoShowBoard = null;
 
   btnClose.addEventListener("click", close);
   btnPrev.addEventListener("click", function () {
-    show(index - 1);
+    go(index - 1, false);
   });
   btnNext.addEventListener("click", function () {
-    show(index + 1);
+    go(index + 1, false);
   });
 
   lightbox.addEventListener("click", function (event) {
     if (event.target.hasAttribute("data-lightbox-close")) close();
   });
+
+  track.addEventListener("scroll", function () {
+    window.clearTimeout(settle);
+    settle = window.setTimeout(fromScroll, 80);
+  });
+
+  track.addEventListener("pointerdown", function (event) {
+    if (event.pointerType === "touch") return;
+    if (track.children.length < 2) return;
+    drag = {
+      id: event.pointerId,
+      x: event.clientX,
+      left: track.scrollLeft
+    };
+    track.classList.add("is-drag");
+    track.setPointerCapture(event.pointerId);
+  });
+
+  track.addEventListener("pointermove", function (event) {
+    if (!drag || event.pointerId !== drag.id) return;
+    track.scrollLeft = drag.left - (event.clientX - drag.x);
+  });
+
+  function endDrag(event) {
+    if (!drag || event.pointerId !== drag.id) return;
+    drag = null;
+    track.classList.remove("is-drag");
+    fromScroll();
+    go(index, false);
+  }
+
+  track.addEventListener("pointerup", endDrag);
+  track.addEventListener("pointercancel", endDrag);
+
+  window.blancoRefreshLightbox = refresh;
 
   document.addEventListener("keydown", function (event) {
     if (lightbox.hidden) return;
@@ -201,13 +278,13 @@ var blancoShowBoard = null;
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      show(index - 1);
+      go(index - 1, false);
       return;
     }
 
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      show(index + 1);
+      go(index + 1, false);
       return;
     }
 
@@ -221,7 +298,7 @@ var blancoShowBoard = null;
     if (event.shiftKey && document.activeElement === first) {
       event.preventDefault();
       last.focus();
-    } else     if (!event.shiftKey && document.activeElement === last) {
+    } else if (!event.shiftKey && document.activeElement === last) {
       event.preventDefault();
       first.focus();
     }
@@ -591,6 +668,9 @@ var blancoShowBoard = null;
 
   window.blancoRefreshGallery = function () {
     setFilter(current);
+    if (typeof window.blancoRefreshLightbox === "function") {
+      window.blancoRefreshLightbox();
+    }
   };
 
   tabs.forEach(function (tab, index) {

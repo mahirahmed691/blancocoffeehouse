@@ -9,6 +9,7 @@
       content="blanco. your way. Coffee, matcha, and sweet’n’savory treats in Hazel Grove — sit in, pick up, or get it delivered. Open every day, 11am–8pm."
     />
     <meta name="theme-color" content="#E9E1D8" />
+    <script src="night.js"></script>
     <link rel="canonical" href="https://blancocoffeehouse.com" />
     <link rel="icon" href="assets/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="assets/favicon.png" />
@@ -1376,6 +1377,8 @@
               rel="noopener noreferrer"
               >Instagram</a
             >
+            ·
+            <button type="button" class="night-toggle" data-night-toggle aria-pressed="false">the night.</button>
           </div>
         </div>
       </div>
@@ -1396,7 +1399,7 @@
       hidden
       role="dialog"
       aria-modal="true"
-      aria-labelledby="lightbox-caption"
+      aria-label="Photograph"
     >
       <div class="lightbox-backdrop" data-lightbox-close></div>
       <div class="lightbox-stage">
@@ -1414,10 +1417,9 @@
         >
           <span aria-hidden="true">‹</span>
         </button>
-        <figure class="lightbox-figure">
-          <img class="lightbox-image" alt="" />
-          <figcaption id="lightbox-caption" class="lightbox-caption"></figcaption>
-        </figure>
+        <div class="lightbox-frame">
+          <div class="lightbox-track" id="lightbox-track"></div>
+        </div>
         <button
           class="lightbox-nav lightbox-next"
           type="button"

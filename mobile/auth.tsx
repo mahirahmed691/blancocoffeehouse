@@ -16,16 +16,13 @@ import {
 } from "react-native";
 import { tap } from "./feel";
 import {
-  BEIGE,
-  BROWN,
-  LINE,
-  MUTED,
-  PAPER,
   ROUND,
   SANS,
   SANS_MED,
   SERIF_ITALIC,
-  usePad
+  usePad,
+  useStyles,
+  type Palette
 } from "./theme";
 
 type Step = "enter" | "verify";
@@ -69,6 +66,7 @@ export function Gate() {
   const [kind, setKind] = useState<VerifyKind>("signup");
   const [note, setNote] = useState("");
   const [ssoBusy, setSsoBusy] = useState(false);
+  const { t, styles } = useStyles(makeStyles);
 
   const busy = inStatus === "fetching" || upStatus === "fetching" || ssoBusy;
 
@@ -295,7 +293,11 @@ export function Gate() {
         keyboardShouldPersistTaps="handled"
       >
         <View nativeID="clerk-captcha" style={styles.captcha} />
-        <Image source={require("./assets/mark.png")} style={styles.mark} />
+        <Image
+          source={require("./assets/mark.png")}
+          style={styles.mark}
+          tintColor={t.night ? t.BROWN : undefined}
+        />
         <Text style={styles.word}>blanco.</Text>
         <Text style={styles.tag}>your way.</Text>
         <Text style={styles.title}>
@@ -352,7 +354,8 @@ export function Gate() {
               value={email}
               onChangeText={setEmail}
               placeholder="you@email"
-              placeholderTextColor={MUTED}
+              placeholderTextColor={t.MUTED}
+              keyboardAppearance={t.night ? "dark" : "light"}
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
@@ -368,7 +371,8 @@ export function Gate() {
               value={password}
               onChangeText={setPassword}
               placeholder="your way in"
-              placeholderTextColor={MUTED}
+              placeholderTextColor={t.MUTED}
+              keyboardAppearance={t.night ? "dark" : "light"}
               secureTextEntry
               autoComplete="password"
               textContentType="password"
@@ -396,7 +400,8 @@ export function Gate() {
               value={code}
               onChangeText={setCode}
               placeholder="000000"
-              placeholderTextColor={MUTED}
+              placeholderTextColor={t.MUTED}
+              keyboardAppearance={t.night ? "dark" : "light"}
               keyboardType="number-pad"
               autoComplete="one-time-code"
               textContentType="oneTimeCode"
@@ -428,10 +433,11 @@ export function Gate() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: BEIGE
+    backgroundColor: t.BEIGE
   },
   inner: {
     paddingHorizontal: 28,
@@ -452,7 +458,7 @@ const styles = StyleSheet.create({
   word: {
     fontFamily: ROUND,
     fontSize: 40,
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -1.2
   },
   tag: {
@@ -461,14 +467,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 3.4,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   title: {
     marginTop: 28,
     fontFamily: ROUND,
     fontSize: 40,
     letterSpacing: -1.2,
-    color: BROWN,
+    color: t.BROWN,
     lineHeight: 42,
     textTransform: "lowercase"
   },
@@ -478,7 +484,7 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 24,
-    color: MUTED,
+    color: t.MUTED,
     maxWidth: 360
   },
   label: {
@@ -488,13 +494,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   input: {
     borderWidth: 1,
-    borderColor: LINE,
-    backgroundColor: PAPER,
-    color: BROWN,
+    borderColor: t.LINE,
+    backgroundColor: t.PAPER,
+    color: t.BROWN,
     fontFamily: SANS,
     paddingHorizontal: 14,
     paddingVertical: 13,
@@ -505,17 +511,17 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontFamily: SANS,
     fontSize: 14,
-    color: BROWN
+    color: t.BROWN
   },
   status: {
     marginTop: 14,
     fontFamily: SANS,
     fontSize: 15,
-    color: BROWN
+    color: t.BROWN
   },
   btn: {
     marginTop: 22,
-    backgroundColor: BROWN,
+    backgroundColor: t.BROWN,
     paddingVertical: 15,
     paddingHorizontal: 22,
     alignItems: "center",
@@ -524,7 +530,7 @@ const styles = StyleSheet.create({
   },
   btnText: {
     fontFamily: SANS_MED,
-    color: BEIGE,
+    color: t.BEIGE,
     fontSize: 15,
     letterSpacing: 0.4
   },
@@ -535,7 +541,7 @@ const styles = StyleSheet.create({
   btnGhost: {
     marginTop: 10,
     borderWidth: 1.5,
-    borderColor: BROWN,
+    borderColor: t.BROWN,
     paddingVertical: 13,
     paddingHorizontal: 22,
     alignItems: "center",
@@ -544,7 +550,7 @@ const styles = StyleSheet.create({
   },
   btnGhostText: {
     fontFamily: SANS_MED,
-    color: BROWN,
+    color: t.BROWN,
     fontSize: 15,
     letterSpacing: 0.4
   },
@@ -557,26 +563,26 @@ const styles = StyleSheet.create({
   orLine: {
     flex: 1,
     height: 1,
-    backgroundColor: LINE
+    backgroundColor: t.LINE
   },
   orText: {
     fontFamily: SANS_MED,
     fontSize: 11,
     letterSpacing: 2,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   hint: {
     marginTop: 16,
     fontFamily: SERIF_ITALIC,
     fontSize: 17,
-    color: BROWN
+    color: t.BROWN
   },
   link: {
     marginTop: 14,
     fontFamily: SERIF_ITALIC,
     fontSize: 17,
-    color: BROWN
+    color: t.BROWN
   },
   pressed: {
     opacity: 0.82
@@ -585,3 +591,5 @@ const styles = StyleSheet.create({
     opacity: 0.55
   }
 });
+}
+

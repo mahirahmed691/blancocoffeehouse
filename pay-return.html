@@ -6,6 +6,7 @@
     <title>blanco.</title>
     <meta name="theme-color" content="#E9E1D8" />
     <meta name="robots" content="noindex" />
+    <script src="night.js"></script>
     <style>
       html,
       body {
@@ -14,6 +15,11 @@
         background: #e9e1d8;
         color: #503931;
         font-family: Georgia, "Times New Roman", serif;
+      }
+      html[data-night],
+      html[data-night] body {
+        background: #1a1412;
+        color: #e9e1d8;
       }
       main {
         min-height: 100dvh;
@@ -33,7 +39,7 @@
         font-size: 1.6rem;
       }
       a {
-        color: #503931;
+        color: inherit;
       }
     </style>
   </head>

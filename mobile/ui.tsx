@@ -11,7 +11,7 @@ import {
   type ViewStyle
 } from "react-native";
 import { tap } from "./feel";
-import { BEIGE, BROWN, LINE, MUTED, PAPER, SANS_MED, SANS_SEMI, SERIF_ITALIC } from "./theme";
+import { SANS_MED, SANS_SEMI, SERIF_ITALIC, useHouse, useStyles, type Palette } from "./theme";
 
 export type MarkName =
   | "menu"
@@ -67,20 +67,26 @@ export function Mark({
   name,
   on,
   size = 20,
-  color = BROWN
+  color
 }: {
   name: MarkName;
   on?: boolean;
   size?: number;
   color?: string;
 }) {
-  return <Ionicons name={(on && ON[name]) || OUT[name]} size={size} color={color} />;
+  const t = useHouse();
+  return <Ionicons name={(on && ON[name]) || OUT[name]} size={size} color={color || t.BROWN} />;
 }
 
 export function Kicker({ label }: { label: string }) {
+  const { t, styles } = useStyles(makeStyles);
   return (
     <View style={styles.kicker}>
-      <Image source={require("./assets/mark.png")} style={styles.kickerMark} />
+      <Image
+        source={require("./assets/mark.png")}
+        style={styles.kickerMark}
+        tintColor={t.night ? t.BROWN : undefined}
+      />
       <Text style={styles.kickerText}>{label}</Text>
     </View>
   );
@@ -97,6 +103,7 @@ export function Stick<T extends string>({
   onChange: (next: T) => void;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { styles } = useStyles(makeStyles);
   const index = Math.max(0, options.indexOf(value));
   const [track, setTrack] = useState(0);
   const slide = useRef(new Animated.Value(index)).current;
@@ -172,6 +179,7 @@ export function Back({
   label: string;
   onPress: () => void;
 }) {
+  const { styles } = useStyles(makeStyles);
   return (
     <Pressable
       onPress={() => {
@@ -189,7 +197,8 @@ export function Back({
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
   kicker: {
     flexDirection: "row",
     alignItems: "center",
@@ -206,7 +215,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 2.4,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   back: {
     flexDirection: "row",
@@ -218,7 +227,7 @@ const styles = StyleSheet.create({
   backText: {
     fontFamily: SERIF_ITALIC,
     fontSize: 18,
-    color: BROWN
+    color: t.BROWN
   },
   pressed: {
     opacity: 0.7
@@ -230,9 +239,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 4,
     padding: 4,
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE,
+    borderColor: t.LINE,
     borderRadius: 16
   },
   stickThumb: {
@@ -240,7 +249,7 @@ const styles = StyleSheet.create({
     top: 4,
     bottom: 4,
     left: 4,
-    backgroundColor: BROWN,
+    backgroundColor: t.BROWN,
     borderRadius: 12
   },
   stickBtn: {
@@ -255,9 +264,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.4,
     textTransform: "uppercase",
-    color: BROWN
+    color: t.BROWN
   },
   stickTextOn: {
-    color: BEIGE
+    color: t.BEIGE
   }
 });
+}
+
