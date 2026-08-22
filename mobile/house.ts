@@ -190,7 +190,45 @@ export function recentForReorder(orders: HouseOrder[], limit = 4) {
 }
 
 export function liveOrders(orders: HouseOrder[]) {
-  return orders.filter((order) => order.status === "in" || order.status === "ready");
+  return orders.filter((order) => isLiveOrder(order.status));
+}
+
+export function watchingOrders(orders: HouseOrder[]) {
+  return orders.filter((order) => isWatchingOrder(order.status));
+}
+
+export function isLiveOrder(status: string) {
+  return status === "in" || status === "preparing" || status === "ready";
+}
+
+export function isWatchingOrder(status: string) {
+  return status === "hold" || isLiveOrder(status);
+}
+
+export function canLetGo(order: { status: string; paid?: boolean }) {
+  return (order.status === "hold" || order.status === "in") && !order.paid;
+}
+
+export const CUP_STEPS = [
+  { id: "in", label: "in" },
+  { id: "preparing", label: "making it" },
+  { id: "ready", label: "ready" }
+] as const;
+
+export function collectionStepIndex(status: string) {
+  if (status === "ready" || status === "collected") return 2;
+  if (status === "preparing") return 1;
+  if (status === "in") return 0;
+  return -1;
+}
+
+export function collectionHeadline(order: HouseOrder) {
+  if (order.status === "hold") return "waiting to pay.";
+  if (order.status === "in") return "the house has it.";
+  if (order.status === "preparing") return "the house is making it.";
+  if (order.status === "ready") return "ready for you.";
+  if (order.status === "collected") return "collected.";
+  return "let go.";
 }
 
 export function bagHintLine(orders: HouseOrder[]) {
@@ -595,7 +633,8 @@ export async function joinRank(session: Session, code: string) {
 
 export function orderStatusLine(order: HouseOrder) {
   if (order.status === "hold") return "Waiting to pay";
-  if (order.status === "in") return order.paid ? "Paid · at the counter" : "At the counter";
+  if (order.status === "in") return order.paid ? "Paid · in" : "In";
+  if (order.status === "preparing") return order.paid ? "Paid · making it" : "Making it";
   if (order.status === "ready") return order.paid ? "Paid · ready for you" : "Ready for you";
   if (order.status === "collected") return "Collected";
   return "Let go";

@@ -5,6 +5,7 @@ export type PayPref = "ask" | "stripe" | "counter";
 
 export type Prefs = {
   haptics: boolean;
+  night: boolean;
   pay: PayPref;
   bagNote: string;
 };
@@ -13,6 +14,7 @@ const KEY = "blanco.house.prefs";
 
 export const DEFAULT_PREFS: Prefs = {
   haptics: true,
+  night: false,
   pay: "ask",
   bagNote: ""
 };
@@ -21,6 +23,7 @@ function clean(raw: Partial<Prefs> | null | undefined): Prefs {
   const pay = raw?.pay;
   return {
     haptics: raw?.haptics !== false,
+    night: raw?.night === true,
     pay: pay === "stripe" || pay === "counter" ? pay : "ask",
     bagNote: String(raw?.bagNote || "").slice(0, 140)
   };

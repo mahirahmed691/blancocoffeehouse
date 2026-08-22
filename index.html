@@ -9,6 +9,7 @@
       content="blanco. your way. Coffee, matcha, and sweet’n’savory treats in Hazel Grove — sit in, pick up, or get it delivered. Open every day, 11am–8pm."
     />
     <meta name="theme-color" content="#E9E1D8" />
+    <script src="night.js"></script>
     <link rel="canonical" href="https://blancocoffeehouse.com" />
     <link rel="icon" href="assets/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="assets/favicon.png" />
@@ -420,7 +421,7 @@
                 />
               </button>
               <h3>pick up.</h3>
-              <p>Build a collection from the board. Pay now, or at the counter when you collect.</p>
+              <p>Build a collection from the board. Watch it go from in, to making it, to ready.</p>
             </li>
             <li class="way-card" id="delivered">
               <button type="button" class="gallery-open" aria-haspopup="dialog">
@@ -1324,6 +1325,7 @@
         <p class="collect-kicker">your collection.</p>
         <p class="collect-count" id="collect-count"></p>
       </div>
+      <div id="collect-track" hidden></div>
       <ul class="collect-lines" id="collect-lines"></ul>
       <p class="collect-total" id="collect-total"></p>
       <label class="collect-note">
@@ -1339,6 +1341,7 @@
       <div class="collect-actions">
         <button class="btn" type="button" id="collect-place">Place for collection</button>
         <button class="btn btn-ghost" type="button" id="collect-counter" hidden>Pay at the counter</button>
+        <button class="btn btn-ghost" type="button" id="collect-let-go" hidden>Let go</button>
       </div>
     </aside>
 
@@ -1374,6 +1377,8 @@
               rel="noopener noreferrer"
               >Instagram</a
             >
+            ·
+            <button type="button" class="night-toggle" data-night-toggle aria-pressed="false">the night.</button>
           </div>
         </div>
       </div>
@@ -1394,7 +1399,7 @@
       hidden
       role="dialog"
       aria-modal="true"
-      aria-labelledby="lightbox-caption"
+      aria-label="Photograph"
     >
       <div class="lightbox-backdrop" data-lightbox-close></div>
       <div class="lightbox-stage">
@@ -1412,10 +1417,9 @@
         >
           <span aria-hidden="true">‹</span>
         </button>
-        <figure class="lightbox-figure">
-          <img class="lightbox-image" alt="" />
-          <figcaption id="lightbox-caption" class="lightbox-caption"></figcaption>
-        </figure>
+        <div class="lightbox-frame">
+          <div class="lightbox-track" id="lightbox-track"></div>
+        </div>
         <button
           class="lightbox-nav lightbox-next"
           type="button"
@@ -1429,6 +1433,7 @@
     <script src="house-config.js"></script>
     <script src="clerk-config.js?v=6"></script>
     <script src="script.js"></script>
+    <script src="collection.js"></script>
     <script src="collect.js"></script>
     <script src="house.js"></script>
     <script src="reviews.js"></script>

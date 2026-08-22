@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -35,20 +36,18 @@ import {
   openAway,
   openHouseMap
 } from "./pieces";
-import { savePrefs, type PayPref, type Prefs } from "./prefs";
+import { savePrefs, type Prefs } from "./prefs";
 import {
-  BEIGE,
-  BROWN,
-  LINE,
-  MUTED,
-  PAPER,
   ROUND,
   SANS,
   SANS_MED,
   SERIF_ITALIC,
-  usePad
+  usePad,
+  useStyles,
+  type Palette
 } from "./theme";
-import { Kicker } from "./ui";
+import { Fill, Rise } from "./motion";
+import { Back, Kicker, Mark, Stick, type MarkName } from "./ui";
 
 export type YouPage = "home" | "house" | "settings";
 
@@ -87,42 +86,92 @@ type YouStackProps = {
 };
 
 export function YouStack(props: YouStackProps) {
-  if (props.page === "house") {
-    return (
-      <HouseVisit
-        hours={props.hours}
-        onBack={() => props.onPage("home")}
-        onPictures={props.onPictures}
-      />
-    );
-  }
-  if (props.page === "settings") {
-    return (
-      <SettingsScreen
-        name={props.name}
-        email={props.email}
-        handle={props.handle}
-        handlePicks={props.handlePicks}
-        onSaveHandle={props.onSaveHandle}
-        onMoreHandles={props.onMoreHandles}
-        hours={props.hours}
-        stripe={props.stripe}
-        prefs={props.prefs}
-        onPrefs={props.onPrefs}
-        onSaveName={props.onSaveName}
-        onSavePassword={props.onSavePassword}
-        passwordOn={props.passwordOn}
-        onHouse={() => props.onPage("house")}
-        onBack={() => props.onPage("home")}
-        onSignOut={props.onSignOut}
-      />
-    );
-  }
-  return <YouHome {...props} />;
+  const { styles } = useStyles(makeStyles);
+  const page = props.page === "house" ? "house" : props.page === "settings" ? "settings" : "home";
+  return (
+    <Rise key={page} shift={false} style={styles.screen}>
+      {page === "house" ? (
+        <HouseVisit
+          hours={props.hours}
+          onBack={() => props.onPage("home")}
+          onPictures={props.onPictures}
+        />
+      ) : page === "settings" ? (
+        <SettingsScreen
+          name={props.name}
+          email={props.email}
+          handle={props.handle}
+          handlePicks={props.handlePicks}
+          onSaveHandle={props.onSaveHandle}
+          onMoreHandles={props.onMoreHandles}
+          hours={props.hours}
+          stripe={props.stripe}
+          prefs={props.prefs}
+          onPrefs={props.onPrefs}
+          onSaveName={props.onSaveName}
+          onSavePassword={props.onSavePassword}
+          passwordOn={props.passwordOn}
+          onHouse={() => props.onPage("house")}
+          onBack={() => props.onPage("home")}
+          onSignOut={props.onSignOut}
+        />
+      ) : (
+        <YouHome {...props} />
+      )}
+    </Rise>
+  );
+}
+
+function StampCard({
+  stamps,
+  note
+}: {
+  stamps: number;
+  note: string;
+}) {
+  const { t, styles } = useStyles(makeStyles);
+  return (
+    <View
+      style={styles.stampCard}
+      accessibilityRole="summary"
+      accessibilityLabel={stamps + " of 8 stamps"}
+    >
+      <View style={styles.stampCardHead}>
+        <Image
+          source={require("./assets/mark.png")}
+          style={styles.stampSeal}
+          tintColor={t.night ? t.BROWN : undefined}
+        />
+        <View style={styles.stampCardCopy}>
+          <Text style={styles.stampWord}>blanco.</Text>
+          <Text style={styles.stampKicker}>your card.</Text>
+        </View>
+        <Text style={styles.stampCount}>{stamps}/8</Text>
+      </View>
+      <View style={styles.stampGrid}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <View key={i} style={[styles.stampCup, i < stamps && styles.stampCupOn]}>
+            <Fill on={i < stamps}>
+              <Image
+                source={require("./assets/mark.png")}
+                style={styles.stampCupMark}
+                tintColor={t.night ? t.BROWN : undefined}
+              />
+            </Fill>
+          </View>
+        ))}
+      </View>
+      <Text style={styles.stampNote}>{note}</Text>
+    </View>
+  );
+}
+
+function firstCall(name: string) {
+  return name.trim().split(/\s+/)[0] || "";
 }
 
 function YouHome({
-  handle,
+  name,
   stamps,
   cardsDone,
   bagHint,
@@ -141,6 +190,7 @@ function YouHome({
   onPictures,
   onToday
 }: YouStackProps) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const stampNote =
     stamps === 0 && cardsDone
@@ -169,32 +219,37 @@ function YouHome({
   }
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: 36 }]}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BROWN} />
-      }
-      keyboardShouldPersistTaps="handled"
-    >
-      <Kicker label="member" />
-      <Text style={styles.title}>{handle ? handle : "you."}</Text>
-      <Pressable
-        onPress={() => {
-          tap();
-          onPage("house");
-        }}
-        hitSlop={6}
-        accessibilityRole="button"
-        accessibilityLabel="The house hours and the map"
+    <View style={styles.screen}>
+      <View style={[styles.sticky, { paddingTop: pad.top }]}>
+        <Kicker label="member" />
+        <Text style={styles.title}>
+          {firstCall(name) ? "welcome, " + firstCall(name) + "." : "you."}
+        </Text>
+        <Pressable
+          onPress={() => {
+            tap();
+            onPage("house");
+          }}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel="The house hours and the map"
+        >
+          <Text style={styles.openLine}>{openLine}</Text>
+        </Pressable>
+        {busyLine ? <Text style={styles.notice}>{busyLine}</Text> : null}
+      </View>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 36 }]}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.BROWN} />
+        }
+        keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.openLine}>{openLine}</Text>
-      </Pressable>
-      {busyLine ? <Text style={styles.notice}>{busyLine}</Text> : null}
 
       {desk ? (
         <>
-          <Text style={styles.sectionTitle}>now.</Text>
+          <Text style={[styles.sectionTitle, styles.sectionFirst]}>now.</Text>
           <Text style={styles.prose}>
             {paceStale(hours)
               ? "Yesterday’s line is off. Set today’s so the house knows the room."
@@ -273,17 +328,8 @@ function YouHome({
         </>
       ) : null}
 
-      <Text style={styles.sectionTitle}>stamps.</Text>
-      <View
-        style={styles.stamps}
-        accessibilityRole="summary"
-        accessibilityLabel={stamps + " of 8 stamps"}
-      >
-        {Array.from({ length: 8 }).map((_, i) => (
-          <View key={i} style={[styles.dot, i < stamps && styles.dotOn]} />
-        ))}
-      </View>
-      <Text style={styles.prose}>{stampNote}</Text>
+      <Text style={[styles.sectionTitle, desk ? null : styles.sectionFirst]}>stamps.</Text>
+      <StampCard stamps={stamps} note={stampNote} />
 
       <Text style={styles.sectionTitle}>the rank.</Text>
       {onRank ? (
@@ -297,7 +343,7 @@ function YouHome({
             value={rankCode}
             onChangeText={onRankCode}
             placeholder="RANK-····"
-            placeholderTextColor="rgba(80,57,49,0.4)"
+            placeholderTextColor={t.MUTED}
             autoCapitalize="characters"
             autoCorrect={false}
             style={styles.input}
@@ -314,31 +360,37 @@ function YouHome({
 
       <Text style={styles.sectionTitle}>the house.</Text>
       <Row
+        mark="bag"
         label="the bag"
         hint={bagHint}
         onPress={onBag}
       />
       <Row
+        mark="map"
         label="Fiveways Parade"
         hint={openLine}
         onPress={() => onPage("house")}
       />
       <Row
+        mark="pictures"
         label="the pictures"
         hint="the house, in pictures"
         onPress={onPictures}
       />
       <Row
+        mark="today"
         label="today"
         hint="your cup, with the house"
         onPress={onToday}
       />
       <Row
+        mark="settings"
         label="settings"
         hint="Your name, the usual note, the card"
         onPress={() => onPage("settings")}
       />
     </ScrollView>
+    </View>
   );
 }
 
@@ -351,6 +403,7 @@ function HouseVisit({
   onBack: () => void;
   onPictures: () => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const state = houseState(hours);
   const openWord = state === "open" ? "open now." : state === "closing" ? "closing soon." : "closed now.";
@@ -374,23 +427,17 @@ function HouseVisit({
   }
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: 36 }]}
-    >
-      <Pressable
-        onPress={() => {
-          tap();
-          onBack();
-        }}
-        hitSlop={12}
-        accessibilityRole="button"
+    <View style={styles.screen}>
+      <View style={[styles.sticky, { paddingTop: pad.top }]}>
+        <Back label="you." onPress={onBack} />
+        <Kicker label="visit" />
+        <Text style={styles.title}>the house.</Text>
+        <Text style={styles.stamp}>{openWord}</Text>
+      </View>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 36 }]}
       >
-        <Text style={styles.back}>you.</Text>
-      </Pressable>
-      <Kicker label="visit" />
-      <Text style={styles.title}>the house.</Text>
-      <Text style={styles.stamp}>{openWord}</Text>
       <Text style={styles.prose}>
         {(hours?.hours_days || "Monday–Sunday") + " · " + (hours?.hours_range || "11am–8pm")}
       </Text>
@@ -411,17 +458,19 @@ function HouseVisit({
         }}
         style={({ pressed }) => [styles.btn, pressed && styles.pressed]}
       >
+        <Mark name="map" size={18} color={t.BEIGE} />
         <Text style={styles.btnText}>Open the map</Text>
       </Pressable>
       <Pressable
         onPress={shareHouse}
         style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed]}
       >
+        <Mark name="share" size={18} />
         <Text style={styles.btnGhostText}>Share the house</Text>
       </Pressable>
-      <Row label="Instagram" hint="@blancocoffeehouse" onPress={() => openAway(INSTAGRAM)} />
-      <Row label="the pictures" hint="In the app — the cup, the case, the room" onPress={onPictures} />
-      <Row label="the house site" hint="The public house on the web" onPress={() => openAway(HOUSE_SITE)} />
+      <Row mark="instagram" label="Instagram" hint="@blancocoffeehouse" onPress={() => openAway(INSTAGRAM)} />
+      <Row mark="pictures" label="the pictures" hint="In the app — the cup, the case, the room" onPress={onPictures} />
+      <Row mark="site" label="the house site" hint="The public house on the web" onPress={() => openAway(HOUSE_SITE)} />
       {reviews && reviews.reviews.length ? (
         <>
           <Text style={styles.sectionTitle}>from the house.</Text>
@@ -439,7 +488,7 @@ function HouseVisit({
             </View>
           ))}
           {reviews.url ? (
-            <Row label="Google reviews" hint="A few words, if you like" onPress={() => openAway(reviews.url)} />
+            <Row mark="google" label="Google reviews" hint="A few words, if you like" onPress={() => openAway(reviews.url)} />
           ) : null}
         </>
       ) : null}
@@ -448,9 +497,11 @@ function HouseVisit({
         Ask at the counter for allergens and how the milk goes. The board does not keep a full book on the phone.
       </Text>
       <Text style={styles.prose}>
-        Collection at the house. The counter will call your name — we do not ping the phone yet.
+        Collection at the house. Watch the bag for in, making it, and ready.
+        Come to the counter when it’s up — we do not ping the phone.
       </Text>
     </ScrollView>
+    </View>
   );
 }
 
@@ -489,6 +540,7 @@ function SettingsScreen({
   onBack: () => void;
   onSignOut: () => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const [called, setCalled] = useState(name);
   const [note, setNote] = useState(prefs.bagNote);
@@ -535,6 +587,8 @@ function SettingsScreen({
       setBusy(false);
     }
   }
+
+  async function keepName() {
     const next = called.trim();
     if (!next) {
       warn();
@@ -596,23 +650,16 @@ function SettingsScreen({
       style={styles.screen}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView
-        style={styles.screen}
-        contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: 36 }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Pressable
-          onPress={() => {
-            tap();
-            onBack();
-          }}
-          hitSlop={12}
-          accessibilityRole="button"
-        >
-          <Text style={styles.back}>you.</Text>
-        </Pressable>
+      <View style={[styles.sticky, { paddingTop: pad.top }]}>
+        <Back label="you." onPress={onBack} />
         <Kicker label="settings" />
         <Text style={styles.title}>your way.</Text>
+      </View>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 36 }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.prose}>
           In the house, others see a handle. Your name and email stay here, and with the desk when a collection needs them.
         </Text>
@@ -655,7 +702,7 @@ function SettingsScreen({
           value={called}
           onChangeText={setCalled}
           placeholder="the name the counter calls"
-          placeholderTextColor="rgba(80,57,49,0.4)"
+          placeholderTextColor={t.MUTED}
           autoCapitalize="words"
           autoCorrect={false}
           style={styles.input}
@@ -680,7 +727,7 @@ function SettingsScreen({
               value={currentPass}
               onChangeText={setCurrentPass}
               placeholder="current password"
-              placeholderTextColor="rgba(80,57,49,0.4)"
+              placeholderTextColor={t.MUTED}
               secureTextEntry
               autoComplete="password"
               textContentType="password"
@@ -690,7 +737,7 @@ function SettingsScreen({
               value={nextPass}
               onChangeText={setNextPass}
               placeholder="new password"
-              placeholderTextColor="rgba(80,57,49,0.4)"
+              placeholderTextColor={t.MUTED}
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
@@ -722,7 +769,7 @@ function SettingsScreen({
           value={note}
           onChangeText={setNote}
           placeholder="Oat milk, extra hot…"
-          placeholderTextColor="rgba(80,57,49,0.4)"
+          placeholderTextColor={t.MUTED}
           style={styles.input}
           maxLength={140}
           onEndEditing={keepNote}
@@ -737,28 +784,13 @@ function SettingsScreen({
             ? "Card now, or at the counter when you collect. Delivery is still to come."
             : "Pay at the counter when you collect. The card is not open on this phone yet."}
         </Text>
-        <View style={styles.seg}>
-          {(
-            [
-              ["ask", "ask"],
-              ...(stripe ? [["stripe", "card"]] : []),
-              ["counter", "counter"]
-            ] as [PayPref, string][]
-          ).map(([id, label]) => (
-            <Pressable
-              key={id}
-              onPress={() => {
-                tap();
-                keepPrefs({ ...prefs, pay: id });
-              }}
-              style={[styles.segBtn, payOn === id && styles.segOn]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: payOn === id }}
-            >
-              <Text style={[styles.segText, payOn === id && styles.segTextOn]}>{label}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <Stick
+          value={payOn === "stripe" ? "card" : payOn}
+          options={stripe ? (["ask", "card", "counter"] as const) : (["ask", "counter"] as const)}
+          onChange={(id) => {
+            keepPrefs({ ...prefs, pay: id === "card" ? "stripe" : id });
+          }}
+        />
 
         <View style={styles.toggleRow}>
           <View style={styles.toggleCopy}>
@@ -772,16 +804,33 @@ function SettingsScreen({
                 if (on) tap();
               });
             }}
-            trackColor={{ false: "rgba(80,57,49,0.18)", true: BROWN }}
-            thumbColor={BEIGE}
-            ios_backgroundColor="rgba(80,57,49,0.18)"
+            trackColor={{ false: t.LINE, true: t.BROWN }}
+            thumbColor={t.BEIGE}
+            ios_backgroundColor={t.LINE}
             accessibilityLabel="The feel"
           />
         </View>
 
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleCopy}>
+            <Text style={styles.toggleLabel}>the night.</Text>
+            <Text style={styles.rowHint}>The house after hours. Cream on espresso.</Text>
+          </View>
+          <Switch
+            value={!!prefs.night}
+            onValueChange={(on) => {
+              keepPrefs({ ...prefs, night: on });
+            }}
+            trackColor={{ false: t.LINE, true: t.BROWN }}
+            thumbColor={t.BEIGE}
+            ios_backgroundColor={t.LINE}
+            accessibilityLabel="The night"
+          />
+        </View>
+
         <Text style={styles.sectionTitle}>the house.</Text>
-        <Row label="Fiveways Parade" hint={houseOpenLine(hours)} onPress={onHouse} />
-        <Row label="the house site" hint="The public house — menu for everyone" onPress={() => openAway(HOUSE_SITE)} />
+        <Row mark="map" label="Fiveways Parade" hint={houseOpenLine(hours)} onPress={onHouse} />
+        <Row mark="site" label="the house site" hint="The public house — menu for everyone" onPress={() => openAway(HOUSE_SITE)} />
 
         <Text style={styles.sectionTitle}>about.</Text>
         <Text style={styles.prose}>
@@ -804,12 +853,15 @@ function SettingsScreen({
 function Row({
   label,
   hint,
+  mark,
   onPress
 }: {
   label: string;
   hint?: string;
+  mark?: MarkName;
   onPress: () => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   return (
     <Pressable
       onPress={() => {
@@ -819,67 +871,75 @@ function Row({
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       accessibilityRole="button"
     >
+      {mark ? (
+        <View style={styles.rowMark}>
+          <Mark name={mark} size={18} />
+        </View>
+      ) : null}
       <View style={styles.rowCopy}>
         <Text style={styles.rowLabel}>{label}</Text>
         {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
       </View>
-      <Text style={styles.rowGo}>open</Text>
+      <Mark name="go" size={16} color={t.MUTED} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: BEIGE
+    backgroundColor: t.BEIGE
   },
   screenInner: {
     paddingHorizontal: 22
+  },
+  sticky: {
+    zIndex: 2,
+    paddingHorizontal: 22,
+    paddingBottom: 10,
+    backgroundColor: t.BEIGE,
+    borderBottomWidth: 1,
+    borderBottomColor: t.LINE
   },
   title: {
     fontFamily: ROUND,
     fontSize: 40,
     letterSpacing: -1.2,
-    color: BROWN,
-    marginBottom: 12,
+    color: t.BROWN,
+    marginBottom: 8,
     textTransform: "lowercase",
     lineHeight: 42
-  },
-  back: {
-    fontFamily: SERIF_ITALIC,
-    fontSize: 18,
-    color: BROWN,
-    marginBottom: 12
   },
   hours: {
     fontFamily: SANS,
     fontSize: 15,
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 12
   },
   openLine: {
     fontFamily: SERIF_ITALIC,
     fontSize: 18,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 8
   },
   stamp: {
     fontFamily: SERIF_ITALIC,
     fontSize: 22,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 8
   },
   notice: {
     fontFamily: SANS_MED,
     fontSize: 15,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 12
   },
   prose: {
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 24,
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 12,
     maxWidth: 360
   },
@@ -887,7 +947,7 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 24,
-    color: BROWN,
+    color: t.BROWN,
     marginTop: 8,
     marginBottom: 16
   },
@@ -897,41 +957,106 @@ const styles = StyleSheet.create({
     fontFamily: ROUND,
     fontSize: 22,
     letterSpacing: -0.4,
-    color: BROWN
+    color: t.BROWN
   },
-  stamps: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 10,
+  sectionFirst: {
     marginTop: 4
   },
-  dot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
-    borderColor: BROWN
+  stampCard: {
+    marginTop: 4,
+    marginBottom: 6,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: t.PAPER,
+    borderWidth: 1,
+    borderColor: t.LINE,
+    borderRadius: 18
   },
-  dotOn: {
-    backgroundColor: BROWN
+  stampCardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14
+  },
+  stampSeal: {
+    width: 40,
+    height: 40,
+    borderRadius: 20
+  },
+  stampCardCopy: {
+    flex: 1,
+    minWidth: 0
+  },
+  stampWord: {
+    fontFamily: SERIF_ITALIC,
+    fontSize: 22,
+    letterSpacing: -0.4,
+    color: t.BROWN,
+    lineHeight: 24
+  },
+  stampKicker: {
+    marginTop: 2,
+    fontFamily: SANS_MED,
+    fontSize: 11,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    color: t.MUTED
+  },
+  stampCount: {
+    fontFamily: ROUND,
+    fontSize: 18,
+    letterSpacing: -0.4,
+    color: t.BROWN
+  },
+  stampGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 10
+  },
+  stampCup: {
+    width: "22%",
+    aspectRatio: 1,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: t.LINE,
+    backgroundColor: t.BEIGE,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  stampCupOn: {
+    borderColor: t.BROWN,
+    backgroundColor: t.BROWN
+  },
+  stampCupMark: {
+    width: "100%",
+    height: "100%"
+  },
+  stampNote: {
+    marginTop: 12,
+    fontFamily: SANS,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.MUTED
   },
   order: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   orderStatus: {
     fontFamily: SANS_MED,
     fontSize: 11,
     letterSpacing: 1.6,
     textTransform: "uppercase",
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 4
   },
   orderItems: {
     fontFamily: SANS,
     fontSize: 16,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 4
   },
   orderNote: {
@@ -939,24 +1064,24 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 14,
     lineHeight: 20,
-    color: MUTED
+    color: t.MUTED
   },
   rowPrice: {
     fontFamily: SANS_MED,
     fontSize: 14,
-    color: BROWN,
+    color: t.BROWN,
     fontVariant: ["tabular-nums"]
   },
   input: {
     borderWidth: 1,
-    borderColor: LINE,
-    backgroundColor: PAPER,
-    color: BROWN,
+    borderColor: t.LINE,
+    backgroundColor: t.PAPER,
+    color: t.BROWN,
     fontFamily: SANS,
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontSize: 16,
-    borderRadius: 2,
+    borderRadius: 16,
     marginBottom: 8
   },
   label: {
@@ -966,54 +1091,59 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   fact: {
     fontFamily: SANS,
     fontSize: 16,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 4
   },
   link: {
     marginTop: 4,
     fontFamily: SERIF_ITALIC,
     fontSize: 17,
-    color: BROWN
+    color: t.BROWN
   },
   status: {
     marginTop: 10,
     marginBottom: 8,
     fontFamily: SANS,
     fontSize: 15,
-    color: BROWN
+    color: t.BROWN
   },
   btnGhost: {
     marginTop: 10,
-    borderWidth: 1.5,
-    borderColor: BROWN,
+    borderWidth: 1,
+    borderColor: t.BROWN,
     paddingVertical: 13,
-    paddingHorizontal: 22,
+    paddingHorizontal: 20,
+    flexDirection: "row",
     alignItems: "center",
-    borderRadius: 999
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 16
   },
   btnGhostText: {
     fontFamily: SANS_MED,
-    color: BROWN,
+    color: t.BROWN,
     fontSize: 15,
-    letterSpacing: 0.4
+    letterSpacing: 0.2
   },
   btn: {
     marginTop: 10,
-    backgroundColor: BROWN,
-    paddingVertical: 15,
-    paddingHorizontal: 22,
+    backgroundColor: t.BROWN,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 999
+    gap: 8,
+    borderRadius: 16
   },
   btnText: {
     fontFamily: SANS_MED,
-    color: BEIGE,
+    color: t.BEIGE,
     fontSize: 15,
     letterSpacing: 0.4
   },
@@ -1030,17 +1160,21 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   rowCopy: {
     flex: 1,
     minWidth: 0
   },
+  rowMark: {
+    width: 28,
+    alignItems: "center"
+  },
   rowLabel: {
     fontFamily: ROUND,
     fontSize: 20,
     letterSpacing: -0.4,
-    color: BROWN,
+    color: t.BROWN,
     textTransform: "lowercase"
   },
   rowHint: {
@@ -1048,12 +1182,7 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 13,
     lineHeight: 18,
-    color: MUTED
-  },
-  rowGo: {
-    fontFamily: SERIF_ITALIC,
-    fontSize: 16,
-    color: BROWN
+    color: t.MUTED
   },
   seg: {
     flexDirection: "row",
@@ -1066,20 +1195,20 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: "center",
     paddingVertical: 10,
-    borderWidth: 1.5,
-    borderColor: BROWN,
-    borderRadius: 999
+    borderWidth: 1,
+    borderColor: t.BROWN,
+    borderRadius: 16
   },
   segOn: {
-    backgroundColor: BROWN
+    backgroundColor: t.BROWN
   },
   segText: {
     fontFamily: SANS_MED,
     fontSize: 14,
-    color: BROWN
+    color: t.BROWN
   },
   segTextOn: {
-    color: BEIGE
+    color: t.BEIGE
   },
   toggleRow: {
     flexDirection: "row",
@@ -1095,6 +1224,8 @@ const styles = StyleSheet.create({
     fontFamily: ROUND,
     fontSize: 22,
     letterSpacing: -0.4,
-    color: BROWN
+    color: t.BROWN
   }
 });
+}
+

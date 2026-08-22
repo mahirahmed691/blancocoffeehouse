@@ -169,7 +169,7 @@ create table if not exists public.collection_orders (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint collection_orders_status check (
-    status = any (array['hold'::text, 'in'::text, 'ready'::text, 'collected'::text, 'cancelled'::text])
+    status = any (array['hold'::text, 'in'::text, 'preparing'::text, 'ready'::text, 'collected'::text, 'cancelled'::text])
   ),
   constraint collection_orders_pay_at check (
     pay_at = any (array['counter'::text, 'stripe'::text])

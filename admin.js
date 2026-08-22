@@ -1324,6 +1324,25 @@
     deskOrdersStatus.classList.toggle("is-error", kind === "error");
   }
 
+  function deskAdvance(status) {
+    if (status === "in") return { status: "preparing", label: "Making it" };
+    if (status === "preparing") return { status: "ready", label: "Ready" };
+    if (status === "ready") return { status: "collected", label: "Collected" };
+    return null;
+  }
+
+  function deskLane(status) {
+    if (status === "ready") return 0;
+    if (status === "preparing") return 1;
+    return 2;
+  }
+
+  function deskStage(status) {
+    if (status === "preparing") return "making it";
+    if (status === "ready") return "ready";
+    return "in";
+  }
+
   function paintDeskOrders(orders) {
     if (!deskOrdersEl) return;
     if (!orders.length) {
@@ -1331,8 +1350,24 @@
       setDeskOrdersStatus("No collections waiting.");
       return;
     }
-    setDeskOrdersStatus(orders.length === 1 ? "One collection." : orders.length + " collections.");
+    var readyCount = orders.filter(function (order) {
+      return order.status === "ready";
+    }).length;
+    var makingCount = orders.filter(function (order) {
+      return order.status === "preparing";
+    }).length;
+    var bits = [];
+    if (readyCount) bits.push(readyCount === 1 ? "one ready" : readyCount + " ready");
+    if (makingCount) bits.push(makingCount === 1 ? "one making" : makingCount + " making");
+    bits.push(orders.length === 1 ? "one collection." : orders.length + " collections.");
+    setDeskOrdersStatus(bits.join(" · "));
     deskOrdersEl.innerHTML = orders
+      .slice()
+      .sort(function (a, b) {
+        var lane = deskLane(a.status) - deskLane(b.status);
+        if (lane) return lane;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      })
       .map(function (order) {
         var who = escapeHtml(order.name || order.email || "a member");
         var items = (order.items || [])
@@ -1343,12 +1378,16 @@
         var note = order.note
           ? '<p class="desk-order-note">' + escapeHtml(order.note) + "</p>"
           : "";
-        var readyBtn =
-          order.status === "in"
-            ? '<button class="btn" type="button" data-order-id="' +
-              escapeHtml(order.id) +
-              '" data-order-status="ready">Ready</button>'
-            : "";
+        var next = deskAdvance(order.status);
+        var nextBtn = next
+          ? '<button class="btn" type="button" data-order-id="' +
+            escapeHtml(order.id) +
+            '" data-order-status="' +
+            escapeHtml(next.status) +
+            '">' +
+            escapeHtml(next.label) +
+            "</button>"
+          : "";
         var first = (order.items && order.items[0]) || null;
         var photo = first
           ? '<img class="desk-order-photo" src="' +
@@ -1365,8 +1404,9 @@
           who +
           " · " +
           ago(order.created_at) +
+          " · " +
+          deskStage(order.status) +
           (order.rank ? " · rank" : "") +
-          (order.status === "ready" ? " · ready" : "") +
           (order.paid ? " · paid" : " · pay at the counter") +
           "</p>" +
           '<p class="desk-order-items">' +
@@ -1378,10 +1418,7 @@
           "</p>" +
           "</div>" +
           '<div class="desk-order-tools">' +
-          readyBtn +
-          '<button class="btn" type="button" data-order-id="' +
-          escapeHtml(order.id) +
-          '" data-order-status="collected">Collected</button>' +
+          nextBtn +
           '<button class="btn btn-ghost" type="button" data-order-id="' +
           escapeHtml(order.id) +
           '" data-order-status="cancelled">Let go</button>' +
@@ -1415,7 +1452,7 @@
   function startDeskOrdersPoll() {
     if (deskOrdersTimer) return;
     loadDeskOrders();
-    deskOrdersTimer = window.setInterval(loadDeskOrders, 15000);
+    deskOrdersTimer = window.setInterval(loadDeskOrders, 8000);
   }
 
   function setDeskOrderStatus(id, status, btn) {

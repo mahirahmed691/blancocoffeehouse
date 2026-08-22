@@ -11,38 +11,44 @@
   var adminUrl = new URL("admin.html", window.location.href).href;
   var onAdminPage = /admin\.html(?:$|\?|#)/.test(location.pathname + location.search);
   var afterAuthUrl = onAdminPage ? adminUrl : accountUrl;
-  var appearance = {
-    variables: {
-      colorPrimary: "#503931",
-      colorBackground: "#F3ECE4",
-      colorInputBackground: "#E9E1D8",
-      colorText: "#503931",
-      colorTextOnPrimaryBackground: "#E9E1D8",
-      colorNeutral: "#503931",
-      borderRadius: "2px",
-      fontFamily: "Work Sans, system-ui, sans-serif"
-    },
-    elements: {
-      cardBox: { boxShadow: "none" },
-      card: {
-        background: "transparent",
-        boxShadow: "none",
-        borderRadius: "2px"
+  function houseAppearance() {
+    var night = document.documentElement.hasAttribute("data-night");
+    var brown = night ? "#e9e1d8" : "#503931";
+    var beige = night ? "#1a1412" : "#E9E1D8";
+    var paper = night ? "#251c18" : "#F3ECE4";
+    return {
+      variables: {
+        colorPrimary: brown,
+        colorBackground: paper,
+        colorInputBackground: night ? "#251c18" : "#E9E1D8",
+        colorText: brown,
+        colorTextOnPrimaryBackground: beige,
+        colorNeutral: brown,
+        borderRadius: "2px",
+        fontFamily: "Work Sans, system-ui, sans-serif"
       },
-      headerTitle: {
-        fontFamily: "Fraunces, Times New Roman, serif",
-        fontWeight: "500"
-      },
-      formButtonPrimary: {
-        backgroundColor: "#503931",
-        color: "#E9E1D8",
-        borderRadius: "1px",
-        fontSize: "0.92rem",
-        fontWeight: "500"
-      },
-      userButtonAvatarBox: { width: "2.15rem", height: "2.15rem" }
-    }
-  };
+      elements: {
+        cardBox: { boxShadow: "none" },
+        card: {
+          background: "transparent",
+          boxShadow: "none",
+          borderRadius: "2px"
+        },
+        headerTitle: {
+          fontFamily: "Fraunces, Times New Roman, serif",
+          fontWeight: "500"
+        },
+        formButtonPrimary: {
+          backgroundColor: brown,
+          color: beige,
+          borderRadius: "1px",
+          fontSize: "0.92rem",
+          fontWeight: "500"
+        },
+        userButtonAvatarBox: { width: "2.15rem", height: "2.15rem" }
+      }
+    };
+  }
 
   function setReady() {
     document.body.classList.add("clerk-ready");
@@ -113,7 +119,14 @@
     if (!user) return;
     var emailObj = user.primaryEmailAddress || (user.emailAddresses && user.emailAddresses[0]);
     var name = user.fullName || user.firstName || "member";
+    var first =
+      user.firstName ||
+      (user.fullName && String(user.fullName).split(" ")[0]) ||
+      "member";
     var email = (emailObj && emailObj.emailAddress) || "—";
+    document.querySelectorAll("[data-account-first]").forEach(function (el) {
+      el.textContent = first;
+    });
     document.querySelectorAll("[data-account-name]").forEach(function (el) {
       el.textContent = name;
     });
@@ -156,7 +169,7 @@
       .forEach(function (el) {
         if (el.getAttribute("data-mounted") === "true") return;
         Clerk.mountUserButton(el, {
-          appearance: appearance,
+          appearance: houseAppearance(),
           userProfileMode: "modal",
           afterSignOutUrl: homeUrl
         });
@@ -225,7 +238,7 @@
     setAuthCopy(mode === "sign-up");
     setMountLoading(mount, true);
     var opts = {
-      appearance: appearance,
+      appearance: houseAppearance(),
       forceRedirectUrl: afterAuthUrl,
       signInForceRedirectUrl: afterAuthUrl,
       signUpForceRedirectUrl: afterAuthUrl
@@ -318,7 +331,7 @@
   }
 
   var loadOpts = {
-    appearance: appearance,
+    appearance: houseAppearance(),
     signInForceRedirectUrl: afterAuthUrl,
     signUpForceRedirectUrl: afterAuthUrl,
     afterSignOutUrl: homeUrl

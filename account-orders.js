@@ -2,6 +2,9 @@
   var root = document.getElementById("account-orders");
   if (!root) return;
 
+  var cup = window.blancoCup;
+  var poll = 0;
+
   function escapeHtml(value) {
     return String(value || "")
       .replace(/&/g, "&amp;")
@@ -17,19 +20,11 @@
     return "£" + n.toFixed(2);
   }
 
-  function statusLine(order) {
-    if (order.status === "hold") return "Waiting to pay";
-    if (order.status === "in") return order.paid ? "Paid · at the counter" : "At the counter";
-    if (order.status === "ready") return order.paid ? "Paid · ready for you" : "Ready for you";
-    if (order.status === "collected") return "Collected";
-    return "Let go";
-  }
-
   function emptyHtml() {
     return (
       '<div class="empty-orders">' +
       '<p class="empty-orders-kicker">Not yet</p>' +
-      "<p>Build a collection from the board. Pay now, or at the counter. Delivery is still to come.</p>" +
+      "<p>Build a collection from the board. Watch it move from in, to making it, to ready.</p>" +
       '<p><a class="btn btn-ghost" href="index.html#menu">The board</a></p>' +
       "</div>"
     );
@@ -48,14 +43,24 @@
       root.innerHTML = emptyHtml();
       return;
     }
-    root.innerHTML = orders
+    var sorted = orders.slice().sort(function (a, b) {
+      var aw = cup && cup.watching(a.status) ? 0 : 1;
+      var bw = cup && cup.watching(b.status) ? 0 : 1;
+      return aw - bw;
+    });
+    root.innerHTML = sorted
       .map(function (order) {
+        var live = cup && cup.live(order.status);
         var cancel =
-          (order.status === "in" || order.status === "hold") && !order.paid
+          (cup && cup.canLetGo
+            ? cup.canLetGo(order)
+            : (order.status === "in" || order.status === "hold") && !order.paid)
             ? '<button type="button" class="btn btn-ghost" data-cancel="' +
               escapeHtml(order.id) +
               '">Let go</button>'
-            : "";
+            : order.status === "preparing" || order.status === "ready" || order.paid
+              ? '<p class="account-order-note">Ask the counter if this should come off.</p>'
+              : "";
         var note = order.note
           ? '<p class="account-order-note">' + escapeHtml(order.note) + "</p>"
           : "";
@@ -64,13 +69,16 @@
           : order.pay_at === "stripe"
             ? " · waiting on the card"
             : " · pay at the counter";
+        var rail = live && cup ? cup.railHtml(order) : "";
         return (
           '<article class="account-order is-' +
           escapeHtml(order.status) +
+          (live ? " is-live" : "") +
           '">' +
-          '<p class="account-order-status">' +
-          statusLine(order) +
-          "</p>" +
+          (rail ||
+            '<p class="account-order-status">' +
+              escapeHtml(cup ? cup.line(order) : order.status) +
+              "</p>") +
           '<p class="account-order-items">' +
           itemsLine(order.items) +
           "</p>" +
@@ -97,6 +105,12 @@
     };
   }
 
+  function watching(orders) {
+    return (orders || []).some(function (order) {
+      return cup ? cup.watching(order.status) : false;
+    });
+  }
+
   function loadOrders() {
     clerkHeaders()
       .then(function (headers) {
@@ -109,7 +123,15 @@
         });
       })
       .then(function (data) {
-        render(data.orders || []);
+        var orders = data.orders || [];
+        render(orders);
+        if (watching(orders) && !poll) {
+          poll = window.setInterval(loadOrders, 8000);
+        }
+        if (!watching(orders) && poll) {
+          window.clearInterval(poll);
+          poll = 0;
+        }
       })
       .catch(function () {
         if (!root.querySelector(".account-order")) root.innerHTML = emptyHtml();
@@ -119,6 +141,7 @@
   root.addEventListener("click", function (event) {
     var btn = event.target.closest("[data-cancel]");
     if (!btn) return;
+    if (!window.confirm("Let this collection go? It comes off the counter.")) return;
     btn.disabled = true;
     clerkHeaders()
       .then(function (headers) {

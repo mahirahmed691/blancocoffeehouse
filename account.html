@@ -9,6 +9,7 @@
       content="Sign in to your Blanco Coffee House account for profile, rewards, and orders."
     />
     <meta name="theme-color" content="#E9E1D8" />
+    <script src="night.js"></script>
     <link rel="canonical" href="https://blancocoffeehouse.com/account.html" />
     <link rel="icon" href="assets/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="assets/favicon.png" />
@@ -200,7 +201,7 @@
           <div class="account-welcome">
             <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> member</p>
             <h1 class="campaign-title" id="account-home-title">
-              Welcome back, <span data-account-name>member</span>.
+              Welcome back, <span data-account-first>member</span>.
             </h1>
             <p class="prose">
               Your blanco account. The public menu and gallery stay on the
@@ -211,6 +212,7 @@
               <div class="clerk-user-button clerk-user-button-lg"></div>
               <a class="btn btn-ghost" href="index.html#menu">View menu</a>
               <a class="btn house-admin-only" data-house-desk hidden href="admin.html">House desk</a>
+              <button type="button" class="btn btn-ghost" data-night-toggle aria-pressed="false">the night.</button>
             </div>
           </div>
 
@@ -244,8 +246,8 @@
                 <div class="empty-orders">
                   <p class="empty-orders-kicker">Not yet</p>
                   <p>
-                    Build a collection from the board. Pay now, or at the
-                    counter. Delivery is still to come.
+                    Build a collection from the board. Watch it move from in,
+                    to making it, to ready.
                   </p>
                 </div>
               </div>
@@ -258,17 +260,26 @@
                 Bring the account to the counter. Eight stamps, then a drink on
                 the house.
               </p>
-              <ol class="stamp-row" id="account-stamps" aria-label="Reward stamps">
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-                <li></li>
-              </ol>
-              <p class="note" data-stamps-note>Eight stamps. A drink on the house.</p>
+              <div class="stamp-card">
+                <div class="stamp-card-head">
+                  <img class="stamp-card-seal" src="assets/logo.png" alt="" width="80" height="80" decoding="async" />
+                  <div>
+                    <p class="stamp-card-word">blanco.</p>
+                    <p class="stamp-card-kicker">your card.</p>
+                  </div>
+                </div>
+                <ol class="stamp-row" id="account-stamps" aria-label="Reward stamps">
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ol>
+                <p class="note" data-stamps-note>Eight stamps. A drink on the house.</p>
+              </div>
             </article>
 
             <article class="account-card" id="account-rank" aria-labelledby="account-rank-title">
@@ -334,6 +345,8 @@
             <a href="mailto:hello@blancocoffeehouse.com"
               >hello@blancocoffeehouse.com</a
             >
+            ·
+            <button type="button" class="night-toggle" data-night-toggle aria-pressed="false">the night.</button>
           </div>
         </div>
       </div>
@@ -353,6 +366,7 @@
     <script src="script.js"></script>
     <script src="house.js"></script>
     <script src="account-stamps.js"></script>
+    <script src="collection.js"></script>
     <script src="account-orders.js"></script>
     <script src="rank.js"></script>
     <script src="clerk-auth.js?v=7"></script>

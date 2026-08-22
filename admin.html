@@ -10,6 +10,7 @@
     />
     <meta name="robots" content="noindex" />
     <meta name="theme-color" content="#E9E1D8" />
+    <script src="night.js"></script>
     <link rel="canonical" href="https://blancocoffeehouse.com/admin.html" />
     <link rel="icon" href="assets/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="assets/favicon.png" />
@@ -310,10 +311,12 @@
                 </label>
                 <button class="btn btn-ghost" type="button" id="stamp-find">Find</button>
               </div>
+              <div class="stamp-card">
               <ol class="stamp-row" id="stamp-preview" aria-label="Member stamps">
                 <li></li><li></li><li></li><li></li>
                 <li></li><li></li><li></li><li></li>
               </ol>
+              </div>
               <p class="admin-hint" id="stamp-status">No card open yet.</p>
               <button class="btn" type="button" id="stamp-give" disabled>Give a stamp</button>
             </article>
@@ -362,9 +365,9 @@
                 <h2>The counter</h2>
               </div>
               <p class="admin-hint">
-                Members place from the board. Pay now on the card, or at the
-                counter. Mark ready when the cup is up. Let go on a paid card
-                refunds it.
+                Members place from the board. In, then making it, then ready
+                when the cup is up. Collected when they take it. Let go on a
+                paid card refunds it.
               </p>
               <p class="admin-hint" id="desk-orders-status">No collections yet.</p>
               <ul class="desk-orders" id="desk-orders"></ul>
@@ -538,6 +541,9 @@
         <div class="footer-meta">
           <div data-hours-footer>Monday–Sunday, 11am–8pm</div>
           <div>4 Fiveways Parade, Hazel Grove, Stockport, SK7 6DG</div>
+          <div>
+            <button type="button" class="night-toggle" data-night-toggle aria-pressed="false">the night.</button>
+          </div>
         </div>
       </div>
       <p class="wrap fineprint">

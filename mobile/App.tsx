@@ -14,9 +14,10 @@ import { tokenCache } from "@clerk/expo/token-cache";
 import * as Linking from "expo-linking";
 import { StatusBar } from "expo-status-bar";
 import * as WebBrowser from "expo-web-browser";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  AppState,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -53,8 +54,15 @@ import {
   counterCue,
   joinRank,
   cancelOrder,
+  collectionHeadline,
+  collectionStepIndex,
+  CUP_STEPS,
   linesFromOrder,
   liveOrders,
+  watchingOrders,
+  canLetGo,
+  isLiveOrder,
+  isWatchingOrder,
   moreHandles,
   onRankPrice,
   orderItemsLine,
@@ -76,11 +84,9 @@ import { DEFAULT_PREFS, loadPrefs, type PayPref, type Prefs } from "./prefs";
 import { LookScreen } from "./look";
 import { type LookBoard } from "./shots";
 import {
-  BEIGE,
-  BROWN,
-  LINE,
-  MUTED,
-  PAPER,
+  DARK,
+  HouseProvider,
+  LIGHT,
   ROUND,
   ROUND_BOLD,
   SANS,
@@ -88,10 +94,13 @@ import {
   SANS_SEMI,
   SERIF,
   SERIF_ITALIC,
-  usePad
+  usePad,
+  useStyles,
+  type Palette
 } from "./theme";
-import { Kicker } from "./ui";
+import { Back, Kicker, Mark, Stick } from "./ui";
 import { YouStack, type YouPage } from "./you";
+import { Pop, Rise } from "./motion";
 
 type Tab = "menu" | "look" | "bag" | "you";
 type Board = "drinks" | "sweets";
@@ -104,9 +113,13 @@ function payHrefKind(url: string) {
 }
 
 function Grain() {
+  const { t, styles } = useStyles(makeStyles);
   const { width, height } = useWindowDimensions();
   return (
-    <View pointerEvents="none" style={[styles.grain, { width, height }]}>
+    <View
+      pointerEvents="none"
+      style={[styles.grain, { width, height, opacity: t.night ? 0.055 : 0.1 }]}
+    >
       <Image
         source={require("./assets/grain.png")}
         style={{ width, height }}
@@ -139,51 +152,42 @@ function MenuScreen({
   onQty: (id: string, delta: number) => void;
   onHouse: () => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const [board, setBoard] = useState<Board>("drinks");
   const sections = groupBoard(items, board);
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: 28 }]}
-      refreshControl={
-        <RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={BROWN} />
-      }
-    >
-      <Kicker label="the board" />
-      <Text style={styles.title}>your way.</Text>
-      <Pressable
-        onPress={() => {
-          tap();
-          onHouse();
-        }}
-        hitSlop={6}
-        accessibilityRole="button"
-        accessibilityLabel="The house hours"
-      >
-        <Text style={styles.hours}>
-          {houseOpenLine(hours)}
-        </Text>
-      </Pressable>
-      {houseBusyLine(hours) ? <Text style={styles.notice}>{houseBusyLine(hours)}</Text> : null}
-      {hours?.notice ? <Text style={styles.notice}>{hours.notice}</Text> : null}
-      <View style={styles.seg}>
-        {(["drinks", "sweets"] as const).map((id) => (
-          <Pressable
-            key={id}
-            onPress={() => {
-              tap();
-              setBoard(id);
-            }}
-            style={[styles.segBtn, board === id && styles.segOn]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: board === id }}
-          >
-            <Text style={[styles.segText, board === id && styles.segTextOn]}>{id}</Text>
-          </Pressable>
-        ))}
+    <View style={styles.screen}>
+      <View style={[styles.sticky, { paddingTop: pad.top }]}>
+        <Kicker label="the board" />
+        <Text style={styles.title}>your way.</Text>
+        <Pressable
+          onPress={() => {
+            tap();
+            onHouse();
+          }}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel="The house hours"
+        >
+          <Text style={styles.hours}>{houseOpenLine(hours)}</Text>
+        </Pressable>
+        {houseBusyLine(hours) ? <Text style={styles.notice}>{houseBusyLine(hours)}</Text> : null}
+        {hours?.notice ? <Text style={styles.notice}>{hours.notice}</Text> : null}
+        <Stick
+          value={board}
+          options={["drinks", "sweets"] as const}
+          onChange={setBoard}
+        />
       </View>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.screenInner, { paddingTop: 12, paddingBottom: 28 }]}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={t.BROWN} />
+        }
+      >
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {loading && !sections.length && !error ? (
         <Text style={styles.prose}>The board is coming up.</Text>
@@ -191,6 +195,7 @@ function MenuScreen({
       {!loading && !error && !sections.length ? (
         <Text style={styles.prose}>The board is quiet. Pull to try again.</Text>
       ) : null}
+      <Rise key={board} shift={false}>
       {sections.map((section) => (
         <View key={section.title} style={styles.section}>
           <Text style={styles.sectionTitle}>{section.title}</Text>
@@ -247,7 +252,73 @@ function MenuScreen({
           })}
         </View>
       ))}
+      </Rise>
     </ScrollView>
+    </View>
+  );
+}
+
+function CupTrack({
+  order,
+  onCancel
+}: {
+  order: HouseOrder;
+  onCancel?: () => void;
+}) {
+  const { styles } = useStyles(makeStyles);
+  const idx = collectionStepIndex(order.status);
+  return (
+    <View style={[styles.cupTrack, order.status === "ready" && styles.cupTrackReady]}>
+      <Text style={styles.cupNow}>{collectionHeadline(order)}</Text>
+      {idx >= 0 ? (
+        <>
+          <View style={styles.cupRail} accessibilityLabel={collectionHeadline(order)}>
+            {CUP_STEPS.map((step, i) => (
+              <Fragment key={step.id}>
+                {i > 0 ? (
+                  <View style={[styles.cupLink, idx >= i && styles.cupLinkOn]} />
+                ) : null}
+                <View
+                  style={[
+                    styles.cupDot,
+                    i < idx && styles.cupDotDone,
+                    i === idx && styles.cupDotNow
+                  ]}
+                />
+              </Fragment>
+            ))}
+          </View>
+          <View style={styles.cupLabels}>
+            {CUP_STEPS.map((step, i) => (
+              <Text
+                key={step.id}
+                style={[styles.cupStep, (i === idx || i < idx) && styles.cupStepOn]}
+              >
+                {step.label}
+              </Text>
+            ))}
+          </View>
+        </>
+      ) : null}
+      <Text style={styles.pastItems}>{orderItemsLine(order)}</Text>
+      <Text style={styles.pastPrice}>{formatPrice(Number(order.total_gbp) || 0)}</Text>
+      {order.note ? <Text style={styles.pastNote}>“{order.note}”</Text> : null}
+      <Text style={styles.pastNote}>
+        {order.paid ? "Paid." : "Pay when you collect."} Collection at the counter — not to the door.
+      </Text>
+      {onCancel ? (
+        <Pressable
+          onPress={onCancel}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Let this collection go"
+        >
+          <Text style={styles.link}>Let this go</Text>
+        </Pressable>
+      ) : (
+        <Text style={styles.pastNote}>Ask the counter if this should come off.</Text>
+      )}
+    </View>
   );
 }
 
@@ -292,16 +363,33 @@ function BagScreen({
   onCancelOrder: (id: string) => void;
   onRefresh: () => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   const empty = bag.length === 0;
   const total = formatPrice(bagTotal(bag));
   const cardFirst = stripe && prefer !== "counter";
   const closed = houseState(hours) === "closed";
-  const waiting = orders.filter((order) => order.status === "hold");
   const live = liveOrders(orders);
+  const watching = watchingOrders(orders);
   const recent = recentForReorder(orders).filter(
     (order) => linesFromOrder(order, items, onRank).length > 0
   );
+
+  function letGo(order: HouseOrder) {
+    Alert.alert(
+      "let this go?",
+      "It comes off the counter. The bag is still here if you want another.",
+      [
+        { text: "stay", style: "cancel" },
+        {
+          text: "let go",
+          style: "destructive",
+          onPress: () => onCancelOrder(order.id)
+        }
+      ]
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.screen}
@@ -312,7 +400,7 @@ function BagScreen({
         contentContainerStyle={[styles.screenInner, { paddingTop: pad.top, paddingBottom: empty ? 36 : 24 }]}
         keyboardShouldPersistTaps="handled"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={BROWN} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.BROWN} />
         }
       >
         <Kicker label="collection" />
@@ -321,11 +409,18 @@ function BagScreen({
         {!closed && counterCue(orders) ? (
           <Text style={styles.notice}>{counterCue(orders)}</Text>
         ) : null}
+        {watching.map((order) => (
+          <CupTrack
+            key={order.id}
+            order={order}
+            onCancel={canLetGo(order) ? () => letGo(order) : undefined}
+          />
+        ))}
         {empty ? (
           <>
             <Text style={styles.prose}>
               {live.length
-                ? "Something is already at the counter. Add more from the board, or order again when this one is collected."
+                ? "Watch this one. The house moves it from in, to making it, to ready."
                 : stripe
                   ? "Add from the board. Pay now with the card, or at the counter when you collect."
                   : "Add from the board. Pay at the counter when you collect."}
@@ -338,44 +433,9 @@ function BagScreen({
               }}
               style={({ pressed }) => [styles.btn, { marginTop: 22 }, pressed && styles.pressed]}
             >
+              <Mark name="menu" size={18} color={t.BEIGE} />
               <Text style={styles.btnText}>The board</Text>
             </Pressable>
-            {waiting.length ? (
-              <>
-                <Text style={styles.sectionTitle}>waiting.</Text>
-                {waiting.map((order) => (
-                  <View key={order.id} style={styles.past}>
-                    <Text style={styles.pastStatus}>{orderStatusLine(order)}</Text>
-                    <Text style={styles.pastItems}>{orderItemsLine(order)}</Text>
-                    <Text style={styles.pastPrice}>{formatPrice(Number(order.total_gbp) || 0)}</Text>
-                    <Pressable
-                      onPress={() => onCancelOrder(order.id)}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel="Let this collection go"
-                    >
-                      <Text style={styles.link}>Let this go</Text>
-                    </Pressable>
-                  </View>
-                ))}
-              </>
-            ) : null}
-            {live.length ? (
-              <>
-                <Text style={styles.sectionTitle}>at the counter.</Text>
-                {live.map((order) => (
-                  <View key={order.id} style={styles.past}>
-                    <Text style={styles.pastStatus}>{orderStatusLine(order)}</Text>
-                    <Text style={styles.pastItems}>{orderItemsLine(order)}</Text>
-                    <Text style={styles.pastPrice}>{formatPrice(Number(order.total_gbp) || 0)}</Text>
-                    {order.note ? <Text style={styles.pastNote}>“{order.note}”</Text> : null}
-                    <Text style={styles.pastNote}>
-                      {order.paid ? "Paid." : "Pay when you collect."} Collection at the counter — not to the door.
-                    </Text>
-                  </View>
-                ))}
-              </>
-            ) : null}
             {recent.length ? (
               <>
                 <Text style={styles.sectionTitle}>again.</Text>
@@ -451,7 +511,7 @@ function BagScreen({
               value={note}
               onChangeText={onNote}
               placeholder="No oat, extra hot…"
-              placeholderTextColor="rgba(80,57,49,0.4)"
+              placeholderTextColor={t.MUTED}
               style={styles.input}
               maxLength={140}
             />
@@ -486,6 +546,7 @@ function BagScreen({
                 onPress={() => onPay("stripe")}
                 style={({ pressed }) => [styles.btn, { marginTop: 8 }, pressed && styles.pressed, busy && styles.dim]}
               >
+                <Mark name="card" size={18} color={t.BEIGE} />
                 <Text style={styles.btnText}>{busy ? "Opening the card…" : "Pay now · " + total}</Text>
               </Pressable>
               <Pressable
@@ -493,6 +554,7 @@ function BagScreen({
                 onPress={() => onPay("counter")}
                 style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed, busy && styles.dim]}
               >
+                <Mark name="counter" size={18} />
                 <Text style={styles.btnGhostText}>Pay at the counter</Text>
               </Pressable>
             </>
@@ -503,6 +565,7 @@ function BagScreen({
                 onPress={() => onPay("counter")}
                 style={({ pressed }) => [styles.btn, { marginTop: 8 }, pressed && styles.pressed, busy && styles.dim]}
               >
+                <Mark name="counter" size={18} color={t.BEIGE} />
                 <Text style={styles.btnText}>
                   {busy ? "Sending to the counter…" : "Pay at the counter · " + total}
                 </Text>
@@ -512,6 +575,7 @@ function BagScreen({
                 onPress={() => onPay("stripe")}
                 style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed, busy && styles.dim]}
               >
+                <Mark name="card" size={18} />
                 <Text style={styles.btnGhostText}>Pay now with the card</Text>
               </Pressable>
             </>
@@ -521,6 +585,7 @@ function BagScreen({
               onPress={() => onPay("counter")}
               style={({ pressed }) => [styles.btn, { marginTop: 8 }, pressed && styles.pressed, busy && styles.dim]}
             >
+              <Mark name="bag" size={18} color={t.BEIGE} />
               <Text style={styles.btnText}>
                 {busy ? "Sending to the counter…" : "Place for collection · " + total}
               </Text>
@@ -541,6 +606,7 @@ function Tabs({
   bagCount: number;
   onTab: (next: Tab) => void;
 }) {
+  const { t, styles } = useStyles(makeStyles);
   const pad = usePad();
   return (
     <View style={[styles.tabs, { paddingBottom: pad.bottom }]}>
@@ -551,26 +617,34 @@ function Tabs({
           ["bag", "bag"],
           ["you", "you"]
         ] as const
-      ).map(([id, label]) => (
-        <Pressable
-          key={id}
-          onPress={() => {
-            tap();
-            onTab(id);
-          }}
-          style={styles.tab}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: tab === id }}
-        >
-          <Text style={[styles.tabText, tab === id && styles.tabTextOn]}>{label}</Text>
-          {id === "bag" && bagCount ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{bagCount > 9 ? "9+" : String(bagCount)}</Text>
+      ).map(([id, label]) => {
+        const on = tab === id;
+        return (
+          <Pressable
+            key={id}
+            onPress={() => {
+              tap();
+              onTab(id);
+            }}
+            style={styles.tab}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={label}
+          >
+            <View>
+              <Pop on={on}>
+                <Mark name={id} on={on} size={22} color={on ? t.BROWN : t.MUTED} />
+              </Pop>
+              {id === "bag" && bagCount ? (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{bagCount > 9 ? "9+" : String(bagCount)}</Text>
+                </View>
+              ) : null}
             </View>
-          ) : null}
-          {tab === id ? <View style={styles.tabLine} /> : null}
-        </Pressable>
-      ))}
+            <Text style={[styles.tabText, on && styles.tabTextOn]}>{label}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -601,6 +675,7 @@ function AppFonts() {
     WorkSans_600SemiBold
   });
   if (!loaded) {
+    const styles = makeStyles(LIGHT);
     return (
       <View style={styles.bootFull}>
         <Image source={require("./assets/mark.png")} style={styles.gateMark} />
@@ -646,6 +721,8 @@ function House() {
   const pendingPayId = useRef("");
   const prefsRef = useRef(prefs);
   prefsRef.current = prefs;
+  const t = prefs.night ? DARK : LIGHT;
+  const styles = useMemo(() => makeStyles(t), [t]);
   const settleRef = useRef<(kind: "paid" | "cancel" | "unknown") => void>(() => {});
   const payDone = useRef(false);
 
@@ -747,6 +824,44 @@ function House() {
     return () => clearTimeout(id);
   }, [toast]);
 
+  const watchingCup = orders.some((order) => isWatchingOrder(order.status));
+
+  useEffect(() => {
+    if (!isSignedIn || !watchingCup) return;
+    let on = true;
+    const tick = () => {
+      liveSession()
+        .then(fetchOrders)
+        .then((collection) => {
+          if (!on || !collection) return;
+          setStripe(!!collection.stripe);
+          setOrders(collection.orders);
+        })
+        .catch(() => {});
+    };
+    const timer = setInterval(tick, 8000);
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") tick();
+    });
+    return () => {
+      on = false;
+      clearInterval(timer);
+      sub.remove();
+    };
+  }, [isSignedIn, watchingCup]);
+
+  const seenStatus = useRef<Record<string, string>>({});
+  useEffect(() => {
+    orders.forEach((order) => {
+      const was = seenStatus.current[order.id];
+      if (was && was !== order.status) {
+        if (order.status === "ready") ok();
+        else if (isLiveOrder(order.status)) tap();
+      }
+      seenStatus.current[order.id] = order.status;
+    });
+  }, [orders]);
+
   useEffect(() => {
     if (!items.length) return;
     setBag((prev) => {
@@ -817,7 +932,7 @@ function House() {
     ok();
     setBag([]);
     setNote(prefsRef.current.bagNote);
-    setBagStatus("Paid. It’s at the counter.");
+    setBagStatus("Paid. The house has it.");
   }
 
   async function settlePay(kind: "paid" | "cancel" | "unknown") {
@@ -845,7 +960,7 @@ function House() {
         const live = await liveSession();
         const collection = await fetchOrders(live).catch(() => null);
         const row = collection?.orders.find((order) => order.id === id);
-        if (row && (row.paid || row.status === "in" || row.status === "ready")) {
+        if (row && (row.paid || isLiveOrder(row.status))) {
           pendingPayId.current = "";
           if (collection) {
             setStripe(!!collection.stripe);
@@ -1007,28 +1122,38 @@ function House() {
 
   if (!isLoaded) {
     return (
-      <View style={styles.bootFull}>
-        <Image source={require("./assets/mark.png")} style={styles.gateMark} />
-        <Text style={styles.bootWord}>blanco.</Text>
-        <Text style={styles.tag}>your way.</Text>
-      </View>
+      <HouseProvider night={!!prefs.night}>
+        <View style={styles.bootFull}>
+          <Image
+            source={require("./assets/mark.png")}
+            style={styles.gateMark}
+            tintColor={t.night ? t.BROWN : undefined}
+          />
+          <Text style={styles.bootWord}>blanco.</Text>
+          <Text style={styles.tag}>your way.</Text>
+        </View>
+      </HouseProvider>
     );
   }
 
   if (!isSignedIn) {
     return (
-      <View style={styles.root}>
-        <StatusBar style="dark" backgroundColor={BEIGE} />
-        <Gate />
-        <Grain />
-      </View>
+      <HouseProvider night={!!prefs.night}>
+        <View style={styles.root}>
+          <StatusBar style={t.night ? "light" : "dark"} backgroundColor={t.BEIGE} />
+          <Gate />
+          <Grain />
+        </View>
+      </HouseProvider>
     );
   }
 
   return (
+    <HouseProvider night={!!prefs.night}>
     <View style={styles.root}>
-      <StatusBar style="dark" backgroundColor={BEIGE} />
+      <StatusBar style={t.night ? "light" : "dark"} backgroundColor={t.BEIGE} />
       <View style={styles.stage}>
+          <Rise key={tab} style={styles.stage}>
           {tab === "menu" ? (
             <MenuScreen
               items={items}
@@ -1095,10 +1220,21 @@ function House() {
                 );
               }}
               onCancelOrder={(id) => {
-                tap();
                 liveSession()
-                  .then((live) => cancelOrder(live, id).then(() => loadHouse(live)))
-                  .catch(() => warn());
+                  .then((live) =>
+                    cancelOrder(live, id).then(() => {
+                      ok();
+                      return loadHouse(live);
+                    })
+                  )
+                  .catch((err) => {
+                    warn();
+                    setBagStatus(
+                      err instanceof Error
+                        ? err.message
+                        : "That collection could not come off."
+                    );
+                  });
               }}
               onRefresh={() => loadHouse()}
             />
@@ -1160,14 +1296,13 @@ function House() {
               }}
             />
           ) : null}
+          </Rise>
         </View>
 
       {paying ? (
         <View style={styles.pay}>
           <View style={[styles.payBar, { paddingTop: pad.top }]}>
-            <Pressable onPress={() => settlePay("cancel")} hitSlop={10}>
-              <Text style={styles.back}>let go</Text>
-            </Pressable>
+            <Back label="let go" onPress={() => settlePay("cancel")} />
             <Text style={styles.payTitle}>the card.</Text>
             <View style={{ width: 52 }} />
           </View>
@@ -1178,17 +1313,19 @@ function House() {
       ) : null}
 
       {toast && tab !== "bag" ? (
-        <Pressable
-          onPress={() => {
-            tap();
-            setToast("");
-            setTab("bag");
-          }}
-          style={[styles.toast, { bottom: pad.toast }]}
-        >
-          <Text style={styles.toastText}>{toast}</Text>
-          <Text style={styles.toastGo}>the bag</Text>
-        </Pressable>
+        <Rise key={toast} style={[styles.toastLift, { bottom: pad.toast }]}>
+          <Pressable
+            onPress={() => {
+              tap();
+              setToast("");
+              setTab("bag");
+            }}
+            style={styles.toast}
+          >
+            <Text style={styles.toastText}>{toast}</Text>
+            <Text style={styles.toastGo}>the bag</Text>
+          </Pressable>
+        </Rise>
       ) : null}
 
       {paying ? null : (
@@ -1202,10 +1339,12 @@ function House() {
       )}
       <Grain />
     </View>
+    </HouseProvider>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(t: Palette) {
+  return StyleSheet.create({
   grain: {
     position: "absolute",
     top: 0,
@@ -1230,11 +1369,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 2.6,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   bootFull: {
     flex: 1,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1243,12 +1382,12 @@ const styles = StyleSheet.create({
     fontFamily: "Georgia",
     fontSize: 34,
     fontStyle: "italic",
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -0.8
   },
   root: {
     flex: 1,
-    backgroundColor: BEIGE
+    backgroundColor: t.BEIGE
   },
   stage: {
     flex: 1
@@ -1265,41 +1404,49 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 3.4,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   screen: {
     flex: 1,
-    backgroundColor: BEIGE
+    backgroundColor: t.BEIGE
   },
   screenInner: {
-    paddingHorizontal: 22
+    paddingHorizontal: 24
+  },
+  sticky: {
+    zIndex: 2,
+    paddingHorizontal: 24,
+    paddingBottom: 10,
+    backgroundColor: t.BEIGE,
+    borderBottomWidth: 1,
+    borderBottomColor: t.LINE
   },
   title: {
     fontFamily: ROUND,
-    fontSize: 40,
-    letterSpacing: -1.2,
-    color: BROWN,
-    marginBottom: 12,
+    fontSize: 38,
+    letterSpacing: -1.1,
+    color: t.BROWN,
+    marginBottom: 8,
     textTransform: "lowercase",
     lineHeight: 42
   },
   hours: {
     fontFamily: SANS,
     fontSize: 15,
-    color: MUTED,
-    marginBottom: 12
+    color: t.MUTED,
+    marginBottom: 8
   },
   notice: {
     fontFamily: SANS_MED,
     fontSize: 15,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 12
   },
   prose: {
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 26,
-    color: MUTED,
+    color: t.MUTED,
     maxWidth: 420
   },
   closing: {
@@ -1308,53 +1455,8 @@ const styles = StyleSheet.create({
     fontFamily: ROUND,
     fontSize: 22,
     letterSpacing: -0.6,
-    color: BROWN,
+    color: t.BROWN,
     lineHeight: 26
-  },
-  stamp: {
-    alignSelf: "flex-start",
-    borderWidth: 1.5,
-    borderColor: BROWN,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    fontFamily: ROUND_BOLD,
-    fontSize: 11,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    color: BROWN,
-    overflow: "hidden",
-    marginBottom: 16
-  },
-  seg: {
-    flexDirection: "row",
-    alignSelf: "flex-start",
-    gap: 4,
-    marginTop: 6,
-    marginBottom: 10,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: LINE,
-    borderRadius: 999,
-    backgroundColor: PAPER
-  },
-  segBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999
-  },
-  segOn: {
-    backgroundColor: BROWN
-  },
-  segText: {
-    fontFamily: SANS_SEMI,
-    fontSize: 12,
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
-    color: BROWN
-  },
-  segTextOn: {
-    color: BEIGE
   },
   section: {
     marginTop: 20
@@ -1362,10 +1464,78 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: SERIF,
     fontSize: 20,
-    color: BROWN,
+    color: t.BROWN,
     marginTop: 22,
     marginBottom: 10,
     letterSpacing: -0.3
+  },
+  cupTrack: {
+    marginTop: 18,
+    paddingTop: 4,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: t.LINE
+  },
+  cupTrackReady: {
+    borderLeftWidth: 3,
+    borderLeftColor: t.BROWN,
+    paddingLeft: 12
+  },
+  cupNow: {
+    fontFamily: SERIF_ITALIC,
+    fontSize: 26,
+    letterSpacing: -0.6,
+    color: t.BROWN,
+    marginBottom: 16,
+    lineHeight: 30
+  },
+  cupRail: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 6,
+    marginBottom: 8
+  },
+  cupLink: {
+    flex: 1,
+    height: 1,
+    backgroundColor: t.LINE,
+    marginHorizontal: 4
+  },
+  cupLinkOn: {
+    backgroundColor: t.BROWN
+  },
+  cupDot: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: t.LINE,
+    backgroundColor: "transparent"
+  },
+  cupDotDone: {
+    backgroundColor: t.BROWN,
+    borderColor: t.BROWN
+  },
+  cupDotNow: {
+    backgroundColor: t.BROWN,
+    borderColor: t.BROWN,
+    transform: [{ scale: 1.18 }]
+  },
+  cupLabels: {
+    flexDirection: "row",
+    marginBottom: 14
+  },
+  cupStep: {
+    flex: 1,
+    textAlign: "center",
+    fontFamily: SANS_MED,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    color: t.MUTED
+  },
+  cupStepOn: {
+    color: t.BROWN
   },
   item: {
     paddingVertical: 8
@@ -1378,7 +1548,7 @@ const styles = StyleSheet.create({
   leader: {
     flex: 1,
     borderBottomWidth: 1.5,
-    borderBottomColor: "rgba(80,57,49,0.18)",
+    borderBottomColor: t.LINE,
     borderStyle: "dotted",
     transform: [{ translateY: -4 }]
   },
@@ -1388,7 +1558,7 @@ const styles = StyleSheet.create({
   rowName: {
     fontFamily: SANS_MED,
     fontSize: 16,
-    color: BROWN
+    color: t.BROWN
   },
   rowDesc: {
     marginTop: 4,
@@ -1396,13 +1566,13 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 13,
     lineHeight: 18,
-    color: MUTED,
+    color: t.MUTED,
     maxWidth: 360
   },
   rowPrice: {
     fontFamily: SANS_MED,
     fontSize: 14,
-    color: MUTED,
+    color: t.MUTED,
     fontVariant: ["tabular-nums"]
   },
   rankMark: {
@@ -1411,18 +1581,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   soldMark: {
     fontFamily: SANS_SEMI,
     fontSize: 10,
     letterSpacing: 1.4,
     textTransform: "uppercase",
-    color: BROWN
+    color: t.BROWN
   },
   add: {
     borderWidth: 1.5,
-    borderColor: BROWN,
+    borderColor: t.BROWN,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -1430,20 +1600,20 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   addOn: {
-    backgroundColor: BROWN
+    backgroundColor: t.BROWN
   },
   addText: {
     fontFamily: SANS_MED,
-    color: BROWN,
+    color: t.BROWN,
     fontSize: 13
   },
   addTextOn: {
-    color: BEIGE
+    color: t.BEIGE
   },
   error: {
     marginTop: 12,
     fontFamily: SANS,
-    color: BROWN
+    color: t.BROWN
   },
   bagLine: {
     flexDirection: "row",
@@ -1452,7 +1622,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   bagCopy: {
     flex: 1,
@@ -1464,32 +1634,32 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontFamily: SANS_MED,
     fontSize: 14,
-    color: BROWN,
+    color: t.BROWN,
     fontVariant: ["tabular-nums"]
   },
   past: {
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   pastStatus: {
     fontFamily: SANS_MED,
     fontSize: 11,
     letterSpacing: 1.6,
     textTransform: "uppercase",
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 4
   },
   pastItems: {
     fontFamily: SANS,
     fontSize: 16,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 4
   },
   pastPrice: {
     fontFamily: SANS_MED,
     fontSize: 14,
-    color: BROWN,
+    color: t.BROWN,
     fontVariant: ["tabular-nums"]
   },
   pastNote: {
@@ -1497,15 +1667,15 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 14,
     lineHeight: 20,
-    color: MUTED
+    color: t.MUTED
   },
   bagDock: {
     paddingHorizontal: 22,
     paddingTop: 4,
     paddingBottom: 12,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     borderTopWidth: 1,
-    borderTopColor: LINE
+    borderTopColor: t.LINE
   },
   bagTotal: {
     flexDirection: "row",
@@ -1516,7 +1686,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 4,
     borderTopWidth: 1.5,
-    borderTopColor: BROWN
+    borderTopColor: t.BROWN
   },
   dim: {
     opacity: 0.45
@@ -1525,13 +1695,13 @@ const styles = StyleSheet.create({
     fontFamily: ROUND,
     fontSize: 22,
     letterSpacing: -0.5,
-    color: BROWN
+    color: t.BROWN
   },
   bagTotalSum: {
     fontFamily: ROUND,
     fontSize: 28,
     letterSpacing: -0.8,
-    color: BROWN,
+    color: t.BROWN,
     fontVariant: ["tabular-nums"]
   },
   qty: {
@@ -1545,14 +1715,14 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: BROWN,
+    borderColor: t.BROWN,
     alignItems: "center",
     justifyContent: "center"
   },
   qtyMark: {
     fontFamily: SANS_MED,
     fontSize: 16,
-    color: BROWN,
+    color: t.BROWN,
     marginTop: -1
   },
   qtyCount: {
@@ -1560,14 +1730,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: SANS_MED,
     fontSize: 15,
-    color: BROWN,
+    color: t.BROWN,
     fontVariant: ["tabular-nums"]
   },
   link: {
     marginTop: 12,
     fontFamily: SERIF_ITALIC,
     fontSize: 17,
-    color: BROWN
+    color: t.BROWN
   },
   label: {
     marginTop: 22,
@@ -1576,13 +1746,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.8,
     textTransform: "uppercase",
-    color: MUTED
+    color: t.MUTED
   },
   input: {
     borderWidth: 1,
-    borderColor: LINE,
-    backgroundColor: PAPER,
-    color: BROWN,
+    borderColor: t.LINE,
+    backgroundColor: t.PAPER,
+    color: t.BROWN,
     fontFamily: SANS,
     paddingHorizontal: 14,
     paddingVertical: 13,
@@ -1595,7 +1765,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontFamily: SANS,
     fontSize: 15,
-    color: BROWN
+    color: t.BROWN
   },
   payHint: {
     marginTop: 4,
@@ -1603,7 +1773,7 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 14,
     lineHeight: 20,
-    color: MUTED
+    color: t.MUTED
   },
   stamps: {
     flexDirection: "row",
@@ -1616,28 +1786,28 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 1.5,
-    borderColor: BROWN
+    borderColor: t.BROWN
   },
   dotOn: {
-    backgroundColor: BROWN
+    backgroundColor: t.BROWN
   },
   order: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: LINE
+    borderBottomColor: t.LINE
   },
   orderStatus: {
     fontFamily: SANS_MED,
     fontSize: 11,
     letterSpacing: 1.6,
     textTransform: "uppercase",
-    color: MUTED,
+    color: t.MUTED,
     marginBottom: 4
   },
   orderItems: {
     fontFamily: SANS,
     fontSize: 16,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 4
   },
   grid: {
@@ -1654,9 +1824,9 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 2 / 3,
     overflow: "hidden",
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE
+    borderColor: t.LINE
   },
   pressed: {
     opacity: 0.82,
@@ -1670,7 +1840,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontFamily: ROUND,
     fontSize: 22,
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -0.5
   },
   cardLine: {
@@ -1678,56 +1848,61 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 13,
     lineHeight: 18,
-    color: MUTED
+    color: t.MUTED
   },
   btn: {
     marginTop: 10,
-    backgroundColor: BROWN,
-    paddingVertical: 15,
-    paddingHorizontal: 22,
+    backgroundColor: t.BROWN,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 999
+    gap: 8,
+    borderRadius: 16
   },
   btnText: {
     fontFamily: SANS_MED,
-    color: BEIGE,
+    color: t.BEIGE,
     fontSize: 15,
-    letterSpacing: 0.4
+    letterSpacing: 0.2
   },
   btnGhost: {
     marginTop: 10,
-    borderWidth: 1.5,
-    borderColor: BROWN,
+    borderWidth: 1,
+    borderColor: t.BROWN,
     paddingVertical: 13,
-    paddingHorizontal: 22,
+    paddingHorizontal: 20,
+    flexDirection: "row",
     alignItems: "center",
-    borderRadius: 999
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 16
   },
   btnGhostText: {
     fontFamily: SANS_MED,
-    color: BROWN,
+    color: t.BROWN,
     fontSize: 15,
     letterSpacing: 0.4
   },
   piece: {
     flex: 1,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     paddingHorizontal: 22
   },
   back: {
     fontFamily: SERIF_ITALIC,
     fontSize: 18,
-    color: BROWN,
+    color: t.BROWN,
     marginBottom: 12
   },
   pieceFrame: {
     flex: 1,
     minHeight: 280,
     overflow: "hidden",
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE
+    borderColor: t.LINE
   },
   pieceImage: {
     width: "100%",
@@ -1737,7 +1912,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontFamily: ROUND,
     fontSize: 32,
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -0.8
   },
   pieceLine: {
@@ -1746,67 +1921,62 @@ const styles = StyleSheet.create({
     fontFamily: SANS,
     fontSize: 16,
     lineHeight: 24,
-    color: MUTED
+    color: t.MUTED
   },
   tabs: {
     flexDirection: "row",
-    paddingHorizontal: 8,
-    paddingTop: 10,
-    backgroundColor: PAPER,
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    backgroundColor: t.PAPER,
     borderTopWidth: 1,
-    borderTopColor: LINE
+    borderTopColor: t.LINE
   },
   tab: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 8
+    gap: 4,
+    paddingVertical: 6
   },
   tabText: {
-    color: BROWN,
-    opacity: 0.34,
-    fontFamily: ROUND,
-    fontSize: 16,
-    letterSpacing: -0.3
+    color: t.MUTED,
+    fontFamily: SANS_MED,
+    fontSize: 11,
+    letterSpacing: 0.6
   },
   tabTextOn: {
-    opacity: 1
-  },
-  tabLine: {
-    marginTop: 6,
-    width: 16,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: BROWN
+    color: t.BROWN
   },
   badge: {
     position: "absolute",
-    top: 2,
-    right: "16%",
-    minWidth: 18,
-    height: 18,
-    paddingHorizontal: 5,
-    borderRadius: 9,
-    backgroundColor: BROWN,
+    top: -4,
+    right: -10,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: t.BROWN,
     alignItems: "center",
     justifyContent: "center"
   },
   badgeText: {
     fontFamily: SANS_MED,
     fontSize: 10,
-    color: BEIGE
+    color: t.BEIGE
   },
-  toast: {
+  toastLift: {
     position: "absolute",
     left: 16,
     right: 16,
-    zIndex: 50,
+    zIndex: 50
+  },
+  toast: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: PAPER,
+    backgroundColor: t.PAPER,
     borderWidth: 1,
-    borderColor: LINE,
-    borderRadius: 999,
+    borderColor: t.LINE,
+    borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 18
   },
@@ -1814,16 +1984,16 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: SANS,
     fontSize: 15,
-    color: BROWN
+    color: t.BROWN
   },
   toastGo: {
     fontFamily: SERIF_ITALIC,
     fontSize: 16,
-    color: BROWN
+    color: t.BROWN
   },
   pay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: BEIGE,
+    backgroundColor: t.BEIGE,
     zIndex: 60
   },
   payBar: {
@@ -1836,7 +2006,7 @@ const styles = StyleSheet.create({
   payTitle: {
     fontFamily: ROUND,
     fontSize: 20,
-    color: BROWN,
+    color: t.BROWN,
     letterSpacing: -0.4
   },
   payWait: {
@@ -1846,3 +2016,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28
   }
 });
+}
+
