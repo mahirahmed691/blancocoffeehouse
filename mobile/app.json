@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "blanco.",
+    "slug": "blancocoffeehouse",
+    "scheme": "blanco",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#E9E1D8",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#E9E1D8"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.blancocoffeehouse.app",
+      "backgroundColor": "#E9E1D8",
+      "infoPlist": {
+        "CFBundleDisplayName": "blanco.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.blancocoffeehouse.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#E9E1D8"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "backgroundColor": "#E9E1D8"
+    },
+    "plugins": [
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#E9E1D8",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180
+        }
+      ],
+      "expo-font",
+      "@clerk/expo",
+      "expo-secure-store"
+    ]
+  }
+}

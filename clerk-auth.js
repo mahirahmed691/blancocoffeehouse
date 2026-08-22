@@ -56,6 +56,13 @@
     document.querySelectorAll(".clerk-signed-in").forEach(function (el) {
       el.hidden = !inSession;
     });
+    try {
+      if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+        window.ReactNativeWebView.postMessage(
+          JSON.stringify({ type: "blanco-auth", signedIn: !!inSession })
+        );
+      }
+    } catch (err) {}
   }
 
   function isSignedIn() {

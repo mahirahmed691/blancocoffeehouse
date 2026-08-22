@@ -288,5 +288,20 @@
     renderDock();
     loadPayOptions();
   };
+  window.blancoOpenCollect = function () {
+    holdOpen = true;
+    renderDock();
+    if (dock && !dock.hidden) {
+      dock.scrollIntoView({ block: "end" });
+    }
+  };
+  if (location.hash === "#collect") {
+    window.setTimeout(function () {
+      window.blancoOpenCollect();
+    }, 250);
+  }
+  window.addEventListener("hashchange", function () {
+    if (location.hash === "#collect") window.blancoOpenCollect();
+  });
   loadPayOptions();
 })();

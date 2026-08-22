@@ -1,6 +1,15 @@
 var blancoShowBoard = null;
 
 (function () {
+  try {
+    if (
+      window.ReactNativeWebView ||
+      /(?:^|[?&])app=1(?:&|$)/.test(String(window.location.search || ""))
+    ) {
+      document.documentElement.classList.add("is-app");
+    }
+  } catch (err) {}
+
   var header = document.querySelector(".site-header");
   var toggle = document.querySelector(".nav-toggle");
   var trigger = document.querySelector(".mega-trigger");
@@ -389,7 +398,7 @@ var blancoShowBoard = null;
     { label: "In the cup", href: "#cup", hay: "coffee espresso latte cappuccino americano mocha iced matcha milk steamed hot choc", kind: "The house" },
     { label: "Sit in, pick up, delivery", href: "#ways", hay: "sit in pick up delivery your way", kind: "Your way" },
     { label: "The gallery", href: "gallery.html", hay: "gallery photos house instagram in-store pictures", kind: "The house" },
-    { label: "Apparel, coming soon", href: "#wear", hay: "apparel merch merchandise tee hoodie tote wear drop clothing", kind: "The house" },
+    { label: "Apparel", href: "#wear", hay: "apparel merch merchandise tee hoodie tote wear drop clothing coffee club", kind: "The house" },
     { label: "The app", href: "#app", hay: "app rewards stamps loyalty account pocket phone expo", kind: "Account" },
     { label: "Google reviews", href: "#reviews", hay: "google reviews share", kind: "The house" },
     { label: "Visit Fiveways Parade", href: "#visit", hay: "visit address hours map stockport hazel grove taxi rank drivers concession", kind: "Visit" },
