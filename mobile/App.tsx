@@ -72,6 +72,9 @@ import {
   priceOf,
   recentForReorder,
   bagHintLine,
+  findUsualItem,
+  usualAwayLine,
+  usualHintLine,
   type HouseHours,
   type HouseOrder,
   type Line,
@@ -79,7 +82,7 @@ import {
   type Session
 } from "./house";
 import { type Piece } from "./pieces";
-import { DEFAULT_PREFS, loadHeld, loadPrefs, saveHeld, type Prefs } from "./prefs";
+import { DEFAULT_PREFS, hasUsual, loadHeld, loadPrefs, saveHeld, savePrefs, type Prefs } from "./prefs";
 import { LookScreen } from "./look";
 import { type LookBoard } from "./shots";
 import {
@@ -135,6 +138,12 @@ function MenuScreen({
   loading,
   error,
   held,
+  usualId,
+  usualName,
+  usualHint,
+  usualAway,
+  onUsual,
+  onKeepUsual,
   onRefresh,
   onAdd,
   onQty,
@@ -147,6 +156,12 @@ function MenuScreen({
   loading: boolean;
   error: string;
   held: Line[];
+  usualId: string;
+  usualName: string;
+  usualHint: string;
+  usualAway: string;
+  onUsual: () => void;
+  onKeepUsual: (item: MenuItem) => void;
   onRefresh: () => void;
   onAdd: (item: MenuItem) => void;
   onQty: (id: string, delta: number) => void;
@@ -250,6 +265,17 @@ function MenuScreen({
         }
       >
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {usualId || usualName ? (
+        <Pressable
+          onPress={onUsual}
+          style={({ pressed }) => [styles.usual, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={usualAway ? usualAway : "the usual, " + usualHint}
+        >
+          <Text style={styles.usualWord}>the usual.</Text>
+          <Text style={styles.usualHint}>{usualAway || usualHint}</Text>
+        </Pressable>
+      ) : null}
       {loading && !shown.length && !error && !q.trim() ? (
         <Text style={styles.prose}>The board is coming up.</Text>
       ) : null}
@@ -271,7 +297,16 @@ function MenuScreen({
             return (
               <View key={id} style={[styles.item, sold && styles.rowSold]}>
                 <View style={styles.itemTop}>
-                  <Text style={styles.rowName}>{item.name}</Text>
+                  <Text
+                    style={styles.rowName}
+                    onLongPress={() => {
+                      if (sold) return;
+                      onKeepUsual(item);
+                    }}
+                    delayLongPress={450}
+                  >
+                    {item.name}
+                  </Text>
                   <View style={styles.leader} />
                   <Text style={styles.rowPrice}>{formatPrice(priceOf(item, onRank))}</Text>
                   {sold ? (
@@ -313,6 +348,19 @@ function MenuScreen({
                   <Text style={styles.rowDesc}>{item.description}</Text>
                 ) : null}
                 {rank ? <Text style={styles.rankMark}>rank</Text> : null}
+                {!sold &&
+                (usualId ? id === usualId : !!(usualName && item.name === usualName)) ? (
+                  <Text style={styles.keepCue}>the usual.</Text>
+                ) : !sold && heldQty > 0 ? (
+                  <Pressable
+                    onPress={() => onKeepUsual(item)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={"Keep " + item.name + " as the usual"}
+                  >
+                    <Text style={styles.keepCue}>keep this as the usual</Text>
+                  </Pressable>
+                ) : null}
               </View>
             );
           })}
@@ -406,6 +454,8 @@ function BagScreen({
   onMenu,
   onReorder,
   onCancelOrder,
+  onKeepUsual,
+  usualId,
   onRefresh,
   topAt
 }: {
@@ -426,6 +476,8 @@ function BagScreen({
   onMenu: () => void;
   onReorder: (order: HouseOrder) => void;
   onCancelOrder: (id: string) => void;
+  onKeepUsual: (row: Line) => void;
+  usualId: string;
   onRefresh: () => void;
   topAt: number;
 }) {
@@ -542,6 +594,18 @@ function BagScreen({
                 <View style={styles.bagCopy}>
                   <Text style={styles.rowName}>{row.name}</Text>
                   {row.rank ? <Text style={styles.rankMark}>rank</Text> : null}
+                  {row.id === usualId ? (
+                    <Text style={styles.keepCue}>the usual.</Text>
+                  ) : (
+                    <Pressable
+                      onPress={() => onKeepUsual(row)}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={"Keep " + row.name + " as the usual"}
+                    >
+                      <Text style={styles.keepCue}>keep this as the usual</Text>
+                    </Pressable>
+                  )}
                 </View>
                 <View style={styles.qty} collapsable={false}>
                   <Pressable
@@ -1007,6 +1071,58 @@ function House() {
     });
   }
 
+  function addUsual(goBag?: boolean) {
+    const prefsNow = prefsRef.current;
+    if (!hasUsual(prefsNow)) {
+      setYouPage("settings");
+      setTab("you");
+      return;
+    }
+    if (!items.length) {
+      warn();
+      setToast("The board is coming up.");
+      return;
+    }
+    const away = usualAwayLine(items, prefsNow.usualId, prefsNow.usualName);
+    const item = findUsualItem(items, prefsNow.usualId, prefsNow.usualName);
+    if (away || !item || item.sold_out) {
+      warn();
+      setToast(away || "The usual is not on the board today.");
+      return;
+    }
+    const id = String(item.id || item.name);
+    if (prefsNow.usualId !== id || prefsNow.usualName !== item.name) {
+      savePrefs({ ...prefsNow, usualId: id, usualName: item.name }).then(setPrefs);
+    }
+    addItem(item);
+    if (goBag) setTab("bag");
+  }
+
+  async function keepUsual(id: string, name: string, nextNote?: string) {
+    tap();
+    const prefsNow = prefsRef.current;
+    const saved = await savePrefs({
+      ...prefsNow,
+      usualId: String(id || "").trim(),
+      usualName: String(name || "").trim(),
+      bagNote: String(nextNote !== undefined ? nextNote : prefsNow.bagNote).trim().slice(0, 140)
+    });
+    setPrefs(saved);
+    if (nextNote !== undefined && !bag.length) setNote(saved.bagNote);
+    ok();
+    setToast("kept as the usual.");
+  }
+
+  async function clearUsual() {
+    const saved = await savePrefs({
+      ...prefsRef.current,
+      usualId: "",
+      usualName: ""
+    });
+    setPrefs(saved);
+    ok();
+  }
+
   function changeQty(id: string, delta: number) {
     const row = bag.find((line) => line.id === id);
     if (!row) return;
@@ -1273,6 +1389,10 @@ function House() {
     );
   }
 
+  const usualItem = findUsualItem(items, prefs.usualId, prefs.usualName);
+  const usualAway = usualAwayLine(items, prefs.usualId, prefs.usualName);
+  const usualHint = usualHintLine(items, prefs.usualId, prefs.usualName, prefs.bagNote);
+
   if (!isSignedIn) {
     return (
       <HouseProvider night={!!prefs.night}>
@@ -1299,6 +1419,12 @@ function House() {
               loading={menuLoading}
               error={menuError}
               held={bag}
+              usualId={prefs.usualId}
+              usualName={prefs.usualName}
+              usualHint={usualHint}
+              usualAway={usualAway}
+              onUsual={() => addUsual(false)}
+              onKeepUsual={(item) => keepUsual(String(item.id || item.name), item.name)}
               onRefresh={() => loadHouse()}
               onAdd={addItem}
               onQty={changeQty}
@@ -1358,6 +1484,8 @@ function House() {
                     : ""
                 );
               }}
+              usualId={prefs.usualId}
+              onKeepUsual={(row) => keepUsual(row.id, row.name, note)}
               onCancelOrder={(id) => {
                 liveSession()
                   .then((live) =>
@@ -1394,7 +1522,14 @@ function House() {
               cardsDone={cardsDone}
               bagHint={bagHintLine(orders)}
               bagReady={orders.some((order) => order.status === "ready")}
+              bag={bag}
+              usualHint={usualHint}
+              usualReady={!!usualItem && !usualItem.sold_out}
+              onUsual={() => addUsual(true)}
+              onKeepUsual={(id, name, nextNote) => keepUsual(id, name, nextNote)}
+              onClearUsual={clearUsual}
               onBag={() => setTab("bag")}
+              onBoard={() => setTab("menu")}
               onRank={onRank}
               desk={desk}
               onHowLive={savePace}
@@ -1735,6 +1870,32 @@ function makeStyles(t: Palette) {
     lineHeight: 18,
     color: t.MUTED,
     maxWidth: 360
+  },
+  usual: {
+    marginTop: 4,
+    marginBottom: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: t.LINE
+  },
+  usualWord: {
+    fontFamily: ROUND,
+    fontSize: 22,
+    letterSpacing: -0.4,
+    color: t.BROWN
+  },
+  usualHint: {
+    marginTop: 4,
+    fontFamily: SANS,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.MUTED
+  },
+  keepCue: {
+    marginTop: 4,
+    fontFamily: SERIF_ITALIC,
+    fontSize: 15,
+    color: t.BROWN
   },
   rowPrice: {
     fontFamily: SANS_MED,

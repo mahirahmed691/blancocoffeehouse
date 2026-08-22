@@ -23,11 +23,13 @@ import {
   HOW_BUSY,
   HOW_WAIT,
   type HouseHours,
-  type HouseReviews
+  type HouseReviews,
+  type Line
 } from "./house";
 import {
   ACCOUNT_URL,
   HOUSE_ADDRESS,
+  HOUSE_BOARD,
   HOUSE_POST,
   HOUSE_SITE,
   HOUSE_STREET,
@@ -36,7 +38,7 @@ import {
   openAway,
   openHouseMap
 } from "./pieces";
-import { savePrefs, type Prefs } from "./prefs";
+import { hasUsual, savePrefs, type Prefs } from "./prefs";
 import {
   ROUND,
   SANS,
@@ -65,7 +67,14 @@ type YouStackProps = {
   cardsDone: number;
   bagHint: string;
   bagReady: boolean;
+  bag: Line[];
+  usualHint: string;
+  usualReady: boolean;
+  onUsual: () => void;
+  onKeepUsual: (id: string, name: string, note?: string) => Promise<void>;
+  onClearUsual: () => Promise<void>;
   onBag: () => void;
+  onBoard: () => void;
   onRank: boolean;
   desk: boolean;
   onHowLive: (patch: { how_busy?: string; how_wait?: string }) => Promise<void>;
@@ -110,6 +119,10 @@ export function YouStack(props: YouStackProps) {
           stripe={props.stripe}
           prefs={props.prefs}
           onPrefs={props.onPrefs}
+          bag={props.bag}
+          onKeepUsual={props.onKeepUsual}
+          onClearUsual={props.onClearUsual}
+          onBoard={props.onBoard}
           onSaveName={props.onSaveName}
           onSavePassword={props.onSavePassword}
           passwordOn={props.passwordOn}
@@ -172,12 +185,27 @@ function firstCall(name: string) {
   return name.trim().split(/\s+/)[0] || "";
 }
 
+async function shareBoard() {
+  try {
+    await Share.share({
+      title: "blanco.",
+      message: "the board. · " + HOUSE_BOARD,
+      url: HOUSE_BOARD
+    });
+  } catch {
+    /* let go */
+  }
+}
+
 function YouHome({
   name,
   stamps,
   cardsDone,
   bagHint,
   bagReady,
+  usualHint,
+  usualReady,
+  onUsual,
   onBag,
   onRank,
   desk,
@@ -375,6 +403,13 @@ function YouHome({
         onPress={onBag}
       />
       <Row
+        mark="counter"
+        label="the usual."
+        hint={usualHint}
+        hot={usualReady}
+        onPress={onUsual}
+      />
+      <Row
         mark="map"
         label="Fiveways Parade"
         hint={openLine}
@@ -393,9 +428,15 @@ function YouHome({
         onPress={onToday}
       />
       <Row
+        mark="share"
+        label="share the board"
+        hint="the table QR · the public board"
+        onPress={shareBoard}
+      />
+      <Row
         mark="settings"
         label="settings"
-        hint="Your name, the usual note, the card"
+        hint="Your name, the usual, the card"
         onPress={() => onPage("settings")}
       />
     </ScrollView>
@@ -477,6 +518,12 @@ function HouseVisit({
         <Mark name="share" size={18} />
         <Text style={styles.btnGhostText}>Share the house</Text>
       </Pressable>
+      <Row
+        mark="menu"
+        label="share the board"
+        hint="the table QR · the public board"
+        onPress={shareBoard}
+      />
       <Row mark="instagram" label="Instagram" hint="@blancocoffeehouse" onPress={() => openAway(INSTAGRAM)} />
       <Row mark="pictures" label="the pictures" hint="In the app — the cup, the case, the room" onPress={onPictures} />
       <Row mark="site" label="the house site" hint="The public house on the web" onPress={() => openAway(HOUSE_SITE)} />
@@ -525,6 +572,10 @@ function SettingsScreen({
   stripe,
   prefs,
   onPrefs,
+  bag,
+  onKeepUsual,
+  onClearUsual,
+  onBoard,
   onSaveName,
   onSavePassword,
   passwordOn,
@@ -542,6 +593,10 @@ function SettingsScreen({
   stripe: boolean;
   prefs: Prefs;
   onPrefs: (next: Prefs) => void;
+  bag: Line[];
+  onKeepUsual: (id: string, name: string, note?: string) => Promise<void>;
+  onClearUsual: () => Promise<void>;
+  onBoard: () => void;
   onSaveName: (next: string) => Promise<void>;
   onSavePassword: (current: string, next: string) => Promise<void>;
   passwordOn: boolean;
@@ -627,7 +682,40 @@ function SettingsScreen({
     tap();
     await keepPrefs({ ...prefs, bagNote: note.trim() });
     ok();
-    setStatus("The usual note sits in the bag.");
+    setStatus(
+      hasUsual(prefs)
+        ? "The usual note sits with the bag."
+        : "The usual note sits in the bag."
+    );
+  }
+
+  async function keepUsualFromBag(row: Line) {
+    setBusy(true);
+    setStatus("");
+    try {
+      await onKeepUsual(row.id, row.name, note.trim());
+      setStatus("kept as the usual.");
+    } catch {
+      warn();
+      setStatus("The usual could not be kept.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function letUsualGo() {
+    tap();
+    setBusy(true);
+    setStatus("");
+    try {
+      await onClearUsual();
+      setStatus("The usual is let go.");
+    } catch {
+      warn();
+      setStatus("The usual could not be let go.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function keepPassword() {
@@ -776,7 +864,52 @@ function SettingsScreen({
           <Text style={styles.link}>Change email on the house site</Text>
         </Pressable>
 
-        <Text style={styles.label}>a usual note for the counter</Text>
+        <Text style={styles.label}>the usual</Text>
+        <Text style={styles.fact}>{prefs.usualName || "nothing kept yet"}</Text>
+        <Text style={styles.prose}>
+          {hasUsual(prefs)
+            ? "One tap from the board or you puts it in the bag."
+            : "Add a cup to the bag, then keep it as the usual. Or hold a cup on the board."}
+        </Text>
+        {bag
+          .filter((row) => row.id !== prefs.usualId)
+          .map((row) => (
+            <Pressable
+              key={row.id}
+              disabled={busy}
+              onPress={() => keepUsualFromBag(row)}
+              hitSlop={8}
+              accessibilityRole="button"
+            >
+              <Text style={styles.link}>
+                {bag.length > 1
+                  ? "keep " + row.name + " as the usual"
+                  : "keep this as the usual"}
+              </Text>
+            </Pressable>
+          ))}
+        {hasUsual(prefs) ? (
+          <Pressable
+            disabled={busy}
+            onPress={letUsualGo}
+            hitSlop={8}
+            accessibilityRole="button"
+          >
+            <Text style={styles.link}>let the usual go</Text>
+          </Pressable>
+        ) : null}
+        <Pressable
+          onPress={() => {
+            tap();
+            onBoard();
+          }}
+          hitSlop={8}
+          accessibilityRole="button"
+        >
+          <Text style={styles.link}>pick from the board</Text>
+        </Pressable>
+
+        <Text style={styles.label}>a note for the counter</Text>
         <TextInput
           value={note}
           onChangeText={setNote}

@@ -133,6 +133,39 @@ export type Line = {
 export const BAG_QTY_MAX = 9;
 export const BAG_LINES_MAX = 12;
 
+export function findUsualItem(items: MenuItem[], id: string, name: string): MenuItem | undefined {
+  const usualId = String(id || "").trim();
+  const usualName = String(name || "").trim();
+  if (usualId) {
+    const byId = items.find((item) => String(item.id || item.name) === usualId);
+    if (byId) return byId;
+  }
+  if (!usualName) return undefined;
+  const needle = usualName.toLowerCase();
+  return items.find((item) => String(item.name).trim().toLowerCase() === needle);
+}
+
+export function usualAwayLine(items: MenuItem[], id: string, name: string) {
+  const called = String(name || "").trim() || "the usual";
+  if (!id && !name) return "";
+  if (!items.length) return "";
+  const item = findUsualItem(items, id, name);
+  if (!item) return called + " is not on the board today.";
+  if (item.sold_out) return item.name + " is sold today.";
+  return "";
+}
+
+export function usualHintLine(items: MenuItem[], id: string, name: string, note: string) {
+  const usualName = String(name || "").trim();
+  const usualNote = String(note || "").trim();
+  if (!id && !usualName) return "Keep one from the bag";
+  const away = usualAwayLine(items, id, name);
+  if (away) return away;
+  const item = findUsualItem(items, id, name);
+  const called = (item && item.name) || usualName || "the usual";
+  return usualNote ? called + " · " + usualNote : called;
+}
+
 export function bagQty(bag: Line[]) {
   return bag.reduce((sum, row) => sum + (Number(row.qty) || 0), 0);
 }
