@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Your account — Blanco Coffee House</title>
+    <title>Your receipts — Blanco Coffee House</title>
     <meta
       name="description"
-      content="Sign in to your Blanco Coffee House account for profile, rewards, and orders."
+      content="Receipts from the house. Collections you’ve paid and collected at Blanco Coffee House."
     />
     <meta name="theme-color" content="#E9E1D8" />
     <script src="night.js"></script>
-    <link rel="canonical" href="https://blancocoffeehouse.com/account.html" />
+    <link rel="canonical" href="https://blancocoffeehouse.com/orders.html" />
     <link rel="icon" href="assets/logo.png" type="image/png" />
     <link rel="apple-touch-icon" href="assets/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -21,9 +21,9 @@
     />
     <link rel="stylesheet" href="styles.css?v=10" />
   </head>
-  <body class="account-page">
+  <body class="account-page receipt-page">
     <div class="grain" aria-hidden="true"></div>
-    <a class="skip" href="#account-main">Skip to account</a>
+    <a class="skip" href="#orders-main">Skip to receipts</a>
 
     <header class="site-header">
       <nav class="nav wrap" aria-label="Primary">
@@ -61,7 +61,7 @@
         </form>
         <div class="nav-cta">
           <a class="btn clerk-signed-out" href="#account-auth" data-auth-mode="sign-in">Sign in</a>
-          <a class="nav-account-link clerk-signed-in" href="account.html" hidden aria-current="page">Account</a>
+          <a class="nav-account-link clerk-signed-in" href="account.html" hidden>Account</a>
           <div class="clerk-signed-in clerk-user-button" data-clerk-user-button hidden></div>
         </div>
         <button
@@ -131,7 +131,7 @@
     <p class="house-notice wrap" data-house-notice hidden></p>
     <p class="house-pace wrap" data-house-pace hidden></p>
 
-    <main id="account-main">
+    <main id="orders-main">
       <section
         class="band band-paper clerk-signed-out"
         id="account-auth"
@@ -139,11 +139,11 @@
       >
         <div class="wrap account-auth-grid">
           <div>
-            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> account</p>
-            <h1 class="campaign-title" id="account-auth-title">your way in.</h1>
+            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> receipts</p>
+            <h1 class="campaign-title" id="account-auth-title">from the house.</h1>
             <p class="prose">
-              The house, the menu, and the gallery stay open on the site. This
-              page is the member book — same account as the app.
+              Sign in with the same account as the bag. Receipts from
+              collections you’ve paid sit here.
             </p>
             <p class="prose" id="clerk-setup-note" hidden>
               Sign-in didn’t open just then. Refresh the page, or come back in
@@ -196,133 +196,70 @@
         class="band clerk-signed-in"
         id="account-home"
         hidden
-        aria-labelledby="account-home-title"
+        aria-labelledby="orders-home-title"
       >
         <div class="wrap">
           <div class="account-welcome">
-            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> member</p>
-            <h1 class="campaign-title" id="account-home-title">
-              Welcome back, <span data-account-first>member</span>.
-            </h1>
+            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> receipts</p>
+            <h1 class="campaign-title" id="orders-home-title">from the house.</h1>
             <p class="prose">
-              Your blanco account. The public menu and gallery stay on the
-              site. The app is the same house in the pocket. Bring this to the
-              counter for stamps.
+              Collections you’ve paid and taken. Open a receipt from the house,
+              or the card receipt from Stripe. Live cups stay on
+              <a href="account.html">your account</a>.
             </p>
             <div class="account-welcome-tools">
               <div class="clerk-user-button clerk-user-button-lg"></div>
-              <a class="btn btn-ghost" href="index.html#menu">View menu</a>
-              <a class="btn house-admin-only" data-house-desk hidden href="admin.html">House desk</a>
+              <a class="btn btn-ghost" href="account.html">Your account</a>
+              <a class="btn btn-ghost" href="index.html#menu">The board</a>
               <button type="button" class="btn btn-ghost" data-night-toggle aria-pressed="false">the night.</button>
             </div>
           </div>
 
-          <div class="account-grid">
-            <article class="account-card" aria-labelledby="account-details-title">
-              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> profile</p>
-              <h2 id="account-details-title">Account details</h2>
-              <dl class="account-facts">
-                <div>
-                  <dt>Name</dt>
-                  <dd data-account-name>member</dd>
-                </div>
-                <div>
-                  <dt>Email</dt>
-                  <dd data-account-email>—</dd>
-                </div>
-                <div>
-                  <dt>House</dt>
-                  <dd>4 Fiveways Parade, Hazel Grove · <span data-hours-range>11am–8pm</span></dd>
-                </div>
-              </dl>
-              <p class="note">
-                Change name or email from the profile portrait.
-                The usual sits in the app. Last cups from the house sit here too.
+          <div class="orders-layout" id="orders-layout">
+            <article class="account-card" id="orders-book" aria-labelledby="orders-book-title">
+              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> the book</p>
+              <h2 id="orders-book-title">order history.</h2>
+              <p class="note" id="orders-live-note" hidden>
+                A collection is moving. Watch it on
+                <a href="account.html">your account</a>.
               </p>
-            </article>
-
-            <article class="account-card" aria-labelledby="account-orders-title">
-              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> orders</p>
-              <h2 id="account-orders-title">Your collection</h2>
-              <p class="note"><a href="orders.html">receipts from the house.</a></p>
-              <div class="last-cups" id="account-last-cups" hidden>
-                <p class="last-cups-word">last cups.</p>
-                <p class="note">A cup you already had. One tap puts it in the bag.</p>
-                <div class="last-cups-list" id="account-last-cups-list"></div>
-              </div>
-              <div id="account-orders">
+              <div id="orders-list">
                 <div class="empty-orders">
                   <p class="empty-orders-kicker">Not yet</p>
                   <p>
-                    Build a collection from the board. Watch it move from in,
-                    to making it, to ready.
+                    Pay a collection from the board. When you take it, the
+                    receipt sits here.
                   </p>
                 </div>
               </div>
             </article>
 
-            <article class="account-card" aria-labelledby="account-rewards-title">
-              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> rewards</p>
-              <h2 id="account-rewards-title">Stamps &amp; the counter</h2>
-              <p class="prose">
-                Bring the account to the counter. Eight stamps, then a drink on
-                the house.
-              </p>
-              <div class="stamp-card">
-                <div class="stamp-card-head">
-                  <img class="stamp-card-seal" src="assets/logo.png" alt="" width="80" height="80" decoding="async" />
-                  <div>
-                    <p class="stamp-card-word">blanco.</p>
-                    <p class="stamp-card-kicker">your card.</p>
-                  </div>
+            <article class="account-card receipt-sheet" id="orders-receipt" hidden aria-labelledby="receipt-title">
+              <div class="receipt-head">
+                <img class="receipt-mark" src="assets/logo.png" alt="" width="80" height="80" decoding="async" />
+                <div>
+                  <p class="receipt-word">blanco.</p>
+                  <p class="receipt-kicker">the house.</p>
                 </div>
-                <ol class="stamp-row" id="account-stamps" aria-label="Reward stamps">
-                  <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
-                  <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
-                  <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
-                  <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
-                  <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
-                  <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
-                  <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
-                  <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
-                </ol>
-                <p class="note" data-stamps-note>Eight stamps. A drink on the house.</p>
+              </div>
+              <h2 id="receipt-title">receipt.</h2>
+              <p class="receipt-place">4 Fiveways Parade, Hazel Grove · SK7 6DG</p>
+              <p class="receipt-when" id="receipt-when"></p>
+              <ul class="receipt-lines" id="receipt-lines"></ul>
+              <p class="receipt-note" id="receipt-note" hidden></p>
+              <div class="receipt-total">
+                <span>total</span>
+                <span class="leader" aria-hidden="true"></span>
+                <span id="receipt-total"></span>
+              </div>
+              <p class="receipt-paid" id="receipt-paid">paid.</p>
+              <p class="receipt-id" id="receipt-id"></p>
+              <div class="receipt-actions">
+                <button type="button" class="btn" id="receipt-print">Print</button>
+                <a class="btn btn-ghost" id="receipt-card" hidden rel="noopener noreferrer" target="_blank">Card receipt</a>
+                <button type="button" class="btn btn-ghost" id="receipt-close">The book</button>
               </div>
             </article>
-
-            <article class="account-card" id="account-rank" aria-labelledby="account-rank-title">
-              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> the rank</p>
-              <h2 id="account-rank-title">Drivers from the base</h2>
-              <p class="prose">
-                The taxi base next door. A concession on selected drinks, and
-                a scoop from the case. Ask at the counter for the house code.
-              </p>
-              <form id="rank-join">
-                <label>
-                  House code
-                  <input
-                    id="rank-code"
-                    type="text"
-                    maxlength="16"
-                    autocomplete="off"
-                    spellcheck="false"
-                    placeholder="RANK-····"
-                  />
-                </label>
-                <button class="btn" type="submit" id="rank-join-btn">Join the rank</button>
-              </form>
-              <ul class="rank-items" id="rank-items"></ul>
-              <p class="note" id="rank-status">
-                Ask at the counter, or at the taxi office, for the house code.
-              </p>
-            </article>
-          </div>
-
-          <div class="account-footer-actions">
-            <a class="btn" href="index.html">Back to the house</a>
-            <button class="btn btn-ghost" type="button" data-clerk-signout>
-              Sign out
-            </button>
           </div>
         </div>
       </section>
@@ -373,10 +310,8 @@
     <script src="clerk-config.js?v=6"></script>
     <script src="script.js"></script>
     <script src="house.js"></script>
-    <script src="account-stamps.js"></script>
     <script src="collection.js?v=3"></script>
-    <script src="account-orders.js"></script>
-    <script src="rank.js"></script>
+    <script src="orders.js"></script>
     <script src="clerk-auth.js?v=9"></script>
   </body>
 </html>

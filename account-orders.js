@@ -4,6 +4,7 @@
 
   var cup = window.blancoCup;
   var poll = 0;
+  var lastOrders = [];
 
   function escapeHtml(value) {
     return String(value || "")
@@ -20,12 +21,22 @@
     return "£" + n.toFixed(2);
   }
 
-  function emptyHtml() {
+  function emptyHtml(hasPast) {
+    if (hasPast) {
+      return (
+        '<div class="empty-orders">' +
+        '<p class="empty-orders-kicker">Nothing moving</p>' +
+        "<p>The counter is clear. Receipts from the house sit in the book.</p>" +
+        '<p><a class="btn btn-ghost" href="orders.html">Your receipts</a></p>' +
+        "</div>"
+      );
+    }
     return (
       '<div class="empty-orders">' +
       '<p class="empty-orders-kicker">Not yet</p>' +
       "<p>Build a collection from the board. Watch it move from in, to making it, to ready.</p>" +
       '<p><a class="btn btn-ghost" href="index.html#menu">The board</a></p>' +
+      '<p class="note"><a href="orders.html">receipts from the house.</a></p>' +
       "</div>"
     );
   }
@@ -38,12 +49,60 @@
       .join(" · ");
   }
 
-  function render(orders) {
-    if (!orders || !orders.length) {
-      root.innerHTML = emptyHtml();
+  function readyCups(orders) {
+    var cups = window.blancoLastCups ? window.blancoLastCups(orders) : [];
+    if (
+      window.blancoLastCupsOnBoard &&
+      window.blancoMenuItems &&
+      window.blancoMenuItems().length
+    ) {
+      return window.blancoLastCupsOnBoard(cups);
+    }
+    return cups;
+  }
+
+  function paintLastCups(orders) {
+    var wrap = document.getElementById("account-last-cups");
+    var list = document.getElementById("account-last-cups-list");
+    if (!wrap || !list) return;
+    var cups = readyCups(orders);
+    if (!cups.length) {
+      wrap.hidden = true;
+      list.innerHTML = "";
       return;
     }
-    var sorted = orders.slice().sort(function (a, b) {
+    list.innerHTML = cups
+      .map(function (cup) {
+        return (
+          '<button type="button" class="last-cup" data-cup="' +
+          escapeHtml(cup.name) +
+          '">' +
+          '<span class="last-cup-name">' +
+          escapeHtml(cup.name) +
+          "</span>" +
+          '<span class="last-cup-cue">add</span>' +
+          "</button>"
+        );
+      })
+      .join("");
+    wrap.hidden = false;
+  }
+
+  function render(orders) {
+    lastOrders = orders || [];
+    paintLastCups(lastOrders);
+    var live = (orders || []).filter(function (order) {
+      return cup ? cup.watching(order.status) : false;
+    });
+    if (!live.length) {
+      root.innerHTML = emptyHtml(
+        (orders || []).some(function (order) {
+          return order.status === "collected";
+        })
+      );
+      return;
+    }
+    var sorted = live.slice().sort(function (a, b) {
       var aw = cup && cup.watching(a.status) ? 0 : 1;
       var bw = cup && cup.watching(b.status) ? 0 : 1;
       return aw - bw;
@@ -69,7 +128,10 @@
           : order.pay_at === "stripe"
             ? " · waiting on the card"
             : " · pay at the counter";
-        var rail = live && cup ? cup.railHtml(order) : "";
+        var rail =
+          cup && (cup.watching(order.status) || order.status === "collected")
+            ? cup.railHtml(order)
+            : "";
         return (
           '<article class="account-order is-' +
           escapeHtml(order.status) +
@@ -134,8 +196,24 @@
         }
       })
       .catch(function () {
-        if (!root.querySelector(".account-order")) root.innerHTML = emptyHtml();
+        if (!root.querySelector(".account-order")) root.innerHTML = emptyHtml(false);
       });
+  }
+
+  var lastCupsList = document.getElementById("account-last-cups-list");
+  if (lastCupsList) {
+    lastCupsList.addEventListener("click", function (event) {
+      var btn = event.target.closest("[data-cup]");
+      if (!btn || !lastCupsList.contains(btn)) return;
+      event.preventDefault();
+      try {
+        sessionStorage.setItem(
+          "blanco.house.cup",
+          JSON.stringify({ name: btn.getAttribute("data-cup") || "" })
+        );
+      } catch (err) {}
+      window.location.href = "index.html#collect";
+    });
   }
 
   root.addEventListener("click", function (event) {
@@ -166,6 +244,9 @@
       });
   });
 
+  window.blancoPaintLastCups = function () {
+    paintLastCups(lastOrders);
+  };
   window.blancoLoadOrders = loadOrders;
 
   if (/[?&]paid=1(?:&|$)/.test(location.search)) {

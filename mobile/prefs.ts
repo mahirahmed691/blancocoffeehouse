@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 import { setFeel } from "./feel";
-import { BAG_LINES_MAX, BAG_QTY_MAX, type Line } from "./house";
+import { BAG_LINES_MAX, BAG_QTY_MAX, LAST_CUPS_MAX, type LastCup, type Line } from "./house";
 
 export type PayPref = "ask" | "stripe" | "counter";
 
@@ -11,11 +11,13 @@ export type Prefs = {
   bagNote: string;
   usualId: string;
   usualName: string;
+  lastCups: LastCup[];
 };
 
 export type Held = {
   lines: Line[];
   note: string;
+  forAt: string;
 };
 
 const KEY = "blanco.house.prefs";
@@ -27,7 +29,8 @@ export const DEFAULT_PREFS: Prefs = {
   pay: "ask",
   bagNote: "",
   usualId: "",
-  usualName: ""
+  usualName: "",
+  lastCups: []
 };
 
 function clean(raw: Partial<Prefs> | null | undefined): Prefs {
@@ -38,8 +41,25 @@ function clean(raw: Partial<Prefs> | null | undefined): Prefs {
     pay: pay === "stripe" ? pay : "ask",
     bagNote: String(raw?.bagNote || "").slice(0, 140),
     usualId: String(raw?.usualId || "").trim().slice(0, 80),
-    usualName: String(raw?.usualName || "").trim().slice(0, 80)
+    usualName: String(raw?.usualName || "").trim().slice(0, 80),
+    lastCups: cleanCups(raw?.lastCups)
   };
+}
+
+function cleanCups(raw: unknown): LastCup[] {
+  if (!Array.isArray(raw)) return [];
+  const out: LastCup[] = [];
+  raw.forEach((row) => {
+    if (!row || typeof row !== "object") return;
+    const next = row as Partial<LastCup>;
+    const name = String(next.name || "").trim().slice(0, 80);
+    const id = String(next.id || name).trim().slice(0, 80);
+    if (!name) return;
+    if (out.some((cup) => cup.name.toLowerCase() === name.toLowerCase())) return;
+    if (out.length >= LAST_CUPS_MAX) return;
+    out.push({ id: id || name, name });
+  });
+  return out;
 }
 
 export function hasUsual(prefs: Prefs) {
@@ -47,7 +67,10 @@ export function hasUsual(prefs: Prefs) {
 }
 
 function cleanHeld(raw: unknown): Held {
-  const data = raw && typeof raw === "object" ? (raw as { lines?: unknown; note?: unknown }) : {};
+  const data =
+    raw && typeof raw === "object"
+      ? (raw as { lines?: unknown; note?: unknown; forAt?: unknown; for?: unknown })
+      : {};
   const lines: Line[] = [];
   if (Array.isArray(data.lines)) {
     data.lines.forEach((row) => {
@@ -68,7 +91,9 @@ function cleanHeld(raw: unknown): Held {
       });
     });
   }
-  return { lines, note: String(data.note || "").slice(0, 140) };
+  const forRaw = String(data.forAt || data.for || "").trim();
+  const forAt = /^(\d{1,2}):(\d{2})$/.test(forRaw) ? forRaw : "";
+  return { lines, note: String(data.note || "").slice(0, 140), forAt };
 }
 
 export async function loadPrefs(): Promise<Prefs> {
@@ -98,14 +123,14 @@ export async function loadHeld(): Promise<Held> {
     const raw = await SecureStore.getItemAsync(HELD_KEY);
     return cleanHeld(raw ? JSON.parse(raw) : null);
   } catch {
-    return { lines: [], note: "" };
+    return { lines: [], note: "", forAt: "" };
   }
 }
 
-export async function saveHeld(lines: Line[], note: string): Promise<void> {
-  const next = cleanHeld({ lines, note });
+export async function saveHeld(lines: Line[], note: string, forAt?: string | null): Promise<void> {
+  const next = cleanHeld({ lines, note, forAt: forAt || "" });
   try {
-    if (!next.lines.length && !next.note) {
+    if (!next.lines.length && !next.note && !next.forAt) {
       await SecureStore.deleteItemAsync(HELD_KEY);
       return;
     }

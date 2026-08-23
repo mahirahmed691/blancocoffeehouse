@@ -15,16 +15,25 @@ import {
 } from "react-native";
 import { ok, tap, warn } from "./feel";
 import {
+  fetchOrder,
   fetchReviews,
+  formatPrice,
+  historyOrders,
   houseBusyLine,
   houseOpenLine,
   houseState,
+  orderWhen,
   paceStale,
+  receiptShare,
+  shortOrderId,
   HOW_BUSY,
   HOW_WAIT,
   type HouseHours,
+  type HouseOrder,
   type HouseReviews,
-  type Line
+  type LastCup,
+  type Line,
+  type Session
 } from "./house";
 import {
   ACCOUNT_URL,
@@ -43,15 +52,18 @@ import {
   ROUND,
   SANS,
   SANS_MED,
+  SANS_SEMI,
   SERIF_ITALIC,
   usePad,
   useStyles,
   type Palette
 } from "./theme";
-import { Fill, Rise, useToTop } from "./motion";
-import { Back, Kicker, Mark, type MarkName } from "./ui";
+import { Rise, useToTop } from "./motion";
+import { Back, FoldHead, Kicker, Mark, type MarkName } from "./ui";
+import { DeskScreen } from "./desk";
+import { StampCup } from "./stamp-cup";
 
-export type YouPage = "home" | "house" | "settings";
+export type YouPage = "home" | "house" | "settings" | "desk" | "orders";
 
 type YouStackProps = {
   page: YouPage;
@@ -70,7 +82,10 @@ type YouStackProps = {
   bag: Line[];
   usualHint: string;
   usualReady: boolean;
+  lastCups: LastCup[];
+  orders: HouseOrder[];
   onUsual: () => void;
+  onLastCup: (cup: LastCup) => void;
   onKeepUsual: (id: string, name: string, note?: string) => Promise<void>;
   onClearUsual: () => Promise<void>;
   onBag: () => void;
@@ -94,11 +109,22 @@ type YouStackProps = {
   onPictures: () => void;
   onToday: () => void;
   topAt: number;
+  getSession: () => Promise<Session>;
+  onSavedBoard: () => void;
 };
 
 export function YouStack(props: YouStackProps) {
   const { styles } = useStyles(makeStyles);
-  const page = props.page === "house" ? "house" : props.page === "settings" ? "settings" : "home";
+  const page =
+    props.page === "house"
+      ? "house"
+      : props.page === "settings"
+        ? "settings"
+        : props.page === "desk" && props.desk
+          ? "desk"
+          : props.page === "orders"
+            ? "orders"
+            : "home";
   return (
     <Rise key={page} shift={false} style={styles.screen}>
       {page === "house" ? (
@@ -129,6 +155,25 @@ export function YouStack(props: YouStackProps) {
           onHouse={() => props.onPage("house")}
           onBack={() => props.onPage("home")}
           onSignOut={props.onSignOut}
+        />
+      ) : page === "desk" && props.desk ? (
+        <DeskScreen
+          getSession={props.getSession}
+          hoursBusy={props.hours?.how_busy}
+          hoursWait={props.hours?.how_wait}
+          onHowLive={props.onHowLive}
+          onSavedBoard={props.onSavedBoard}
+          onBack={() => props.onPage("home")}
+          topAt={props.topAt}
+        />
+      ) : page === "orders" ? (
+        <OrdersScreen
+          orders={props.orders}
+          getSession={props.getSession}
+          refreshing={props.refreshing}
+          onRefresh={props.onRefresh}
+          onBack={() => props.onPage("home")}
+          topAt={props.topAt}
         />
       ) : (
         <YouHome {...props} />
@@ -165,14 +210,8 @@ function StampCard({
       </View>
       <View style={styles.stampGrid}>
         {Array.from({ length: 8 }).map((_, i) => (
-          <View key={i} style={[styles.stampCup, i < stamps && styles.stampCupOn]}>
-            <Fill on={i < stamps}>
-              <Image
-                source={require("./assets/mark.png")}
-                style={styles.stampCupMark}
-                tintColor={t.night ? t.BROWN : undefined}
-              />
-            </Fill>
+          <View key={i} style={styles.stampCup}>
+            <StampCup on={i < stamps} />
           </View>
         ))}
       </View>
@@ -205,7 +244,10 @@ function YouHome({
   bagReady,
   usualHint,
   usualReady,
+  lastCups = [],
+  orders = [],
   onUsual,
+  onLastCup,
   onBag,
   onRank,
   desk,
@@ -237,6 +279,17 @@ function YouHome({
   const openLine = houseOpenLine(hours);
   const busyLine = houseBusyLine(hours);
   const [paceBusy, setPaceBusy] = useState(false);
+  const firstFold = desk ? "now" : "stamps";
+  const [fold, setFold] = useState<Record<string, boolean>>({});
+  const houseCount = 8 + (lastCups.length ? lastCups.length : 0);
+
+  function foldOn(id: string) {
+    return fold[id] ?? id === firstFold;
+  }
+
+  function toggleFold(id: string) {
+    setFold((prev) => ({ ...prev, [id]: !foldOn(id) }));
+  }
 
   async function setPace(patch: { how_busy?: string; how_wait?: string }) {
     if (paceBusy) return;
@@ -283,8 +336,15 @@ function YouHome({
       >
 
       {desk ? (
-        <>
-          <Text style={[styles.sectionTitle, styles.sectionFirst]}>now.</Text>
+        <View style={styles.foldBlock}>
+          <FoldHead
+            label="now."
+            count={2}
+            open={foldOn("now")}
+            onPress={() => toggleFold("now")}
+          />
+          {foldOn("now") ? (
+            <>
           <Text style={styles.prose}>
             {paceStale(hours)
               ? "Yesterday’s line is off. Set today’s so the house knows the room."
@@ -360,13 +420,38 @@ function YouHome({
               <Text style={[styles.segText, !hours?.how_wait && styles.segTextOn]}>clear</Text>
             </Pressable>
           </View>
-        </>
+            </>
+          ) : null}
+        </View>
       ) : null}
 
-      <Text style={[styles.sectionTitle, desk ? null : styles.sectionFirst]}>stamps.</Text>
-      <StampCard stamps={stamps} note={stampNote} />
+      {desk ? (
+        <Row
+          mark="desk"
+          label="the desk."
+          hint="the counter, today, the card, the board"
+          onPress={() => onPage("desk")}
+        />
+      ) : null}
 
-      <Text style={styles.sectionTitle}>the rank.</Text>
+      <View style={[styles.foldBlock, !desk && styles.sectionFirst]}>
+        <FoldHead
+          label="stamps."
+          count={stamps + "/8"}
+          open={foldOn("stamps")}
+          onPress={() => toggleFold("stamps")}
+        />
+        {foldOn("stamps") ? <StampCard stamps={stamps} note={stampNote} /> : null}
+      </View>
+
+      <View style={styles.foldBlock}>
+        <FoldHead
+          label="the rank."
+          open={foldOn("rank")}
+          onPress={() => toggleFold("rank")}
+        />
+        {foldOn("rank") ? (
+          <>
       {onRank ? (
         <Text style={styles.prose}>You’re on the rank. Selected drinks sit at the concession.</Text>
       ) : (
@@ -393,8 +478,19 @@ function YouHome({
         </>
       )}
       {rankNote ? <Text style={styles.status}>{rankNote}</Text> : null}
+          </>
+        ) : null}
+      </View>
 
-      <Text style={styles.sectionTitle}>the house.</Text>
+      <View style={styles.foldBlock}>
+        <FoldHead
+          label="the house."
+          count={houseCount}
+          open={foldOn("house")}
+          onPress={() => toggleFold("house")}
+        />
+        {foldOn("house") ? (
+          <>
       <Row
         mark="bag"
         label="the bag"
@@ -403,12 +499,42 @@ function YouHome({
         onPress={onBag}
       />
       <Row
+        mark="card"
+        label="receipts."
+        hint={
+          historyOrders(orders).length
+            ? historyOrders(orders).length + " from the house"
+            : "from the house."
+        }
+        onPress={() => onPage("orders")}
+      />
+      <Row
         mark="counter"
         label="the usual."
         hint={usualHint}
         hot={usualReady}
         onPress={onUsual}
       />
+      {lastCups.length ? (
+        <View style={styles.lastCups}>
+          <Text style={styles.lastCupsWord}>last cups.</Text>
+          {lastCups.map((cup) => (
+            <Pressable
+              key={cup.id + ":" + cup.name}
+              onPress={() => {
+                tap();
+                onLastCup(cup);
+              }}
+              style={({ pressed }) => [styles.lastCup, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={"Add " + cup.name + " to the bag"}
+            >
+              <Text style={styles.lastCupName}>{cup.name}</Text>
+              <Text style={styles.lastCupCue}>add</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       <Row
         mark="map"
         label="Fiveways Parade"
@@ -439,7 +565,200 @@ function YouHome({
         hint="Your name, the usual, the card"
         onPress={() => onPage("settings")}
       />
+          </>
+        ) : null}
+      </View>
     </ScrollView>
+    </View>
+  );
+}
+
+function OrdersScreen({
+  orders,
+  getSession,
+  refreshing,
+  onRefresh,
+  onBack,
+  topAt
+}: {
+  orders: HouseOrder[];
+  getSession: () => Promise<Session>;
+  refreshing: boolean;
+  onRefresh: () => void;
+  onBack: () => void;
+  topAt: number;
+}) {
+  const { t, styles } = useStyles(makeStyles);
+  const pad = usePad();
+  const list = useRef<ScrollView>(null);
+  useToTop(topAt, list);
+  const past = historyOrders(orders);
+  const [open, setOpen] = useState<HouseOrder | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    let gone = false;
+    getSession()
+      .then((session) => fetchOrder(session, open.id))
+      .then((row) => {
+        if (!gone && row) setOpen(row);
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+    };
+  }, [open?.id]);
+
+  if (open) {
+    return <ReceiptScreen order={open} onBack={() => setOpen(null)} />;
+  }
+
+  return (
+    <View style={styles.screen}>
+      <View style={[styles.sticky, { paddingTop: pad.top }]}>
+        <Back label="you." onPress={onBack} />
+        <Kicker label="receipts" />
+        <Text style={styles.title}>from the house.</Text>
+      </View>
+      <ScrollView
+        ref={list}
+        style={styles.screen}
+        contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 36 }]}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.BROWN} />
+        }
+      >
+        <Text style={styles.prose}>
+          Collections you’ve paid and taken. Open a receipt from the house, or the card receipt from Stripe.
+        </Text>
+        {past.length ? (
+          past.map((order) => (
+            <Pressable
+              key={order.id}
+              onPress={() => {
+                tap();
+                setOpen(order);
+              }}
+              style={({ pressed }) => [styles.historyRow, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={"Receipt for " + (order.items || []).map((row) => row.name).join(", ")}
+            >
+              <Text style={styles.historyWhen}>{orderWhen(order) || "collected."}</Text>
+              <Text style={styles.historyItems}>
+                {(order.items || [])
+                  .map((row) => row.qty + " × " + row.name)
+                  .join(" · ")}
+              </Text>
+              <Text style={styles.historyTotal}>
+                {formatPrice(order.total_gbp) + (order.paid ? " · paid" : "")}
+              </Text>
+            </Pressable>
+          ))
+        ) : (
+          <Text style={styles.prose}>
+            Pay a collection from the board. When you take it, the receipt sits here.
+          </Text>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+function ReceiptScreen({
+  order,
+  onBack
+}: {
+  order: HouseOrder;
+  onBack: () => void;
+}) {
+  const { t, styles } = useStyles(makeStyles);
+  const pad = usePad();
+
+  async function shareReceipt() {
+    tap();
+    try {
+      await Share.share({
+        title: "blanco.",
+        message: receiptShare(order)
+      });
+    } catch {
+      /* let go */
+    }
+  }
+
+  return (
+    <View style={styles.screen}>
+      <View style={[styles.sticky, { paddingTop: pad.top }]}>
+        <Back label="receipts." onPress={onBack} />
+        <Kicker label="receipt" />
+        <Text style={styles.title}>blanco.</Text>
+      </View>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.screenInner, { paddingTop: 14, paddingBottom: 36 }]}
+      >
+        <View style={styles.receiptPaper} accessibilityRole="summary">
+          <View style={styles.receiptHead}>
+            <Image
+              source={require("./assets/mark.png")}
+              style={styles.receiptSeal}
+              tintColor={t.night ? t.BROWN : undefined}
+            />
+            <View style={styles.stampCardCopy}>
+              <Text style={styles.stampWord}>blanco.</Text>
+              <Text style={styles.stampKicker}>the house.</Text>
+            </View>
+          </View>
+          <Text style={styles.receiptPlace}>4 Fiveways Parade, Hazel Grove · SK7 6DG</Text>
+          {orderWhen(order) ? (
+            <Text style={styles.receiptMeta}>{orderWhen(order)}</Text>
+          ) : null}
+          {(order.items || []).map((row, i) => {
+            const qty = Number(row.qty) || 1;
+            const price = formatPrice((Number(row.price_gbp) || 0) * qty);
+            return (
+              <View key={order.id + ":" + i} style={styles.receiptLine}>
+                <Text style={styles.receiptName}>{qty + " × " + row.name}</Text>
+                <View style={styles.receiptLeader} />
+                <Text style={styles.receiptPrice}>{price}</Text>
+              </View>
+            );
+          })}
+          {order.note ? <Text style={styles.receiptMeta}>{order.note}</Text> : null}
+          <View style={styles.receiptLine}>
+            <Text style={styles.receiptTotalLabel}>total</Text>
+            <View style={styles.receiptLeader} />
+            <Text style={styles.receiptTotalPrice}>{formatPrice(order.total_gbp)}</Text>
+          </View>
+          <Text style={styles.receiptPaid}>
+            {order.paid
+              ? order.status === "collected"
+                ? "paid · collected."
+                : "paid."
+              : "collected."}
+          </Text>
+          <Text style={styles.receiptId}>{shortOrderId(order.id)}</Text>
+        </View>
+        <Pressable
+          onPress={shareReceipt}
+          style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed]}
+          accessibilityRole="button"
+        >
+          <Text style={styles.btnGhostText}>Share</Text>
+        </Pressable>
+        {order.receipt_url ? (
+          <Pressable
+            onPress={() => {
+              tap();
+              openAway(order.receipt_url || "");
+            }}
+            style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed]}
+            accessibilityRole="link"
+          >
+            <Text style={styles.btnGhostText}>Card receipt</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
     </View>
   );
 }
@@ -898,6 +1217,15 @@ function SettingsScreen({
             <Text style={styles.link}>let the usual go</Text>
           </Pressable>
         ) : null}
+        {prefs.lastCups.length ? (
+          <>
+            <Text style={styles.label}>last cups</Text>
+            <Text style={styles.fact}>
+              {prefs.lastCups.map((cup) => cup.name).join(" · ")}
+            </Text>
+            <Text style={styles.prose}>From the house. One tap on you or the board puts a cup in the bag.</Text>
+          </>
+        ) : null}
         <Pressable
           onPress={() => {
             tap();
@@ -1100,8 +1428,47 @@ function makeStyles(t: Palette) {
     letterSpacing: -0.4,
     color: t.BROWN
   },
+  lastCups: {
+    marginTop: 6,
+    marginBottom: 4
+  },
+  lastCupsWord: {
+    marginTop: 12,
+    marginBottom: 2,
+    fontFamily: ROUND,
+    fontSize: 20,
+    letterSpacing: -0.4,
+    color: t.BROWN
+  },
+  lastCup: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: t.LINE
+  },
+  lastCupName: {
+    flex: 1,
+    fontFamily: ROUND,
+    fontSize: 20,
+    letterSpacing: -0.4,
+    color: t.BROWN
+  },
+  lastCupCue: {
+    fontFamily: SANS_SEMI,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    color: t.MUTED
+  },
   sectionFirst: {
     marginTop: 4
+  },
+  foldBlock: {
+    marginTop: 8,
+    marginBottom: 6
   },
   stampCard: {
     marginTop: 4,
@@ -1157,22 +1524,7 @@ function makeStyles(t: Palette) {
   },
   stampCup: {
     width: "22%",
-    aspectRatio: 1,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: t.LINE,
-    backgroundColor: t.BEIGE,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  stampCupOn: {
-    borderColor: t.BROWN,
-    backgroundColor: t.BROWN
-  },
-  stampCupMark: {
-    width: "100%",
-    height: "100%"
+    aspectRatio: 1
   },
   stampNote: {
     marginTop: 12,
@@ -1205,6 +1557,116 @@ function makeStyles(t: Palette) {
     fontFamily: SANS,
     fontSize: 14,
     lineHeight: 20,
+    color: t.MUTED
+  },
+  historyRow: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: t.LINE
+  },
+  historyWhen: {
+    fontFamily: SANS_MED,
+    fontSize: 11,
+    letterSpacing: 1.6,
+    textTransform: "uppercase",
+    color: t.MUTED,
+    marginBottom: 4
+  },
+  historyItems: {
+    fontFamily: SERIF_ITALIC,
+    fontSize: 18,
+    color: t.BROWN,
+    marginBottom: 4
+  },
+  historyTotal: {
+    fontFamily: SANS,
+    fontSize: 14,
+    color: t.MUTED,
+    fontVariant: ["tabular-nums"]
+  },
+  receiptPaper: {
+    marginTop: 4,
+    marginBottom: 8,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    backgroundColor: t.PAPER,
+    borderWidth: 1,
+    borderColor: t.LINE,
+    borderRadius: 18
+  },
+  receiptHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14
+  },
+  receiptSeal: {
+    width: 40,
+    height: 40,
+    borderRadius: 20
+  },
+  receiptPlace: {
+    fontFamily: SANS,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.MUTED,
+    marginBottom: 4
+  },
+  receiptMeta: {
+    fontFamily: SANS,
+    fontSize: 14,
+    lineHeight: 20,
+    color: t.MUTED,
+    marginBottom: 12
+  },
+  receiptLine: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
+    marginBottom: 8
+  },
+  receiptName: {
+    fontFamily: SANS_MED,
+    fontSize: 15,
+    color: t.BROWN,
+    maxWidth: "62%"
+  },
+  receiptLeader: {
+    flex: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: t.LINE,
+    minWidth: 12,
+    alignSelf: "center"
+  },
+  receiptPrice: {
+    fontFamily: SANS,
+    fontSize: 14,
+    color: t.MUTED,
+    fontVariant: ["tabular-nums"]
+  },
+  receiptTotalLabel: {
+    fontFamily: SANS_SEMI,
+    fontSize: 15,
+    color: t.BROWN
+  },
+  receiptTotalPrice: {
+    fontFamily: SANS_SEMI,
+    fontSize: 15,
+    color: t.BROWN,
+    fontVariant: ["tabular-nums"]
+  },
+  receiptPaid: {
+    marginTop: 8,
+    fontFamily: SERIF_ITALIC,
+    fontSize: 18,
+    color: t.BROWN
+  },
+  receiptId: {
+    marginTop: 6,
+    fontFamily: SANS_MED,
+    fontSize: 11,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
     color: t.MUTED
   },
   rowPrice: {

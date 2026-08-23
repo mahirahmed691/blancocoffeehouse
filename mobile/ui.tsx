@@ -11,7 +11,7 @@ import {
   type ViewStyle
 } from "react-native";
 import { tap } from "./feel";
-import { SANS_MED, SANS_SEMI, SERIF_ITALIC, useHouse, useStyles, type Palette } from "./theme";
+import { SANS_MED, SANS_SEMI, SERIF, SERIF_ITALIC, useHouse, useStyles, type Palette } from "./theme";
 
 export type MarkName =
   | "menu"
@@ -32,7 +32,8 @@ export type MarkName =
   | "google"
   | "house"
   | "go"
-  | "back";
+  | "back"
+  | "desk";
 
 const OUT: Record<MarkName, keyof typeof Ionicons.glyphMap> = {
   menu: "cafe-outline",
@@ -53,7 +54,8 @@ const OUT: Record<MarkName, keyof typeof Ionicons.glyphMap> = {
   google: "star-outline",
   house: "home-outline",
   go: "chevron-forward",
-  back: "chevron-back"
+  back: "chevron-back",
+  desk: "storefront-outline"
 };
 
 const ON: Partial<Record<MarkName, keyof typeof Ionicons.glyphMap>> = {
@@ -172,6 +174,37 @@ export function Stick<T extends string>({
   );
 }
 
+export function FoldHead({
+  label,
+  count,
+  open,
+  onPress
+}: {
+  label: string;
+  count?: number | string;
+  open: boolean;
+  onPress: () => void;
+}) {
+  const { styles } = useStyles(makeStyles);
+  const cue = count == null || count === "" ? "" : String(count);
+  return (
+    <Pressable
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.fold, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      accessibilityLabel={cue ? label + ", " + cue : label}
+    >
+      <Text style={styles.foldLabel}>{label}</Text>
+      {cue ? <Text style={styles.foldCount}>{cue}</Text> : null}
+      <View style={[styles.foldMark, open && styles.foldMarkOn]} />
+    </Pressable>
+  );
+}
+
 export function Back({
   label,
   onPress
@@ -268,6 +301,39 @@ function makeStyles(t: Palette) {
   },
   stickTextOn: {
     color: t.BEIGE
+  },
+  fold: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 10,
+    paddingVertical: 6
+  },
+  foldLabel: {
+    flex: 1,
+    fontFamily: SERIF,
+    fontSize: 20,
+    color: t.BROWN,
+    letterSpacing: -0.3
+  },
+  foldCount: {
+    fontFamily: SANS_MED,
+    fontSize: 11,
+    letterSpacing: 1.6,
+    color: t.MUTED
+  },
+  foldMark: {
+    width: 7,
+    height: 7,
+    marginBottom: 4,
+    borderRightWidth: 1.5,
+    borderBottomWidth: 1.5,
+    borderColor: t.BROWN,
+    transform: [{ rotate: "45deg" }],
+    opacity: 0.55
+  },
+  foldMarkOn: {
+    transform: [{ rotate: "225deg" }],
+    marginBottom: 1
   }
 });
 }

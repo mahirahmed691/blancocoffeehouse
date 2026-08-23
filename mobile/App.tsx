@@ -52,13 +52,16 @@ import {
   houseBusyLine,
   houseOpenLine,
   houseState,
+  houseTags,
   counterCue,
   joinRank,
   cancelOrder,
   collectionHeadline,
+  pickupLine,
+  pickupSlots,
+  stillOpenFor,
   collectionStepIndex,
   CUP_STEPS,
-  linesFromOrder,
   watchingOrders,
   canLetGo,
   isLiveOrder,
@@ -70,13 +73,19 @@ import {
   placeOrder,
   postPace,
   priceOf,
-  recentForReorder,
   bagHintLine,
+  cupsEqual,
   findUsualItem,
+  lastCupAwayLine,
+  lastCupsFromOrders,
+  lastCupsOnBoard,
+  mergeLastCups,
+  rememberLastCup,
   usualAwayLine,
   usualHintLine,
   type HouseHours,
   type HouseOrder,
+  type LastCup,
   type Line,
   type MenuItem,
   type Session
@@ -100,7 +109,8 @@ import {
   useStyles,
   type Palette
 } from "./theme";
-import { Back, Kicker, Mark, Stick } from "./ui";
+import { Back, FoldHead, Kicker, Mark, Stick } from "./ui";
+import { BrewCup } from "./brew";
 import { YouStack, type YouPage } from "./you";
 import { Pop, Pulse, Rise, useToTop } from "./motion";
 
@@ -131,6 +141,34 @@ function Grain() {
   );
 }
 
+function LastCups({
+  cups,
+  onCup
+}: {
+  cups: LastCup[];
+  onCup: (cup: LastCup) => void;
+}) {
+  const { styles } = useStyles(makeStyles);
+  if (!cups.length) return null;
+  return (
+    <View style={styles.lastCups}>
+      <Text style={styles.usualWord}>last cups.</Text>
+      {cups.map((cup) => (
+        <Pressable
+          key={cup.id + ":" + cup.name}
+          onPress={() => onCup(cup)}
+          style={({ pressed }) => [styles.lastCup, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={"Add " + cup.name}
+        >
+          <Text style={styles.lastCupName}>{cup.name}</Text>
+          <Text style={styles.lastCupCue}>add</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 function MenuScreen({
   items,
   hours,
@@ -142,7 +180,9 @@ function MenuScreen({
   usualName,
   usualHint,
   usualAway,
+  lastCups,
   onUsual,
+  onLastCup,
   onKeepUsual,
   onRefresh,
   onAdd,
@@ -160,7 +200,9 @@ function MenuScreen({
   usualName: string;
   usualHint: string;
   usualAway: string;
+  lastCups: LastCup[];
   onUsual: () => void;
+  onLastCup: (cup: LastCup) => void;
   onKeepUsual: (item: MenuItem) => void;
   onRefresh: () => void;
   onAdd: (item: MenuItem) => void;
@@ -175,6 +217,7 @@ function MenuScreen({
   const [board, setBoard] = useState<Board>("drinks");
   const [q, setQ] = useState("");
   const [findOn, setFindOn] = useState(false);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   const shown = useMemo(() => {
     const sections = groupBoard(items, board);
     const needle = q.trim().toLowerCase();
@@ -183,13 +226,19 @@ function MenuScreen({
       .map((section) => ({
         title: section.title,
         items: section.items.filter((item) =>
-          (item.name + " " + (item.description || "")).toLowerCase().includes(needle)
+          (item.name + " " + (item.description || "") + " " + houseTags(item).join(" "))
+            .toLowerCase()
+            .includes(needle)
         )
       }))
       .filter((section) => section.items.length);
   }, [items, board, q]);
   const shut = houseState(hours) === "closed";
   useToTop(topAt, list);
+
+  useEffect(() => {
+    setOpen({});
+  }, [board]);
 
   useEffect(() => {
     if (findOn) find.current?.focus();
@@ -220,6 +269,7 @@ function MenuScreen({
             setBoard(next);
             setQ("");
             setFindOn(false);
+            setOpen({});
             list.current?.scrollTo({ y: 0, animated: false });
           }}
         />
@@ -276,6 +326,7 @@ function MenuScreen({
           <Text style={styles.usualHint}>{usualAway || usualHint}</Text>
         </Pressable>
       ) : null}
+      <LastCups cups={lastCups} onCup={onLastCup} />
       {loading && !shown.length && !error && !q.trim() ? (
         <Text style={styles.prose}>The board is coming up.</Text>
       ) : null}
@@ -286,10 +337,21 @@ function MenuScreen({
         <Text style={styles.prose}>Nothing on the board matches.</Text>
       ) : null}
       <Rise key={board} shift={false}>
-      {shown.map((section) => (
+      {shown.map((section, i) => {
+        const fold = !q.trim() && shown.length > 1;
+        const on = !fold || (open[section.title] ?? i === 0);
+        return (
         <View key={section.title} style={styles.section}>
-          <Text style={styles.sectionTitle}>{section.title}</Text>
-          {section.items.map((item) => {
+          <FoldHead
+            label={section.title}
+            count={section.items.length}
+            open={on}
+            onPress={() =>
+              setOpen((prev) => ({ ...prev, [section.title]: !on }))
+            }
+          />
+          {on
+            ? section.items.map((item) => {
             const sold = !!item.sold_out;
             const rank = onRankPrice(item, onRank);
             const id = String(item.id || item.name);
@@ -309,6 +371,11 @@ function MenuScreen({
                   </Text>
                   <View style={styles.leader} />
                   <Text style={styles.rowPrice}>{formatPrice(priceOf(item, onRank))}</Text>
+                  {houseTags(item).map((tag) => (
+                    <Text key={tag} style={styles.allergenMark}>
+                      {tag}
+                    </Text>
+                  ))}
                   {sold ? (
                     <Text style={styles.soldMark}>sold</Text>
                   ) : heldQty > 0 ? (
@@ -363,10 +430,13 @@ function MenuScreen({
                 ) : null}
               </View>
             );
-          })}
+          })
+            : null}
         </View>
-      ))}
+        );
+      })}
       </Rise>
+      <Text style={styles.allergenNote}>Ask at the counter for the rest.</Text>
     </ScrollView>
     </View>
   );
@@ -383,7 +453,13 @@ function CupTrack({
   const idx = collectionStepIndex(order.status);
   return (
     <View style={[styles.cupTrack, order.status === "ready" && styles.cupTrackReady]}>
-      <Text style={styles.cupNow}>{collectionHeadline(order)}</Text>
+      <View style={styles.cupHead}>
+        <BrewCup status={order.status} />
+        <View style={styles.cupCopy}>
+          <Text style={styles.cupNow}>{collectionHeadline(order)}</Text>
+          <Text style={styles.pastNote}>{pickupLine(order)}</Text>
+        </View>
+      </View>
       {idx >= 0 ? (
         <>
           <View style={styles.cupRail} accessibilityLabel={collectionHeadline(order)}>
@@ -439,45 +515,47 @@ function CupTrack({
 function BagScreen({
   bag,
   note,
+  forAt,
   stripe,
   status,
   busy,
-  items,
   hours,
-  onRank,
   orders,
   refreshing,
   onNote,
+  onFor,
   onQty,
   onClear,
   onPay,
   onMenu,
-  onReorder,
   onCancelOrder,
   onKeepUsual,
   usualId,
+  lastCups,
+  onLastCup,
   onRefresh,
   topAt
 }: {
   bag: Line[];
   note: string;
+  forAt: string;
   stripe: boolean;
   status: string;
   busy: boolean;
-  items: MenuItem[];
   hours: HouseHours | null;
-  onRank: boolean;
   orders: HouseOrder[];
   refreshing: boolean;
   onNote: (next: string) => void;
+  onFor: (next: string) => void;
   onQty: (id: string, delta: number) => void;
   onClear: () => void;
   onPay: () => void;
   onMenu: () => void;
-  onReorder: (order: HouseOrder) => void;
   onCancelOrder: (id: string) => void;
   onKeepUsual: (row: Line) => void;
   usualId: string;
+  lastCups: LastCup[];
+  onLastCup: (cup: LastCup) => void;
   onRefresh: () => void;
   topAt: number;
 }) {
@@ -488,10 +566,8 @@ function BagScreen({
   const empty = bag.length === 0;
   const total = formatPrice(bagTotal(bag));
   const closed = houseState(hours) === "closed";
+  const slots = pickupSlots(hours);
   const watching = watchingOrders(orders);
-  const recent = recentForReorder(orders).filter(
-    (order) => linesFromOrder(order, items, onRank).length > 0
-  );
 
   function letGo(order: HouseOrder) {
     Alert.alert(
@@ -558,34 +634,7 @@ function BagScreen({
               <Mark name="menu" size={18} color={t.BEIGE} />
               <Text style={styles.btnText}>The board</Text>
             </Pressable>
-            {recent.length ? (
-              <>
-                <Text style={styles.sectionTitle}>again.</Text>
-                {recent.map((order) => {
-                  const lines = linesFromOrder(order, items, onRank);
-                  const wanted = (order.items || []).reduce(
-                    (sum, row) => sum + (Number(row.qty) || 0),
-                    0
-                  );
-                  const skipped = bagQty(lines) < wanted;
-                  return (
-                    <Pressable
-                      key={order.id}
-                      onPress={() => onReorder(order)}
-                      style={({ pressed }) => [styles.past, pressed && styles.pressed]}
-                      accessibilityRole="button"
-                      accessibilityLabel={"Order again: " + orderItemsLine(order)}
-                    >
-                      <Text style={styles.pastItems}>{orderItemsLine(order)}</Text>
-                      <Text style={styles.pastPrice}>{formatPrice(bagTotal(lines))}</Text>
-                      <Text style={styles.link}>
-                        {skipped ? "Order what is still on the board" : "Order again"}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </>
-            ) : null}
+            <LastCups cups={lastCups} onCup={onLastCup} />
           </>
         ) : (
           <>
@@ -652,6 +701,47 @@ function BagScreen({
               style={styles.input}
               maxLength={140}
             />
+            <Text style={styles.label}>when.</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.whenRow}
+            >
+              <Pressable
+                onPress={() => onFor("")}
+                style={[styles.whenChip, !forAt && styles.whenChipOn]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: !forAt }}
+                accessibilityLabel="when it's ready"
+              >
+                <Text style={[styles.whenChipText, !forAt && styles.whenChipTextOn]}>
+                  when it's ready.
+                </Text>
+              </Pressable>
+              {slots.map((slot) => {
+                const on = forAt === slot.hm;
+                return (
+                  <Pressable
+                    key={slot.hm}
+                    onPress={() => onFor(slot.hm)}
+                    style={[styles.whenChip, on && styles.whenChipOn]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={slot.line}
+                  >
+                    <Text style={[styles.whenChipText, on && styles.whenChipTextOn]}>
+                      {slot.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            <Text style={styles.payHint}>
+              {forAt
+                ? (slots.find((slot) => slot.hm === forAt)?.line || "when it's ready.") +
+                  " Collection at the counter."
+                : "when it's ready. Collection at the counter."}
+            </Text>
           </>
         )}
       </ScrollView>
@@ -662,7 +752,7 @@ function BagScreen({
             <Text style={styles.bagTotalSum}>{total}</Text>
           </View>
           {status ? <Text style={styles.status}>{status}</Text> : null}
-          {closed ? (
+          {closed && !slots.length ? (
             <Text style={styles.payHint}>
               The house is closed now. We’ll have it at the counter when we open.
             </Text>
@@ -817,6 +907,7 @@ function House() {
   const [handlePicks, setHandlePicks] = useState<string[]>([]);
   const [bag, setBag] = useState<Line[]>([]);
   const [note, setNote] = useState("");
+  const [forAt, setForAt] = useState("");
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [stripe, setStripe] = useState(false);
   const [bagStatus, setBagStatus] = useState("");
@@ -885,7 +976,10 @@ function House() {
         if (collection) {
           setStripe(!!collection.stripe);
           setOrders(collection.orders);
+          keepLastCups(collection.orders);
         }
+      } else {
+        setDesk(false);
       }
     } catch (err) {
       setMenuError(err instanceof Error ? err.message : "The board could not load.");
@@ -909,6 +1003,7 @@ function House() {
       setHandlePicks([]);
       setBag([]);
       setNote("");
+      setForAt("");
       setOrders([]);
       setStamps(0);
       setBagStatus("");
@@ -941,6 +1036,7 @@ function House() {
         setBag((current) => (current.length ? current : held.lines));
       }
       if (held.note) setNote(held.note);
+      if (held.forAt) setForAt(held.forAt);
       heldReady.current = true;
     });
     return () => {
@@ -949,12 +1045,17 @@ function House() {
   }, [isSignedIn]);
 
   useEffect(() => {
+    if (!forAt) return;
+    if (!stillOpenFor(forAt, hours)) setForAt("");
+  }, [forAt, hours]);
+
+  useEffect(() => {
     if (!isSignedIn || !heldReady.current) return;
     const id = setTimeout(() => {
-      saveHeld(bag, note).catch(() => {});
+      saveHeld(bag, note, forAt).catch(() => {});
     }, 280);
     return () => clearTimeout(id);
-  }, [bag, note, isSignedIn]);
+  }, [bag, note, forAt, isSignedIn]);
 
   useEffect(() => {
     if (!toast) return;
@@ -975,6 +1076,7 @@ function House() {
           if (!on || !collection) return;
           setStripe(!!collection.stripe);
           setOrders(collection.orders);
+          keepLastCups(collection.orders);
         })
         .catch(() => {});
     };
@@ -1071,6 +1173,35 @@ function House() {
     });
   }
 
+  function keepLastCups(nextOrders: HouseOrder[]) {
+    const prefsNow = prefsRef.current;
+    const merged = mergeLastCups(
+      lastCupsFromOrders(nextOrders),
+      prefsNow.lastCups,
+      prefsNow.usualId,
+      prefsNow.usualName
+    );
+    if (cupsEqual(merged, prefsNow.lastCups)) return;
+    savePrefs({ ...prefsNow, lastCups: merged }).then(setPrefs);
+  }
+
+  function addLastCup(cup: LastCup, goBag?: boolean) {
+    if (!items.length) {
+      warn();
+      setToast("The board is coming up.");
+      return;
+    }
+    const away = lastCupAwayLine(items, cup.id, cup.name);
+    const item = findUsualItem(items, cup.id, cup.name);
+    if (away || !item || item.sold_out) {
+      warn();
+      setToast(away || "That’s not on today.");
+      return;
+    }
+    addItem(item);
+    if (goBag) setTab("bag");
+  }
+
   function addUsual(goBag?: boolean) {
     const prefsNow = prefsRef.current;
     if (!hasUsual(prefsNow)) {
@@ -1101,10 +1232,19 @@ function House() {
   async function keepUsual(id: string, name: string, nextNote?: string) {
     tap();
     const prefsNow = prefsRef.current;
+    const nextId = String(id || "").trim();
+    const nextName = String(name || "").trim();
+    const lastCups = rememberLastCup(
+      prefsNow.lastCups,
+      hasUsual(prefsNow) ? { id: prefsNow.usualId, name: prefsNow.usualName } : null,
+      nextId,
+      nextName
+    );
     const saved = await savePrefs({
       ...prefsNow,
-      usualId: String(id || "").trim(),
-      usualName: String(name || "").trim(),
+      usualId: nextId,
+      usualName: nextName,
+      lastCups,
       bagNote: String(nextNote !== undefined ? nextNote : prefsNow.bagNote).trim().slice(0, 140)
     });
     setPrefs(saved);
@@ -1114,10 +1254,18 @@ function House() {
   }
 
   async function clearUsual() {
+    const prefsNow = prefsRef.current;
+    const lastCups = rememberLastCup(
+      prefsNow.lastCups,
+      hasUsual(prefsNow) ? { id: prefsNow.usualId, name: prefsNow.usualName } : null,
+      "",
+      ""
+    );
     const saved = await savePrefs({
-      ...prefsRef.current,
+      ...prefsNow,
       usualId: "",
-      usualName: ""
+      usualName: "",
+      lastCups
     });
     setPrefs(saved);
     ok();
@@ -1147,6 +1295,7 @@ function House() {
     ok();
     setBag([]);
     setNote(prefsRef.current.bagNote);
+    setForAt("");
     setBagStatus("Paid. The house has it.");
   }
 
@@ -1211,12 +1360,17 @@ function House() {
       setBagStatus("The card is not open on this phone yet.");
       return;
     }
+    if (forAt && !stillOpenFor(forAt, hours)) {
+      setForAt("");
+      setBagStatus("that time has already gone. pick another, or when it's ready.");
+      return;
+    }
     tap();
     setBusy(true);
     setBagStatus("Opening the card…");
     try {
       const live = await liveSession(true);
-      const data = await placeOrder(live, bag, note, Linking.createURL("pay"));
+      const data = await placeOrder(live, bag, note, Linking.createURL("pay"), forAt);
       if (data.url) {
         pendingPayId.current = String((data.order && data.order.id) || "");
         payDone.current = false;
@@ -1333,10 +1487,10 @@ function House() {
   useEffect(() => {
     if (!isSignedIn || !heldReady.current) return;
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "background") saveHeld(bag, note).catch(() => {});
+      if (state === "background") saveHeld(bag, note, forAt).catch(() => {});
     });
     return () => sub.remove();
-  }, [bag, note, isSignedIn]);
+  }, [bag, note, forAt, isSignedIn]);
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -1392,6 +1546,12 @@ function House() {
   const usualItem = findUsualItem(items, prefs.usualId, prefs.usualName);
   const usualAway = usualAwayLine(items, prefs.usualId, prefs.usualName);
   const usualHint = usualHintLine(items, prefs.usualId, prefs.usualName, prefs.bagNote);
+  const lastCups = lastCupsOnBoard(
+    mergeLastCups(lastCupsFromOrders(orders), prefs.lastCups, prefs.usualId, prefs.usualName),
+    items,
+    prefs.usualId,
+    prefs.usualName
+  );
 
   if (!isSignedIn) {
     return (
@@ -1423,7 +1583,9 @@ function House() {
               usualName={prefs.usualName}
               usualHint={usualHint}
               usualAway={usualAway}
+              lastCups={lastCups}
               onUsual={() => addUsual(false)}
+              onLastCup={(cup) => addLastCup(cup, false)}
               onKeepUsual={(item) => keepUsual(String(item.id || item.name), item.name)}
               onRefresh={() => loadHouse()}
               onAdd={addItem}
@@ -1451,40 +1613,26 @@ function House() {
             <BagScreen
               bag={bag}
               note={note}
+              forAt={forAt}
               stripe={stripe}
               status={bagStatus}
               busy={busy}
-              items={items}
               hours={hours}
-              onRank={onRank}
               orders={orders}
               refreshing={menuLoading}
               onNote={setNote}
+              onFor={setForAt}
               onQty={changeQty}
               onClear={() => {
                 setBag([]);
+                setForAt("");
                 setBagStatus("");
               }}
               onPay={pay}
               onMenu={() => setTab("menu")}
-              onReorder={(order) => {
-                const lines = linesFromOrder(order, items, onRank);
-                if (!lines.length) {
-                  warn();
-                  setBagStatus("That’s not on the board today.");
-                  return;
-                }
-                tap();
-                setBag(lines);
-                setNote(order.note || prefs.bagNote);
-                setBagStatus(
-                  bagQty(lines) <
-                  (order.items || []).reduce((sum, row) => sum + (Number(row.qty) || 0), 0)
-                    ? "Some of that is not on the board today. The rest is in the bag."
-                    : ""
-                );
-              }}
               usualId={prefs.usualId}
+              lastCups={lastCups}
+              onLastCup={(cup) => addLastCup(cup, false)}
               onKeepUsual={(row) => keepUsual(row.id, row.name, note)}
               onCancelOrder={(id) => {
                 liveSession()
@@ -1525,7 +1673,10 @@ function House() {
               bag={bag}
               usualHint={usualHint}
               usualReady={!!usualItem && !usualItem.sold_out}
+              lastCups={lastCups}
+              orders={orders}
               onUsual={() => addUsual(true)}
+              onLastCup={(cup) => addLastCup(cup, true)}
               onKeepUsual={(id, name, nextNote) => keepUsual(id, name, nextNote)}
               onClearUsual={clearUsual}
               onBag={() => setTab("bag")}
@@ -1557,6 +1708,8 @@ function House() {
                 setTab("look");
               }}
               topAt={topAt}
+              getSession={liveSession}
+              onSavedBoard={() => loadHouse()}
               onSignOut={() => {
                 Alert.alert(
                   "Leave the house?",
@@ -1783,12 +1936,22 @@ function makeStyles(t: Palette) {
     borderLeftColor: t.BROWN,
     paddingLeft: 12
   },
+  cupHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 12
+  },
+  cupCopy: {
+    flex: 1,
+    minWidth: 0
+  },
   cupNow: {
     fontFamily: SERIF_ITALIC,
     fontSize: 26,
     letterSpacing: -0.6,
     color: t.BROWN,
-    marginBottom: 16,
+    marginBottom: 4,
     lineHeight: 30
   },
   cupRail: {
@@ -1845,6 +2008,7 @@ function makeStyles(t: Palette) {
   itemTop: {
     flexDirection: "row",
     alignItems: "baseline",
+    flexWrap: "wrap",
     gap: 8
   },
   leader: {
@@ -1891,6 +2055,32 @@ function makeStyles(t: Palette) {
     lineHeight: 20,
     color: t.MUTED
   },
+  lastCups: {
+    marginTop: 4,
+    marginBottom: 12
+  },
+  lastCup: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: t.LINE
+  },
+  lastCupName: {
+    flex: 1,
+    fontFamily: SANS_MED,
+    fontSize: 16,
+    color: t.BROWN
+  },
+  lastCupCue: {
+    fontFamily: SANS_SEMI,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+    color: t.MUTED
+  },
   keepCue: {
     marginTop: 4,
     fontFamily: SERIF_ITALIC,
@@ -1917,6 +2107,20 @@ function makeStyles(t: Palette) {
     letterSpacing: 1.4,
     textTransform: "uppercase",
     color: t.BROWN
+  },
+  allergenMark: {
+    fontFamily: SANS_SEMI,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    color: t.MUTED
+  },
+  allergenNote: {
+    marginTop: 18,
+    fontFamily: SANS,
+    fontSize: 13,
+    lineHeight: 18,
+    color: t.MUTED
   },
   add: {
     borderWidth: 1.5,
@@ -2121,6 +2325,32 @@ function makeStyles(t: Palette) {
     fontSize: 14,
     lineHeight: 20,
     color: t.MUTED
+  },
+  whenRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 2,
+    paddingRight: 12,
+    marginBottom: 6
+  },
+  whenChip: {
+    borderWidth: 1,
+    borderColor: t.BROWN,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8
+  },
+  whenChipOn: {
+    backgroundColor: t.BROWN
+  },
+  whenChipText: {
+    fontFamily: SANS_MED,
+    fontSize: 14,
+    color: t.BROWN
+  },
+  whenChipTextOn: {
+    color: t.BEIGE
   },
   stamps: {
     flexDirection: "row",

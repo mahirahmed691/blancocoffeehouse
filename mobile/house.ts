@@ -14,7 +14,17 @@ export type MenuItem = {
   section: string | null;
   sold_out: boolean;
   sort: number;
+  allergens?: string[] | null;
 };
+
+export const HOUSE_TAGS = ["dairy", "oat", "nuts", "gluten", "sesame"] as const;
+export type HouseTag = (typeof HOUSE_TAGS)[number];
+
+export function houseTags(item: MenuItem): HouseTag[] {
+  const raw = item.allergens;
+  if (!Array.isArray(raw) || !raw.length) return [];
+  return HOUSE_TAGS.filter((tag) => raw.indexOf(tag) !== -1);
+}
 
 export type MenuSection = {
   title: string;
@@ -122,6 +132,67 @@ export function houseOpenLine(hours: HouseHours | null) {
   return "Closed now · " + range;
 }
 
+const PICKUP_SLOT = 15;
+
+function padClock(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+export function clockLabel(minutes: number) {
+  let hour = Math.floor(minutes / 60) % 12;
+  if (hour === 0) hour = 12;
+  return hour + ":" + padClock(minutes % 60);
+}
+
+export type PickupSlot = {
+  minutes: number;
+  hm: string;
+  label: string;
+  line: string;
+};
+
+export function pickupSlots(hours: HouseHours | null, at = new Date()): PickupSlot[] {
+  const openAt = parseMinutes(hours?.opens) ?? 11 * 60;
+  const closeAt = parseMinutes(hours?.closes) ?? 20 * 60;
+  const now = minutesInLondon(at);
+  if (now >= closeAt) return [];
+  const start = now < openAt ? openAt : Math.ceil((now + 1) / PICKUP_SLOT) * PICKUP_SLOT;
+  const out: PickupSlot[] = [];
+  for (let m = start; m < closeAt; m += PICKUP_SLOT) {
+    out.push({
+      minutes: m,
+      hm: padClock(Math.floor(m / 60)) + ":" + padClock(m % 60),
+      label: clockLabel(m),
+      line: "for " + clockLabel(m) + "."
+    });
+  }
+  return out;
+}
+
+export function pickupWhen(order: { for_at?: string | null }) {
+  if (!order.for_at) return "";
+  const at = new Date(order.for_at);
+  if (Number.isNaN(at.getTime())) return "";
+  return "for " + clockLabel(minutesInLondon(at));
+}
+
+export function pickupLine(order: { for_at?: string | null }) {
+  const when = pickupWhen(order);
+  return when ? when + "." : "when it's ready.";
+}
+
+export function stillOpenFor(hm: string, hours: HouseHours | null, at = new Date()) {
+  return pickupSlots(hours, at).some((slot) => slot.hm === hm);
+}
+
+export function pickupHm(forAt?: string | null) {
+  if (!forAt) return "";
+  const at = new Date(forAt);
+  if (Number.isNaN(at.getTime())) return "";
+  const minutes = minutesInLondon(at);
+  return padClock(Math.floor(minutes / 60)) + ":" + padClock(minutes % 60);
+}
+
 export type Line = {
   id: string;
   name: string;
@@ -129,6 +200,13 @@ export type Line = {
   qty: number;
   rank: boolean;
 };
+
+export type LastCup = {
+  id: string;
+  name: string;
+};
+
+export const LAST_CUPS_MAX = 5;
 
 export const BAG_QTY_MAX = 9;
 export const BAG_LINES_MAX = 12;
@@ -164,6 +242,124 @@ export function usualHintLine(items: MenuItem[], id: string, name: string, note:
   const item = findUsualItem(items, id, name);
   const called = (item && item.name) || usualName || "the usual";
   return usualNote ? called + " · " + usualNote : called;
+}
+
+function cupNameKey(name: string) {
+  return String(name || "").trim().toLowerCase();
+}
+
+export function sameCup(
+  a: { id?: string; name?: string } | null | undefined,
+  b: { id?: string; name?: string } | null | undefined
+) {
+  if (!a || !b) return false;
+  const aId = String(a.id || "").trim();
+  const bId = String(b.id || "").trim();
+  if (aId && bId && aId === bId) return true;
+  const aName = cupNameKey(a.name || "");
+  const bName = cupNameKey(b.name || "");
+  return !!(aName && bName && aName === bName);
+}
+
+export function asLastCup(raw: { id?: string; name?: string } | null | undefined): LastCup | null {
+  const name = String(raw?.name || "").trim().slice(0, 80);
+  if (!name) return null;
+  const id = String(raw?.id || name).trim().slice(0, 80);
+  return { id: id || name, name };
+}
+
+function paidForCups(order: HouseOrder) {
+  if (!order || order.status === "cancelled" || order.status === "hold") return false;
+  return !!order.paid || order.status === "collected" || isLiveOrder(order.status);
+}
+
+export function lastCupsFromOrders(orders: HouseOrder[], limit = LAST_CUPS_MAX): LastCup[] {
+  const seen: Record<string, true> = {};
+  const out: LastCup[] = [];
+  (orders || []).forEach((order) => {
+    if (!paidForCups(order) || out.length >= limit) return;
+    (order.items || []).forEach((row) => {
+      if (out.length >= limit) return;
+      const cup = asLastCup(row);
+      if (!cup) return;
+      const key = cupNameKey(cup.name);
+      if (!key || seen[key]) return;
+      seen[key] = true;
+      out.push(cup);
+    });
+  });
+  return out;
+}
+
+export function lastCupAwayLine(items: MenuItem[], id: string, name: string) {
+  if (!id && !name) return "";
+  if (!items.length) return "";
+  const item = findUsualItem(items, id, name);
+  if (!item || item.sold_out) return "That’s not on today.";
+  return "";
+}
+
+export function rememberLastCup(
+  list: LastCup[],
+  incoming: { id?: string; name?: string } | null | undefined,
+  usualId = "",
+  usualName = "",
+  limit = LAST_CUPS_MAX
+): LastCup[] {
+  return mergeLastCups([asLastCup(incoming)].filter(Boolean) as LastCup[], list, usualId, usualName, limit);
+}
+
+export function mergeLastCups(
+  fromOrders: LastCup[],
+  local: LastCup[],
+  usualId = "",
+  usualName = "",
+  limit = LAST_CUPS_MAX
+): LastCup[] {
+  const usual = asLastCup({ id: usualId, name: usualName });
+  const out: LastCup[] = [];
+  const seen: Record<string, true> = {};
+  const push = (next: LastCup | null) => {
+    if (!next) return;
+    if (usual && sameCup(next, usual)) return;
+    const key = cupNameKey(next.name);
+    if (!key || seen[key] || out.length >= limit) return;
+    seen[key] = true;
+    out.push({ id: next.id, name: next.name });
+  };
+  (fromOrders || []).forEach((row) => push(asLastCup(row)));
+  (local || []).forEach((row) => push(asLastCup(row)));
+  return out;
+}
+
+export function lastCupsOnBoard(
+  cups: LastCup[],
+  items: MenuItem[],
+  usualId = "",
+  usualName = "",
+  limit = LAST_CUPS_MAX
+): LastCup[] {
+  const usual = asLastCup({ id: usualId, name: usualName });
+  const out: LastCup[] = [];
+  (cups || []).forEach((row) => {
+    if (out.length >= limit) return;
+    const cup = asLastCup(row);
+    if (!cup) return;
+    if (usual && sameCup(cup, usual)) return;
+    if (items.length) {
+      const item = findUsualItem(items, cup.id, cup.name);
+      if (!item || item.sold_out) return;
+      out.push({ id: String(item.id || item.name), name: item.name });
+      return;
+    }
+    out.push(cup);
+  });
+  return out;
+}
+
+export function cupsEqual(a: LastCup[], b: LastCup[]) {
+  if (a.length !== b.length) return false;
+  return a.every((cup, i) => sameCup(cup, b[i]));
 }
 
 export function bagQty(bag: Line[]) {
@@ -222,6 +418,54 @@ export function recentForReorder(orders: HouseOrder[], limit = 4) {
   return out.slice(0, limit);
 }
 
+export function historyOrders(orders: HouseOrder[]) {
+  return orders.filter((order) => order.status === "collected");
+}
+
+export function shortOrderId(id: string) {
+  return String(id || "")
+    .replace(/-/g, "")
+    .slice(0, 8);
+}
+
+export function orderWhen(order: { created_at?: string; for_at?: string | null }) {
+  const raw = order.created_at || order.for_at;
+  if (!raw) return "";
+  const at = new Date(raw);
+  if (Number.isNaN(at.getTime())) return "";
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(at);
+}
+
+export function receiptShare(order: HouseOrder) {
+  const lines = (order.items || []).map((row) => {
+    const qty = Number(row.qty) || 1;
+    const price = formatPrice((Number(row.price_gbp) || 0) * qty);
+    return qty + " × " + row.name + (price ? "  " + price : "");
+  });
+  return [
+    "blanco.",
+    "4 Fiveways Parade, Hazel Grove",
+    orderWhen(order),
+    "",
+    ...lines,
+    "",
+    "total  " + formatPrice(order.total_gbp),
+    order.paid ? "paid." : "",
+    order.status === "collected" ? "collected." : "",
+    shortOrderId(order.id)
+  ]
+    .filter((line, i, all) => line !== "" || all[i - 1] !== "")
+    .join("\n")
+    .trim();
+}
+
 export function liveOrders(orders: HouseOrder[]) {
   return orders.filter((order) => isLiveOrder(order.status));
 }
@@ -269,7 +513,7 @@ export function bagHintLine(orders: HouseOrder[]) {
   if (waiting) return "Waiting to pay";
   const live = liveOrders(orders)[0];
   if (live) return orderStatusLine(live);
-  if (recentForReorder(orders, 1).length) return "Order again from the bag";
+  if (lastCupsFromOrders(orders, 1).length) return "A last cup from the bag";
   return "Start a collection";
 }
 
@@ -278,9 +522,15 @@ export type HouseOrder = {
   status: string;
   items: Line[];
   note: string;
+  for_at?: string | null;
   total_gbp: number;
   paid: boolean;
   pay_at: string;
+  name?: string;
+  email?: string;
+  rank?: boolean;
+  receipt_url?: string;
+  created_at?: string;
 };
 
 export type Session = {
@@ -464,16 +714,34 @@ export async function fetchOrders(session: Session): Promise<{
   };
 }
 
+export async function fetchOrder(session: Session, id: string): Promise<HouseOrder | null> {
+  const res = await fetch(
+    HOUSE_SITE + "/api/orders?id=" + encodeURIComponent(id),
+    { headers: clerkHeaders(session) }
+  );
+  const data = await readJson(res);
+  const order = data.order as HouseOrder | undefined;
+  if (!order || order.status === "cancelled") return null;
+  return order;
+}
+
 export async function placeOrder(
   session: Session,
   items: Line[],
   note: string,
-  returnUrl?: string
+  returnUrl?: string,
+  forAt?: string | null
 ) {
   const res = await fetch(HOUSE_SITE + "/api/orders", {
     method: "POST",
     headers: clerkHeaders(session),
-    body: JSON.stringify({ items, note, pay: "stripe", return_url: returnUrl || "" })
+    body: JSON.stringify({
+      items,
+      note,
+      pay: "stripe",
+      return_url: returnUrl || "",
+      for: forAt || ""
+    })
   });
   return readJson(res);
 }
@@ -483,6 +751,233 @@ export async function cancelOrder(session: Session, id: string) {
     method: "PATCH",
     headers: clerkHeaders(session),
     body: JSON.stringify({ id, status: "cancelled" })
+  });
+  return readJson(res);
+}
+
+export async function fetchDeskOrders(session: Session): Promise<HouseOrder[]> {
+  const res = await fetch(HOUSE_SITE + "/api/orders?desk=1", {
+    headers: clerkHeaders(session)
+  });
+  const data = await readJson(res);
+  const orders = Array.isArray(data.orders) ? data.orders : [];
+  return orders.filter((row: HouseOrder) => row.status !== "cancelled");
+}
+
+export async function setDeskOrder(session: Session, id: string, status: string) {
+  const res = await fetch(HOUSE_SITE + "/api/orders", {
+    method: "PATCH",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({ id, status })
+  });
+  return readJson(res);
+}
+
+export type DeskCup = CupCheckin & { status: "live" | "hold" };
+
+export async function fetchDeskCups(session: Session): Promise<{
+  holds: DeskCup[];
+  cups: DeskCup[];
+}> {
+  const res = await fetch(HOUSE_SITE + "/api/checkins?desk=1", {
+    headers: clerkHeaders(session)
+  });
+  const data = await readJson(res);
+  function list(raw: unknown): DeskCup[] {
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((row: Partial<CupCheckin>) => asCup(row))
+      .filter((row): row is CupCheckin => !!row)
+      .map((row) => ({ ...row, status: row.status === "hold" ? "hold" : ("live" as const) }));
+  }
+  return {
+    holds: list(data.holds),
+    cups: list(data.cups)
+  };
+}
+
+export async function setDeskCup(session: Session, id: string, status: "live" | "drop") {
+  const res = await fetch(HOUSE_SITE + "/api/checkins", {
+    method: "PATCH",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({ id, status })
+  });
+  return readJson(res);
+}
+
+export type DeskCard = {
+  stamps: number;
+  cards_done: number;
+  email: string;
+  name: string;
+  filled?: boolean;
+};
+
+export async function findDeskCard(session: Session, email: string): Promise<DeskCard> {
+  const res = await fetch(HOUSE_SITE + "/api/stamps?email=" + encodeURIComponent(email), {
+    headers: clerkHeaders(session)
+  });
+  const data = await readJson(res);
+  return {
+    stamps: Number(data.stamps) || 0,
+    cards_done: Number(data.cards_done) || 0,
+    email: String(data.email || email),
+    name: String(data.name || "")
+  };
+}
+
+export async function giveDeskStamp(session: Session, email: string): Promise<DeskCard> {
+  const res = await fetch(HOUSE_SITE + "/api/stamps", {
+    method: "POST",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({ email })
+  });
+  const data = await readJson(res);
+  return {
+    stamps: Number(data.stamps) || 0,
+    cards_done: Number(data.cards_done) || 0,
+    email: String(data.email || email),
+    name: String(data.name || ""),
+    filled: !!data.filled
+  };
+}
+
+export type DeskDriver = {
+  id: string;
+  email: string;
+  name: string;
+  status: string;
+};
+
+export async function fetchDeskRank(session: Session): Promise<{
+  code: string;
+  count: number;
+  drivers: DeskDriver[];
+}> {
+  const res = await fetch(HOUSE_SITE + "/api/drivers?desk=1", {
+    headers: clerkHeaders(session)
+  });
+  const data = await readJson(res);
+  const drivers = Array.isArray(data.drivers) ? data.drivers : [];
+  return {
+    code: String(data.code || "RANK-····"),
+    count: Number(data.count) || 0,
+    drivers: drivers.map((row: DeskDriver) => ({
+      id: String(row.id || ""),
+      email: String(row.email || ""),
+      name: String(row.name || ""),
+      status: String(row.status || "")
+    }))
+  };
+}
+
+export async function postDeskRank(
+  session: Session,
+  patch: { action: "rotate" | "add" | "pause" | "in"; email?: string }
+) {
+  const res = await fetch(HOUSE_SITE + "/api/drivers", {
+    method: "POST",
+    headers: clerkHeaders(session),
+    body: JSON.stringify(patch)
+  });
+  return readJson(res);
+}
+
+export type DeskItem = {
+  id: string;
+  board: string;
+  section: string;
+  name: string;
+  description: string;
+  price_gbp: number;
+  driver_price_gbp: number | null;
+  sold_out: boolean;
+  sort: number;
+  photo: string;
+  allergens: string[];
+};
+
+export type DeskHours = {
+  hours_line: string;
+  hours_days: string;
+  hours_range: string;
+  opens: string;
+  closes: string;
+  notice: string;
+};
+
+function asDeskItem(row: Record<string, unknown>): DeskItem | null {
+  const name = String(row.name || "").trim();
+  if (!name) return null;
+  const allergens = Array.isArray(row.allergens)
+    ? HOUSE_TAGS.filter((tag) => (row.allergens as string[]).indexOf(tag) !== -1)
+    : [];
+  const rank = Number(row.driver_price_gbp);
+  return {
+    id: String(row.id || ""),
+    board: row.board === "sweets" ? "sweets" : "drinks",
+    section: String(row.section || "The board").trim() || "The board",
+    name,
+    description: String(row.description || ""),
+    price_gbp: Number(row.price_gbp) || 0,
+    driver_price_gbp: isFinite(rank) ? rank : null,
+    sold_out: !!row.sold_out,
+    sort: parseInt(String(row.sort || "0"), 10) || 0,
+    photo: String(row.photo || ""),
+    allergens
+  };
+}
+
+export async function fetchDeskBoard(session: Session): Promise<{
+  settings: DeskHours;
+  items: DeskItem[];
+}> {
+  const res = await fetch(HOUSE_SITE + "/api/admin", {
+    headers: clerkHeaders(session)
+  });
+  const data = await readJson(res);
+  const settings = data.settings || {};
+  const items = Array.isArray(data.items) ? data.items : [];
+  return {
+    settings: {
+      hours_line: String(settings.hours_line || "Open every day · 11am–8pm"),
+      hours_days: String(settings.hours_days || "Monday–Sunday"),
+      hours_range: String(settings.hours_range || "11am–8pm"),
+      opens: String(settings.opens || "11:00"),
+      closes: String(settings.closes || "20:00"),
+      notice: String(settings.notice || "")
+    },
+    items: items.map((row: Record<string, unknown>) => asDeskItem(row)).filter(Boolean) as DeskItem[]
+  };
+}
+
+export async function saveDeskBoard(
+  session: Session,
+  patch: { settings?: DeskHours; items?: DeskItem[]; deleted_ids?: string[] }
+) {
+  const res = await fetch(HOUSE_SITE + "/api/admin", {
+    method: "PUT",
+    headers: clerkHeaders(session),
+    body: JSON.stringify(patch)
+  });
+  return readJson(res);
+}
+
+export async function postDeskShot(
+  session: Session,
+  image: string,
+  kind: "house" | "cup" | "sweets",
+  caption: string
+) {
+  const res = await fetch(HOUSE_SITE + "/api/gallery", {
+    method: "POST",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({
+      image,
+      kind,
+      caption,
+      alt: caption || "From the house."
+    })
   });
   return readJson(res);
 }
@@ -521,6 +1016,7 @@ export type CupCheckin = {
   name: string;
   day: string;
   mine: boolean;
+  status?: "live" | "hold";
   created_at: string;
 };
 
@@ -528,6 +1024,7 @@ export type CupBoard = {
   today: string;
   mine: CupCheckin | null;
   cups: CupCheckin[];
+  waiting?: boolean;
 };
 
 function asCup(row: Partial<CupCheckin> | null | undefined): CupCheckin | null {
@@ -538,6 +1035,7 @@ function asCup(row: Partial<CupCheckin> | null | undefined): CupCheckin | null {
     name: String(row.name || "a member"),
     day: String(row.day || ""),
     mine: !!row.mine,
+    status: row.status === "hold" ? "hold" : "live",
     created_at: String(row.created_at || "")
   };
 }
@@ -550,11 +1048,13 @@ export async function fetchCheckins(session: Session): Promise<CupBoard> {
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
   const cups = (Array.isArray(data.cups) ? data.cups : [])
     .map((row: Partial<CupCheckin>) => asCup(row))
-    .filter((row): row is CupCheckin => !!row && Date.parse(row.created_at) >= cutoff);
+    .filter((row): row is CupCheckin => !!row && row.status !== "hold" && Date.parse(row.created_at) >= cutoff);
+  const mine = asCup(data.mine) || cups.find((cup) => cup.mine) || null;
   return {
     today: String(data.today || ""),
-    mine: cups.find((cup) => cup.mine) || null,
-    cups
+    mine,
+    cups,
+    waiting: !!data.waiting || mine?.status === "hold"
   };
 }
 
@@ -664,10 +1164,12 @@ export async function joinRank(session: Session, code: string) {
 }
 
 export function orderStatusLine(order: HouseOrder) {
-  if (order.status === "hold") return "Waiting to pay";
-  if (order.status === "in") return order.paid ? "Paid · in" : "In";
-  if (order.status === "preparing") return order.paid ? "Paid · making it" : "Making it";
-  if (order.status === "ready") return order.paid ? "Paid · ready for you" : "Ready for you";
-  if (order.status === "collected") return "Collected";
+  const when = pickupWhen(order);
+  const tail = when ? " · " + when : "";
+  if (order.status === "hold") return "Waiting to pay" + tail;
+  if (order.status === "in") return (order.paid ? "Paid · in" : "In") + tail;
+  if (order.status === "preparing") return (order.paid ? "Paid · making it" : "Making it") + tail;
+  if (order.status === "ready") return (order.paid ? "Paid · ready for you" : "Ready for you") + tail;
+  if (order.status === "collected") return "Collected" + tail;
   return "Let go";
 }

@@ -69,7 +69,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Nunito:wght@500;600;700;800&family=Work+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=3" />
+    <link rel="stylesheet" href="styles.css?v=10" />
     <link rel="prefetch" href="account.html" />
     <link rel="prefetch" href="gallery.html" />
   </head>
@@ -163,6 +163,7 @@
               >Instagram</a
             >
             <a href="account.html">Your account</a>
+            <a href="orders.html">Your receipts</a>
           </section>
           <aside class="mega-feature">
             <a class="mega-feature-photo" href="#visit">
@@ -685,6 +686,10 @@
                 >Sweets</a
               >
             </div>
+            <div class="last-cups" id="last-cups" hidden>
+              <p class="last-cups-word">last cups.</p>
+              <div class="last-cups-list" id="last-cups-list"></div>
+            </div>
           </div>
 
           <div class="boards">
@@ -1089,7 +1094,7 @@
           </div>
 
           <p class="note">
-            Please inform staff of any allergies. All drinks available with oat
+            Ask at the counter for the rest. All drinks available with oat
             milk.
           </p>
         </div>
@@ -1115,7 +1120,7 @@
             </div>
             <div class="app-actions clerk-signed-in" hidden>
               <a class="btn btn-on-dark" href="account.html">Your account</a>
-              <a class="btn btn-ghost-on-dark" href="gallery.html">The gallery</a>
+              <a class="btn btn-ghost-on-dark" href="orders.html">Your receipts</a>
             </div>
             <p class="prose prose-on-dark clerk-signed-in" hidden>
               Your account works on the site and in the app. The pictures and
@@ -1337,6 +1342,11 @@
           placeholder="Oat milk, extra hot."
         />
       </label>
+      <div class="collect-when" id="collect-when" hidden>
+        <p class="collect-when-label">when.</p>
+        <div class="collect-when-slots" id="collect-when-slots"></div>
+        <p class="collect-when-line" id="collect-when-line">when it's ready.</p>
+      </div>
       <p class="collect-status" id="collect-status" role="status"></p>
       <div class="collect-actions">
         <button class="btn" type="button" id="collect-place">Pay now</button>
@@ -1433,11 +1443,11 @@
     <script src="house-config.js"></script>
     <script src="clerk-config.js?v=6"></script>
     <script src="script.js"></script>
-    <script src="collection.js"></script>
-    <script src="collect.js?v=3"></script>
+    <script src="collection.js?v=3"></script>
+    <script src="collect.js?v=5"></script>
     <script src="house.js"></script>
     <script src="reviews.js"></script>
     <script src="rank.js"></script>
-    <script src="clerk-auth.js?v=7"></script>
+    <script src="clerk-auth.js?v=9"></script>
   </body>
 </html>

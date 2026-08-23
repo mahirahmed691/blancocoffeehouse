@@ -3,6 +3,7 @@
 
 var clerk = require("../lib/clerk-verify");
 var stripe = require("../lib/stripe");
+var pickup = require("../lib/for-at");
 
 function json(res, status, body) {
   res.statusCode = status;
@@ -151,12 +152,32 @@ function asOrder(row) {
     status: row.status,
     items: row.items || [],
     note: row.note || "",
+    for_at: row.for_at || null,
     total_gbp: Number(row.total_gbp) || 0,
     paid: !!row.paid,
     pay_at: row.pay_at || "counter",
+    receipt_url: stripe.safeReceiptUrl(row.receipt_url),
     rank: !!row.rank,
     created_at: row.created_at
   };
+}
+
+async function fillReceipt(row) {
+  if (!row || row.receipt_url) return row;
+  if (!row.paid || row.pay_at !== "stripe" || !row.stripe_session_id) return row;
+  var url = await stripe.receiptUrlForSession(row.stripe_session_id);
+  if (!url) return row;
+  var updated = await sb(
+    "/rest/v1/collection_orders?id=eq." + encodeURIComponent(row.id),
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        receipt_url: url,
+        updated_at: new Date().toISOString()
+      })
+    }
+  );
+  return (updated && updated[0]) || Object.assign({}, row, { receipt_url: url });
 }
 
 async function isRankDriver(userId, email) {
@@ -210,6 +231,7 @@ module.exports = async function handler(req, res) {
   try {
     if (req.method === "GET") {
       var desk = queryParam(req, "desk") === "1";
+      var one = String(queryParam(req, "id") || "").trim();
       var rows;
       if (desk) {
         if (!admin) {
@@ -219,11 +241,31 @@ module.exports = async function handler(req, res) {
         rows = await sb(
           "/rest/v1/collection_orders?status=neq.hold&status=neq.collected&status=neq.cancelled&order=created_at.asc&select=*"
         );
+      } else if (one) {
+        if (!/^[0-9a-f-]{36}$/i.test(one)) {
+          json(res, 400, { error: "That receipt is gone." });
+          return;
+        }
+        rows = await sb(
+          "/rest/v1/collection_orders?id=eq." + encodeURIComponent(one) + "&select=*"
+        );
+        var found = rows && rows[0];
+        if (!found || found.clerk_user_id !== user.id) {
+          json(res, 404, { error: "That receipt is gone." });
+          return;
+        }
+        found = await fillReceipt(found);
+        json(res, 200, {
+          stripe: stripe.stripeEnabled(),
+          order: asOrder(found),
+          orders: [asOrder(found)]
+        });
+        return;
       } else {
         rows = await sb(
           "/rest/v1/collection_orders?clerk_user_id=eq." +
             encodeURIComponent(user.id) +
-            "&order=created_at.desc&limit=12&select=*"
+            "&order=created_at.desc&limit=40&select=*"
         );
       }
       json(res, 200, {
@@ -250,6 +292,17 @@ module.exports = async function handler(req, res) {
         json(res, 503, { error: "The card is not on yet." });
         return;
       }
+      var hoursRow = await sb("/rest/v1/house_settings?id=eq.1&select=opens,closes");
+      var forAt;
+      try {
+        forAt = pickup.resolveForAt(
+          body.for != null ? body.for : body.for_at,
+          (hoursRow && hoursRow[0]) || {}
+        );
+      } catch (err) {
+        json(res, err.status || 400, { error: err.message || "that time is not for the house." });
+        return;
+      }
       var created = await sb("/rest/v1/collection_orders", {
         method: "POST",
         body: JSON.stringify({
@@ -259,6 +312,7 @@ module.exports = async function handler(req, res) {
           status: "hold",
           items: items,
           note: String(body.note || "").trim().slice(0, 140),
+          for_at: forAt,
           total_gbp: Math.round(totalOf(items) * 100) / 100,
           paid: false,
           pay_at: payAt,

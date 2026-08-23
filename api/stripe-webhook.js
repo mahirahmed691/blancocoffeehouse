@@ -63,16 +63,20 @@ async function loadOrder(id) {
   return (rows && rows[0]) || null;
 }
 
-async function markPaid(order) {
+async function markPaid(order, session) {
   if (!order || order.paid) return;
   if (order.status !== "hold" && order.status !== "in") return;
+  var patch = {
+    paid: true,
+    status: "in",
+    updated_at: new Date().toISOString()
+  };
+  var sessionId = order.stripe_session_id || (session && session.id) || "";
+  var url = await stripe.receiptUrlForSession(sessionId);
+  if (url) patch.receipt_url = url;
   await sb("/rest/v1/collection_orders?id=eq." + encodeURIComponent(order.id), {
     method: "PATCH",
-    body: JSON.stringify({
-      paid: true,
-      status: "in",
-      updated_at: new Date().toISOString()
-    })
+    body: JSON.stringify(patch)
   });
 }
 
@@ -128,7 +132,7 @@ module.exports = async function handler(req, res) {
     var session = event.data && event.data.object;
     var order = await loadOrder(orderIdOf(session));
     if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
-      if (session && session.payment_status === "paid") await markPaid(order);
+      if (session && session.payment_status === "paid") await markPaid(order, session);
     } else if (
       event.type === "checkout.session.expired" ||
       event.type === "checkout.session.async_payment_failed"

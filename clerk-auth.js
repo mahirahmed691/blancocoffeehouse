@@ -10,7 +10,8 @@
   var homeUrl = new URL("index.html", window.location.href).href;
   var adminUrl = new URL("admin.html", window.location.href).href;
   var onAdminPage = /admin\.html(?:$|\?|#)/.test(location.pathname + location.search);
-  var afterAuthUrl = onAdminPage ? adminUrl : accountUrl;
+  var onOrdersPage = /orders\.html(?:$|\?|#)/.test(location.pathname + location.search);
+  var afterAuthUrl = onAdminPage ? adminUrl : onOrdersPage ? location.href : accountUrl;
   function houseAppearance() {
     var night = document.documentElement.hasAttribute("data-night");
     var brown = night ? "#e9e1d8" : "#503931";
@@ -82,36 +83,83 @@
     if (note) note.hidden = false;
   }
 
-  function isHouseAdmin() {
+  function roleAdmin() {
     var user = window.Clerk && Clerk.user;
     if (!user) return false;
     var meta = user.publicMetadata || user.public_metadata || {};
-    if (String(meta.role || "").toLowerCase() === "admin") return true;
-    var emailObj = user.primaryEmailAddress || (user.emailAddresses && user.emailAddresses[0]);
-    var email = String((emailObj && emailObj.emailAddress) || "").trim().toLowerCase();
-    var allowed = String(window.HOUSE_ADMIN_EMAILS || "")
-      .split(/[,;\s]+/)
-      .map(function (e) {
-        return e.trim().toLowerCase();
-      })
-      .filter(Boolean);
-    return !!email && allowed.indexOf(email) !== -1;
+    return String(meta.role || "").toLowerCase() === "admin";
   }
 
-  window.blancoIsAdmin = isHouseAdmin;
+  var adminTick = 0;
+  var adminKnown = false;
 
-  function setAdminUi() {
-    var admin = isSignedIn() && isHouseAdmin();
-    document.body.classList.toggle("is-house-admin", admin);
+  function paintAdmin(admin, known) {
+    adminKnown = !!known;
+    document.body.classList.toggle("is-house-admin", !!admin);
     document.querySelectorAll("[data-house-desk]").forEach(function (el) {
       el.hidden = !admin;
     });
     var denied = document.getElementById("admin-denied");
     var desk = document.getElementById("admin-desk");
-    if (!denied && !desk) return;
     var inSession = isSignedIn();
-    if (denied) denied.hidden = !(inSession && !admin);
+    if (denied) denied.hidden = !(inSession && known && !admin);
     if (desk) desk.hidden = !(inSession && admin);
+    document.dispatchEvent(
+      new CustomEvent("blanco-admin", { detail: { admin: !!admin, known: !!known } })
+    );
+  }
+
+  function isHouseAdmin() {
+    return document.body.classList.contains("is-house-admin");
+  }
+
+  window.blancoIsAdmin = isHouseAdmin;
+
+  function setAdminUi() {
+    if (!isSignedIn()) {
+      adminTick += 1;
+      paintAdmin(false, true);
+      return;
+    }
+    paintAdmin(roleAdmin(), roleAdmin() || adminKnown);
+    confirmAdmin();
+  }
+
+  function confirmAdmin() {
+    var tick = ++adminTick;
+    if (!window.Clerk || !Clerk.session) {
+      paintAdmin(roleAdmin(), true);
+      return;
+    }
+    Clerk.session
+      .getToken()
+      .then(function (jwt) {
+        if (tick !== adminTick) return null;
+        if (!jwt) {
+          paintAdmin(false, true);
+          return null;
+        }
+        return fetch("/api/pace", {
+          headers: {
+            Authorization: "Bearer " + jwt,
+            "X-Clerk-Session": Clerk.session.id
+          }
+        }).then(function (res) {
+          return res.json().catch(function () {
+            return {};
+          }).then(function (data) {
+            return { ok: res.ok, admin: !!(data && data.admin) };
+          });
+        });
+      })
+      .then(function (result) {
+        if (tick !== adminTick || !result) return;
+        paintAdmin(!!result.admin, true);
+      })
+      .catch(function () {
+        if (tick !== adminTick) return;
+        paintAdmin(roleAdmin(), true);
+      });
   }
 
   function fillProfile() {
