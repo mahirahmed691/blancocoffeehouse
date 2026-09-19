@@ -59,7 +59,8 @@ Omitted on purpose: `telephone`, `geo` (the Maps embed is query-based, not lat/l
 ```
 index.html              # public shop (nav, hero, about, menu boards, visit, footer) + JSON-LD
 account.html            # Clerk member area (sign-in when signed out; dashboard when signed in)
-admin.html              # house desk (prices, sold-out, names, hours) — Clerk admin only
+admin.html              # house desk (prices, sold-out, names, hours, stamp QR) — Clerk admin only
+stamp.html              # member redeem of the counter stamp QR — Clerk session
 gallery.html            # in-store photographs
 menu.json               # seed of the printed boards (same data as supabase/schema.sql)
 reviews.json            # Google rating + a few public quotes (HTML fallback)
@@ -142,6 +143,10 @@ Local saves need `vercel dev` so `/api/admin` exists. The public menu reads Supa
 
 Never put `SUPABASE_SERVICE_ROLE_KEY` or `CLERK_SECRET_KEY` in a client file.
 
+### Stamp QR at the counter
+
+Admins open the desk and show **stamps.** A short-lived code (about a minute, single use) becomes a house-branded QR. A signed-in member scans it in the app (`you` → stamps → scan.) or with the phone camera (`stamp.html?t=`). The server stamps the card. One QR stamp per visit (four hours). Email stamp on the desk stays as a house override.
+
 ## Hosting
 
 - GitHub: [mahirahmed691/blancocoffeehouse](https://github.com/mahirahmed691/blancocoffeehouse)
@@ -150,17 +155,20 @@ Never put `SUPABASE_SERVICE_ROLE_KEY` or `CLERK_SECRET_KEY` in a client file.
 
 ### Attach `blancocoffeehouse.com` (GoDaddy → Vercel)
 
+`www` is the canonical host. Vercel already 308s the apex to `www`.
+
 1. In Vercel, open the **blancocoffeehouse** project → **Settings** → **Domains** → add `blancocoffeehouse.com`. Accept the prompt to also add `www.blancocoffeehouse.com`.
-2. Open the domain card and copy the **exact** A / CNAME values it shows (newer projects sometimes use a different anycast IP than the default below).
-3. In [GoDaddy DNS](https://dcc.godaddy.com/): **blancocoffeehouse.com** → **DNS** → **DNS Records**. Turn **off** domain forwarding / the GoDaddy parking page if either is on.
-4. Delete leftover apex `A` / `CNAME` / `Forward` records that still point at GoDaddy parking or an old host.
-5. Add (or match) these records — use the domain card values if they differ:
+2. Open the domain card and copy the **exact** A / CNAME values it shows.
+3. In [GoDaddy DNS](https://dcc.godaddy.com/control/blancocoffeehouse.com/dns): turn **off** domain forwarding and parking. Forwarding adds `15.197.148.33` and `3.33.130.190`, which break SSL on the apex (iOS error 1200).
+4. Delete every apex `A` record that is not in the table below (especially those two GoDaddy IPs and a leftover `76.76.21.21` mixed with the new anycast pair).
+5. Records that match this project:
 
 | Type  | Name | Value | TTL |
 | ----- | ---- | ----- | --- |
-| A     | `@`  | `76.76.21.21` (or the IP on the Vercel domain card) | 600 / 1 hour |
-| CNAME | `www` | `cname.vercel-dns.com` (or the `*.vercel-dns-*.com` target on the card) | 600 / 1 hour |
+| A     | `@`  | `216.198.79.1` | 600 / 1 hour |
+| A     | `@`  | `64.29.17.1` | 600 / 1 hour |
+| CNAME | `www` | `51e9642e15a14c65.vercel-dns-017.com` | 600 / 1 hour |
 
-6. Wait for Vercel to show **Valid Configuration**, then SSL. Apex (`blancocoffeehouse.com`) and `www` should both serve the site; optional: in Vercel set `www` as primary and redirect the apex to it.
+6. Wait for Vercel to show **Valid Configuration**. `dig +short A blancocoffeehouse.com` should return only those two IPs.
 
 Do not point nameservers away from GoDaddy unless you intend to manage DNS on Vercel instead. Keep MX/TXT records for email if you add those later.
