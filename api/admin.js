@@ -74,6 +74,15 @@ function asDriverPrice(value) {
   return asPrice(value);
 }
 
+var HOUSE_TAGS = ["dairy", "oat", "nuts", "gluten", "sesame"];
+
+function asAllergens(value) {
+  if (!Array.isArray(value)) return [];
+  return HOUSE_TAGS.filter(function (tag) {
+    return value.indexOf(tag) !== -1;
+  });
+}
+
 function asPhoto(value) {
   var raw = String(value || "").trim();
   if (!raw) return "";
@@ -102,7 +111,8 @@ function asItem(row) {
     sort: parseInt(row.sort, 10) || 0,
     sold_out: !!row.sold_out,
     photo: asPhoto(row.photo),
-    driver_price_gbp: asDriverPrice(row.driver_price_gbp)
+    driver_price_gbp: asDriverPrice(row.driver_price_gbp),
+    allergens: asAllergens(row.allergens)
   };
   if (row.id) item.id = String(row.id);
   return item;

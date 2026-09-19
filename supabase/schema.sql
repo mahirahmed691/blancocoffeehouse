@@ -52,6 +52,7 @@ create table if not exists public.menu_items (
   sold_out boolean not null default false,
   photo text not null default '',
   driver_price_gbp numeric(6,2),
+  allergens text[] not null default '{}',
   updated_at timestamptz not null default now()
 );
 
@@ -62,6 +63,17 @@ alter table public.menu_items
 
 alter table public.menu_items
   add column if not exists driver_price_gbp numeric(6,2);
+
+alter table public.menu_items
+  add column if not exists allergens text[] not null default '{}';
+
+alter table public.menu_items
+  drop constraint if exists menu_items_allergens_ok;
+
+alter table public.menu_items
+  add constraint menu_items_allergens_ok check (
+    allergens <@ array['dairy','oat','nuts','gluten','sesame']::text[]
+  );
 
 alter table public.house_settings enable row level security;
 alter table public.menu_items enable row level security;
@@ -161,10 +173,12 @@ create table if not exists public.collection_orders (
   status text not null default 'in',
   items jsonb not null default '[]'::jsonb,
   note text not null default '',
+  for_at timestamptz,
   total_gbp numeric not null default 0,
   paid boolean not null default false,
   pay_at text not null default 'counter',
   stripe_session_id text,
+  receipt_url text,
   rank boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -230,6 +244,51 @@ grant all on table public.gallery_shots to service_role;
 -- Taxi rank concession. Service role only; members go through /api/drivers.
 alter table public.collection_orders
   add column if not exists rank boolean not null default false;
+
+alter table public.collection_orders
+  add column if not exists for_at timestamptz;
+
+alter table public.collection_orders
+  add column if not exists receipt_url text;
+
+create table if not exists public.stamp_cards (
+  id uuid primary key default gen_random_uuid(),
+  clerk_user_id text not null unique,
+  email text,
+  stamps smallint not null default 0,
+  cards_done integer not null default 0,
+  last_qr_at timestamptz,
+  updated_at timestamptz not null default now(),
+  constraint stamp_cards_stamps_range check (stamps >= 0 and stamps <= 8)
+);
+
+alter table public.stamp_cards
+  add column if not exists last_qr_at timestamptz;
+
+alter table public.stamp_cards enable row level security;
+revoke all on table public.stamp_cards from anon, authenticated;
+grant all on table public.stamp_cards to service_role;
+
+create table if not exists public.stamp_tokens (
+  id uuid primary key default gen_random_uuid(),
+  token_hash text not null unique,
+  minted_by text not null,
+  expires_at timestamptz not null,
+  redeemed_at timestamptz,
+  redeemed_by text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists stamp_tokens_live_idx
+  on public.stamp_tokens (minted_by, expires_at desc)
+  where redeemed_at is null;
+
+create index if not exists stamp_tokens_redeemed_by_idx
+  on public.stamp_tokens (redeemed_by, redeemed_at desc);
+
+alter table public.stamp_tokens enable row level security;
+revoke all on table public.stamp_tokens from anon, authenticated;
+grant all on table public.stamp_tokens to service_role;
 
 create table if not exists public.rank_settings (
   id int primary key default 1 check (id = 1),
@@ -310,19 +369,26 @@ create table if not exists public.cup_checkins (
   display_name text not null default '',
   path text not null unique,
   day date not null,
+  status text not null default 'live',
   created_at timestamptz not null default now(),
-  constraint cup_checkins_user_day unique (clerk_user_id, day)
+  constraint cup_checkins_user_day unique (clerk_user_id, day),
+  constraint cup_checkins_status check (
+    status = any (array['live'::text, 'hold'::text])
+  )
 );
 
 create index if not exists cup_checkins_day_idx
   on public.cup_checkins (day desc, created_at desc);
+
+create index if not exists cup_checkins_status_idx
+  on public.cup_checkins (status, created_at desc);
 
 alter table public.cup_checkins enable row level security;
 
 drop policy if exists cup_checkins_public_read on public.cup_checkins;
 create policy cup_checkins_public_read
   on public.cup_checkins for select
-  using (true);
+  using (status = 'live');
 
 grant select on table public.cup_checkins to anon, authenticated;
 grant all on table public.cup_checkins to service_role;

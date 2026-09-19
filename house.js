@@ -59,10 +59,21 @@
     );
   }
 
+  var HOUSE_TAGS = ["dairy", "oat", "nuts", "gluten", "sesame"];
+
+  function houseTags(item) {
+    var raw = item && item.allergens;
+    if (!raw || !raw.length) return [];
+    return HOUSE_TAGS.filter(function (tag) {
+      return raw.indexOf(tag) !== -1;
+    });
+  }
+
   function renderBoard(root, sections) {
     if (!root) return;
+    var fold = sections.length > 1;
     root.innerHTML = sections
-      .map(function (section) {
+      .map(function (section, i) {
         var rows = section.items
           .map(function (item) {
             var sold = item.sold_out
@@ -71,6 +82,11 @@
             var rank = onRank(item)
               ? '<span class="rank-mark">rank</span>'
               : "";
+            var tags = houseTags(item)
+              .map(function (tag) {
+                return '<span class="allergen-mark">' + escapeHtml(tag) + "</span>";
+              })
+              .join("");
             var desc = item.description
               ? '<p class="menu-item-desc">' + escapeHtml(item.description) + "</p>"
               : "";
@@ -88,6 +104,7 @@
               '<span class="price">' +
               formatPrice(priceOf(item)) +
               "</span>" +
+              tags +
               rank +
               sold +
               "</div>" +
@@ -96,11 +113,15 @@
           })
           .join("");
         return (
-          '<div class="board-section"><h4>' +
+          "<details class=\"board-section\"" +
+          (!fold || i === 0 ? " open" : "") +
+          "><summary><h4>" +
           escapeHtml(section.title) +
-          "</h4>" +
+          '</h4><span class="board-fold-n">' +
+          section.items.length +
+          "</span></summary>" +
           rows +
-          "</div>"
+          "</details>"
         );
       })
       .join("");
@@ -205,6 +226,8 @@
       el.textContent = pace;
       el.hidden = !pace;
     });
+    window.blancoHours = settings;
+    if (typeof window.blancoOnHours === "function") window.blancoOnHours(settings);
     var ld = document.querySelector('script[type="application/ld+json"]');
     if (!ld || !settings.opens || !settings.closes) return;
     try {
@@ -236,6 +259,71 @@
 
   var menuItems = [];
 
+  function lastCupsFromOrders(orders, limit) {
+    limit = limit || 5;
+    var seen = {};
+    var out = [];
+    (orders || []).forEach(function (order) {
+      if (!order || out.length >= limit) return;
+      if (order.status === "cancelled" || order.status === "hold") return;
+      var live =
+        order.status === "in" ||
+        order.status === "preparing" ||
+        order.status === "ready";
+      if (!order.paid && order.status !== "collected" && !live) return;
+      (order.items || []).forEach(function (row) {
+        if (out.length >= limit) return;
+        var name = String((row && row.name) || "").trim();
+        if (!name) return;
+        var key = name.toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
+        out.push({ id: String((row && row.id) || name), name: name });
+      });
+    });
+    return out;
+  }
+
+  function lastCupsOnBoard(cups, items, limit) {
+    limit = limit || 5;
+    var list = items || menuItems;
+    var out = [];
+    (cups || []).forEach(function (cup) {
+      if (out.length >= limit) return;
+      var name = String((cup && cup.name) || "").trim();
+      if (!name) return;
+      var needle = name.toLowerCase();
+      var found = null;
+      (list || []).forEach(function (item) {
+        if (found) return;
+        if (String(item.name || "").trim().toLowerCase() === needle) found = item;
+      });
+      if (!found || found.sold_out) return;
+      out.push({ id: String(found.id || found.name), name: found.name });
+    });
+    return out;
+  }
+
+  function findMenuItem(name) {
+    var needle = String(name || "").trim().toLowerCase();
+    if (!needle) return null;
+    for (var i = 0; i < menuItems.length; i++) {
+      if (String(menuItems[i].name || "").trim().toLowerCase() === needle) {
+        return menuItems[i];
+      }
+    }
+    return null;
+  }
+
+  window.blancoLastCups = lastCupsFromOrders;
+  window.blancoLastCupsOnBoard = lastCupsOnBoard;
+  window.blancoMenuItems = function () {
+    return menuItems.slice();
+  };
+  window.blancoFindItem = findMenuItem;
+  window.blancoPriceOf = priceOf;
+  window.blancoOnRank = onRank;
+
   function paintMenu() {
     if (!menuItems.length) return;
     var drinksRoot = document.querySelector("#drinks-board .board-cols");
@@ -244,6 +332,12 @@
     if (sweetsRoot) renderBoard(sweetsRoot, groupBoard(menuItems, "sweets"));
     if (typeof window.blancoBindMenuRows === "function") {
       window.blancoBindMenuRows();
+    }
+    if (typeof window.blancoFoldBoards === "function") {
+      window.blancoFoldBoards();
+    }
+    if (typeof window.blancoPaintLastCups === "function") {
+      window.blancoPaintLastCups();
     }
   }
 

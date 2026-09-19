@@ -9,6 +9,9 @@
   var linesEl = document.getElementById("collect-lines");
   var totalEl = document.getElementById("collect-total");
   var noteEl = document.getElementById("collect-note");
+  var whenEl = document.getElementById("collect-when");
+  var whenSlotsEl = document.getElementById("collect-when-slots");
+  var whenLineEl = document.getElementById("collect-when-line");
   var placeBtn = document.getElementById("collect-place");
   var letGoBtn = document.getElementById("collect-let-go");
   var clearBtn = document.getElementById("collect-clear");
@@ -23,6 +26,11 @@
   var liveTimer = 0;
   var stripeOn = false;
   var stripeChecked = false;
+  var forHm = "";
+  var hours = window.blancoHours || null;
+  var lastCupOrders = [];
+  var lastCupsRoot = document.getElementById("last-cups");
+  var lastCupsList = document.getElementById("last-cups-list");
 
   function signedIn() {
     if (!window.Clerk) return false;
@@ -99,9 +107,11 @@
     }
     var lines = [];
     var note = "";
+    var heldFor = "";
     if (raw && Array.isArray(raw.lines)) {
       lines = raw.lines;
       note = String(raw.note || "");
+      heldFor = String(raw.for || raw.forAt || "");
     } else if (Array.isArray(raw)) {
       lines = raw;
     }
@@ -116,15 +126,17 @@
       basket.push(next);
     });
     if (noteEl && note && !noteEl.value) noteEl.value = note.slice(0, 140);
+    if (/^\d{1,2}:\d{2}$/.test(heldFor)) forHm = heldFor;
   }
 
   function saveBasket() {
     var payload = JSON.stringify({
       lines: basket,
-      note: noteEl ? String(noteEl.value || "").trim().slice(0, 140) : ""
+      note: noteEl ? String(noteEl.value || "").trim().slice(0, 140) : "",
+      for: forHm || ""
     });
     try {
-      if (!basket.length && !(noteEl && noteEl.value.trim())) localStorage.removeItem(KEY);
+      if (!basket.length && !(noteEl && noteEl.value.trim()) && !forHm) localStorage.removeItem(KEY);
       else localStorage.setItem(KEY, payload);
       sessionStorage.removeItem(OLD_KEY);
     } catch (err) {}
@@ -198,6 +210,7 @@
             return cup && cup.watching(row.status);
           })[0] ||
           null;
+        paintLastCups(data.orders || []);
         watchLive(next);
       })
       .catch(function () {});
@@ -265,6 +278,7 @@
     }
     if (clearBtn) clearBtn.hidden = !basket.length;
     if (noteEl && noteEl.parentElement) noteEl.parentElement.hidden = !basket.length;
+    paintWhen();
     if (trackEl) {
       if ((watchingNow || collected) && cup) {
         trackEl.hidden = false;
@@ -337,6 +351,54 @@
     }
   }
 
+  function pickupSlots() {
+    return cup && cup.pickupSlots ? cup.pickupSlots(hours || window.blancoHours) : [];
+  }
+
+  function paintWhen() {
+    if (!whenEl) return;
+    if (!basket.length) {
+      whenEl.hidden = true;
+      return;
+    }
+    var slots = pickupSlots();
+    if (forHm && !slots.some(function (slot) {
+      return slot.hm === forHm;
+    })) {
+      forHm = "";
+    }
+    whenEl.hidden = false;
+    if (whenLineEl) {
+      var picked = slots.filter(function (slot) {
+        return slot.hm === forHm;
+      })[0];
+      whenLineEl.textContent = picked ? picked.line : "when it's ready.";
+    }
+    if (!whenSlotsEl) return;
+    whenSlotsEl.innerHTML =
+      '<button type="button" class="collect-when-btn' +
+      (!forHm ? " is-on" : "") +
+      '" data-for="" aria-pressed="' +
+      (!forHm ? "true" : "false") +
+      '">when it\'s ready.</button>' +
+      slots
+        .map(function (slot) {
+          var on = forHm === slot.hm;
+          return (
+            '<button type="button" class="collect-when-btn' +
+            (on ? " is-on" : "") +
+            '" data-for="' +
+            escapeHtml(slot.hm) +
+            '" aria-pressed="' +
+            (on ? "true" : "false") +
+            '">' +
+            escapeHtml(slot.label) +
+            "</button>"
+          );
+        })
+        .join("");
+  }
+
   function paintSlots() {
     document.querySelectorAll(".menu-row").forEach(function (row) {
       if (row.classList.contains("is-sold-out")) return;
@@ -362,6 +424,128 @@
       btn.setAttribute("aria-label", "Add " + name + " to collection");
       slot.appendChild(btn);
     });
+  }
+
+  function findBoardRow(name) {
+    var needle = String(name || "").trim().toLowerCase();
+    var rows = document.querySelectorAll(".menu-row");
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var item = row.querySelector(".menu-item");
+      var nameEl = item && item.querySelector(".name");
+      var priceEl = item && item.querySelector(".price");
+      if (!nameEl || !priceEl) continue;
+      if (nameEl.textContent.trim().toLowerCase() !== needle) continue;
+      return {
+        id: item.getAttribute("data-id") || nameEl.textContent.trim(),
+        name: nameEl.textContent.trim(),
+        price: parsePrice(priceEl.textContent),
+        rank: item.classList.contains("is-rank"),
+        sold: row.classList.contains("is-sold-out")
+      };
+    }
+    return null;
+  }
+
+  function readyLastCups(orders) {
+    var cups = typeof window.blancoLastCups === "function" ? window.blancoLastCups(orders) : [];
+    var menuReady =
+      typeof window.blancoMenuItems === "function" && window.blancoMenuItems().length > 0;
+    if (menuReady && typeof window.blancoLastCupsOnBoard === "function") {
+      return window.blancoLastCupsOnBoard(cups);
+    }
+    return cups;
+  }
+
+  function paintLastCups(orders) {
+    if (orders) lastCupOrders = orders;
+    if (!lastCupsRoot || !lastCupsList) return;
+    if (!signedIn()) {
+      lastCupsRoot.hidden = true;
+      lastCupsList.innerHTML = "";
+      return;
+    }
+    var cups = readyLastCups(lastCupOrders);
+    if (!cups.length) {
+      lastCupsRoot.hidden = true;
+      lastCupsList.innerHTML = "";
+      return;
+    }
+    lastCupsList.innerHTML = cups
+      .map(function (cup) {
+        return (
+          '<button type="button" class="last-cup" data-cup="' +
+          escapeHtml(cup.name) +
+          '">' +
+          '<span class="last-cup-name">' +
+          escapeHtml(cup.name) +
+          "</span>" +
+          '<span class="last-cup-cue">add</span>' +
+          "</button>"
+        );
+      })
+      .join("");
+    lastCupsRoot.hidden = false;
+  }
+
+  function addLastCup(name) {
+    if (!signedIn()) {
+      window.location.href = "account.html";
+      return;
+    }
+    var item = typeof window.blancoFindItem === "function" ? window.blancoFindItem(name) : null;
+    if (item) {
+      if (item.sold_out) {
+        setStatus("That’s not on today.", "error");
+        holdOpen = true;
+        renderDock();
+        return;
+      }
+      var price =
+        typeof window.blancoPriceOf === "function" ? window.blancoPriceOf(item) : Number(item.price_gbp) || 0;
+      var rank = typeof window.blancoOnRank === "function" ? window.blancoOnRank(item) : false;
+      addItem(item.name, price, rank, String(item.id || item.name));
+      return;
+    }
+    var found = findBoardRow(name);
+    if (!found || found.sold) {
+      setStatus("That’s not on today.", "error");
+      holdOpen = true;
+      renderDock();
+      return;
+    }
+    addItem(found.name, found.price, found.rank, found.id);
+  }
+
+  function takePendingCup() {
+    var raw = "";
+    try {
+      raw = sessionStorage.getItem("blanco.house.cup") || "";
+    } catch (err) {
+      raw = "";
+    }
+    if (!raw) return;
+    var pending = null;
+    try {
+      pending = JSON.parse(raw);
+    } catch (err) {
+      pending = null;
+    }
+    if (!pending || !pending.name) {
+      try {
+        sessionStorage.removeItem("blanco.house.cup");
+      } catch (err) {}
+      return;
+    }
+    var item = typeof window.blancoFindItem === "function" ? window.blancoFindItem(pending.name) : null;
+    var found = findBoardRow(pending.name);
+    var menuReady =
+      typeof window.blancoMenuItems === "function" && window.blancoMenuItems().length > 0;
+    if (!item && !found && !menuReady) return;
+    try {
+      sessionStorage.removeItem("blanco.house.cup");
+    } catch (err) {}
+    addLastCup(pending.name);
   }
 
   function addItem(name, price, rank, id) {
@@ -474,6 +658,7 @@
 
   function clearBag() {
     basket = [];
+    forHm = "";
     if (noteEl) noteEl.value = "";
     saveBasket();
     setStatus("");
@@ -486,6 +671,15 @@
       setStatus("The card is not on yet.", "error");
       return;
     }
+    if (forHm && !pickupSlots().some(function (slot) {
+      return slot.hm === forHm;
+    })) {
+      forHm = "";
+      saveBasket();
+      paintWhen();
+      setStatus("that time has already gone. pick another, or when it's ready.", "error");
+      return;
+    }
     if (placeBtn) placeBtn.disabled = true;
     setStatus("Opening the card…");
     clerkHeaders()
@@ -496,7 +690,8 @@
           body: JSON.stringify({
             items: basket,
             note: noteEl ? noteEl.value.trim() : "",
-            pay: "stripe"
+            pay: "stripe",
+            for: forHm || ""
           })
         });
       })
@@ -509,6 +704,7 @@
       .then(function (data) {
         if (data.url) {
           basket = [];
+          forHm = "";
           saveBasket();
           window.location.href = data.url;
           return;
@@ -544,6 +740,7 @@
       .then(function (data) {
         stripeOn = !!data.stripe;
         stripeChecked = true;
+        paintLastCups(data.orders || []);
         var next = (data.orders || []).filter(function (row) {
           return cup && cup.watching(row.status);
         })[0];
@@ -552,6 +749,7 @@
       })
       .catch(function () {
         renderDock();
+        paintLastCups();
       });
   }
 
@@ -564,6 +762,15 @@
       parseInt(qtyBtn.getAttribute("data-delta"), 10) || 0
     );
   });
+
+  if (lastCupsList) {
+    lastCupsList.addEventListener("click", function (event) {
+      var btn = event.target.closest("[data-cup]");
+      if (!btn || !lastCupsList.contains(btn)) return;
+      event.preventDefault();
+      addLastCup(btn.getAttribute("data-cup") || "");
+    });
+  }
 
   document.addEventListener("click", function (event) {
     var qtyBtn = event.target.closest("[data-qty]");
@@ -610,16 +817,35 @@
   if (noteEl) {
     noteEl.addEventListener("input", saveBasket);
   }
+  if (whenSlotsEl) {
+    whenSlotsEl.addEventListener("click", function (event) {
+      var btn = event.target.closest("[data-for]");
+      if (!btn || !whenSlotsEl.contains(btn)) return;
+      event.preventDefault();
+      forHm = btn.getAttribute("data-for") || "";
+      saveBasket();
+      paintWhen();
+    });
+  }
+  window.blancoOnHours = function (settings) {
+    hours = settings || null;
+    paintWhen();
+  };
 
   var prevBind = window.blancoBindMenuRows;
   window.blancoBindMenuRows = function () {
     if (typeof prevBind === "function") prevBind();
     bindRows();
+    paintLastCups();
+    takePendingCup();
   };
+  window.blancoPaintLastCups = paintLastCups;
 
   loadBasket();
   bindRows();
   renderDock();
+  paintLastCups();
+  takePendingCup();
   window.blancoRenderCollection = function () {
     renderDock();
     loadPayOptions();

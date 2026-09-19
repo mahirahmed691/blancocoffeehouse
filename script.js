@@ -333,8 +333,47 @@ var blancoShowBoard = null;
     });
   }
 
+  function boardShouldFold(count) {
+    return count > 1;
+  }
+
+  function upgradeSection(section) {
+    var details = document.createElement("details");
+    details.className = section.className;
+    var summary = document.createElement("summary");
+    var heading = section.querySelector(":scope > h4");
+    var count = section.querySelectorAll(".menu-item").length;
+    if (heading) summary.appendChild(heading);
+    var mark = document.createElement("span");
+    mark.className = "board-fold-n";
+    mark.textContent = String(count);
+    summary.appendChild(mark);
+    details.appendChild(summary);
+    while (section.firstChild) details.appendChild(section.firstChild);
+    section.parentNode.replaceChild(details, section);
+    return details;
+  }
+
+  function foldBoards() {
+    document.querySelectorAll(".board-cols").forEach(function (root) {
+      var sections = Array.prototype.slice.call(root.children).filter(function (node) {
+        return node.classList && node.classList.contains("board-section");
+      });
+      var fold = boardShouldFold(sections.length);
+      sections.forEach(function (section, i) {
+        var details = section.tagName === "DETAILS" ? section : upgradeSection(section);
+        if (!details.hasAttribute("data-fold")) {
+          details.open = !fold || i === 0;
+          details.setAttribute("data-fold", "1");
+        }
+      });
+    });
+  }
+
   bindMenuRows();
+  foldBoards();
   window.blancoBindMenuRows = bindMenuRows;
+  window.blancoFoldBoards = foldBoards;
 
   var tabs = Array.prototype.slice.call(document.querySelectorAll(".menu-tab"));
   var drinksBoard = document.getElementById("drinks-board");
@@ -498,6 +537,10 @@ var blancoShowBoard = null;
       var heading = section && section.querySelector("h4");
       var desc = row.querySelector(".menu-item-desc");
       var price = item.querySelector(".price");
+      var marks = Array.prototype.slice
+        .call(item.querySelectorAll(".allergen-mark"))
+        .map(textOf)
+        .join(" ");
       var name = textOf(item.querySelector(".name"));
       var boardKind = board && board.getAttribute("aria-labelledby") === "sweets-board-title"
         ? "Sweets"
@@ -506,7 +549,7 @@ var blancoShowBoard = null;
       return {
         label: name,
         href: boardKind === "Sweets" ? "#sweets-board-title" : "#drinks-board-title",
-        hay: [name, textOf(desc), textOf(price), sectionName, boardKind].join(" ").toLowerCase(),
+        hay: [name, textOf(desc), textOf(price), marks, sectionName, boardKind].join(" ").toLowerCase(),
         kind: boardKind + (sectionName ? " · " + sectionName : ""),
         meta: textOf(price),
         row: row,
@@ -584,6 +627,8 @@ var blancoShowBoard = null;
     }
     if (item.boardKind) activateBoard(item.boardKind);
     if (item.row) {
+      var wrap = item.row.closest("details.board-section");
+      if (wrap) wrap.open = true;
       item.row.classList.add("is-search-hit");
       item.row.scrollIntoView({ behavior: "smooth", block: "center" });
     } else if (item.href.charAt(0) === "#") {

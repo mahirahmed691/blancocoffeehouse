@@ -5,7 +5,7 @@ The house on the phone: native board, bag, stamps, drop, and sign-in. Card payme
 **menu** is the live board — add a drink, pay now with the card.  
 **drop** is the wear lookbook.  
 **bag** is checkout and collection.  
-**you** is stamps, orders, and sign-out.
+**you** is stamps, orders, and sign-out. Scan the house QR from stamps.
 
 Sign-in is required. Instagram opens in Safari.
 
@@ -23,6 +23,13 @@ Scan the QR with **Expo Go from the App Store** (SDK 54). Stop Metro with Ctrl+C
 The Clerk publishable key lives in `.env` as `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`. Native sign-in also needs **Native applications** turned on in the Clerk Dashboard, plus **Google** and **Apple** under **User & authentication → Social connections**.
 
 Override the house URL with `EXPO_PUBLIC_HOUSE_URL` (defaults to `https://www.blancocoffeehouse.com`).
+
+Today check-ins are gated on the house (`POST /api/checkins`) before they go public. On Vercel set **one** of:
+
+- `OPENAI_API_KEY` (uses `gpt-4o-mini` vision)
+- `GEMINI_API_KEY` (uses `gemini-2.0-flash`)
+
+A clear cup / case / room goes live. NSFW or off-topic is refused. If the key is missing or the read is fuzzy, the shot waits on the desk (`admin.html` → today). Never put those keys in this folder.
 
 ## Live Clerk
 

@@ -1,9 +1,12 @@
 /* Daily cup check-in. Members post; others see it in the app.
-   Env: same as /api/orders */
+   Env: same as /api/orders
+   Look gate (server, before the photo is public): OPENAI_API_KEY or GEMINI_API_KEY.
+   A confident house shot goes live. NSFW / off-topic is refused. Uncertain waits on the desk. */
 
 var crypto = require("crypto");
 var clerk = require("../lib/clerk-verify");
 var handles = require("../lib/handle");
+var lookGate = require("../lib/look-gate");
 
 var MAX_BYTES = 2 * 1024 * 1024;
 
@@ -107,12 +110,22 @@ function publicUri(supabaseUrl, path) {
   return supabaseUrl + "/storage/v1/object/public/checkins/" + path;
 }
 
+function queryParam(req, name) {
+  if (req.query && req.query[name]) return String(req.query[name]);
+  try {
+    return new URL(req.url, "http://localhost").searchParams.get(name) || "";
+  } catch (err) {
+    return "";
+  }
+}
+
 function asCup(row, userId, supabaseUrl) {
   return {
     id: row.id,
     uri: publicUri(supabaseUrl, row.path),
     name: row.display_name || "a member",
     day: row.day,
+    status: row.status === "hold" ? "hold" : "live",
     mine: row.clerk_user_id === userId,
     created_at: row.created_at
   };
@@ -130,7 +143,7 @@ module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Clerk-Session");
     res.end();
     return;
@@ -162,20 +175,61 @@ module.exports = async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
+      var desk = queryParam(req, "desk") === "1";
+      if (desk) {
+        if (!clerk.isAdmin(user)) {
+          json(res, 403, { error: "this desk is for the house." });
+          return;
+        }
+        var deskRows = await sb(
+          "/rest/v1/cup_checkins?select=id,clerk_user_id,display_name,path,day,status,created_at&created_at=gte." +
+            encodeURIComponent(liveSince()) +
+            "&order=created_at.desc&limit=80"
+        );
+        var deskList = Array.isArray(deskRows) ? deskRows : [];
+        json(res, 200, {
+          today: today,
+          holds: deskList
+            .filter(function (row) {
+              return row.status === "hold";
+            })
+            .map(function (row) {
+              return asCup(row, userId, supabaseUrl);
+            }),
+          cups: deskList
+            .filter(function (row) {
+              return row.status !== "hold";
+            })
+            .map(function (row) {
+              return asCup(row, userId, supabaseUrl);
+            })
+        });
+        return;
+      }
       var rows = await sb(
-        "/rest/v1/cup_checkins?select=id,clerk_user_id,display_name,path,day,created_at&created_at=gte." +
+        "/rest/v1/cup_checkins?select=id,clerk_user_id,display_name,path,day,status,created_at&created_at=gte." +
           encodeURIComponent(liveSince()) +
           "&order=created_at.desc&limit=80"
       );
       var list = Array.isArray(rows) ? rows : [];
-      var cups = list.map(function (row) {
-        return asCup(row, userId, supabaseUrl);
-      });
-      var mine =
-        cups.filter(function (cup) {
-          return cup.mine;
+      var mineRow =
+        list.filter(function (row) {
+          return row.clerk_user_id === userId;
         })[0] || null;
-      json(res, 200, { today: today, mine: mine, cups: cups });
+      var cups = list
+        .filter(function (row) {
+          return row.status !== "hold";
+        })
+        .map(function (row) {
+          return asCup(row, userId, supabaseUrl);
+        });
+      var mine = mineRow ? asCup(mineRow, userId, supabaseUrl) : null;
+      json(res, 200, {
+        today: today,
+        mine: mine,
+        cups: cups,
+        waiting: !!(mineRow && mineRow.status === "hold")
+      });
       return;
     }
 
@@ -183,9 +237,16 @@ module.exports = async function handler(req, res) {
       var body = await readBody(req);
       var image = decodeImage(body.image);
       if (!image) {
-        json(res, 400, { error: "That picture could not go up. Use the camera or a photo from the roll." });
+        json(res, 400, { error: "that picture could not go up. use the camera or a photo from the roll." });
         return;
       }
+
+      var gate = await lookGate.judge(image);
+      if (gate.verdict === "reject") {
+        json(res, 400, { error: lookGate.message(gate) });
+        return;
+      }
+      var status = gate.verdict === "hold" ? "hold" : "live";
 
       var existing = await sb(
         "/rest/v1/cup_checkins?clerk_user_id=eq." +
@@ -226,6 +287,7 @@ module.exports = async function handler(req, res) {
           body: JSON.stringify({
             display_name: name,
             path: path,
+            status: status,
             created_at: new Date().toISOString()
           })
         });
@@ -237,7 +299,8 @@ module.exports = async function handler(req, res) {
             clerk_user_id: userId,
             display_name: name,
             path: path,
-            day: today
+            day: today,
+            status: status
           })
         });
       }
@@ -248,6 +311,7 @@ module.exports = async function handler(req, res) {
         display_name: name,
         path: path,
         day: today,
+        status: status,
         created_at: new Date().toISOString()
       };
 
@@ -268,12 +332,54 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      json(res, 200, { today: today, cup: asCup(row, userId, supabaseUrl) });
+      json(res, 200, {
+        today: today,
+        cup: asCup(row, userId, supabaseUrl),
+        hold: status === "hold"
+      });
+      return;
+    }
+
+    if (req.method === "PATCH") {
+      if (!clerk.isAdmin(user)) {
+        json(res, 403, { error: "this desk is for the house." });
+        return;
+      }
+      var patchBody = await readBody(req);
+      var deskId = String(patchBody.id || "").trim();
+      var next = String(patchBody.status || "").trim();
+      if (!deskId || (next !== "live" && next !== "drop")) {
+        json(res, 400, { error: "that cup is gone." });
+        return;
+      }
+      var deskFound = await sb(
+        "/rest/v1/cup_checkins?id=eq." + encodeURIComponent(deskId) + "&select=*"
+      );
+      var deskRow = deskFound && deskFound[0];
+      if (!deskRow) {
+        json(res, 404, { error: "that cup is gone." });
+        return;
+      }
+      if (next === "drop") {
+        await removeObject(supabaseUrl, service, deskRow.path);
+        await sb("/rest/v1/cup_checkins?id=eq." + encodeURIComponent(deskId), {
+          method: "DELETE"
+        });
+        json(res, 200, { ok: true });
+        return;
+      }
+      var opened = await sb("/rest/v1/cup_checkins?id=eq." + encodeURIComponent(deskId), {
+        method: "PATCH",
+        body: JSON.stringify({ status: "live" })
+      });
+      var openedRow = (opened && opened[0]) || deskRow;
+      openedRow.status = "live";
+      json(res, 200, { today: today, cup: asCup(openedRow, userId, supabaseUrl) });
       return;
     }
 
     if (req.method !== "DELETE") {
-      json(res, 405, { error: "Use GET, POST, or DELETE." });
+      json(res, 405, { error: "use GET, POST, PATCH, or DELETE." });
       return;
     }
 

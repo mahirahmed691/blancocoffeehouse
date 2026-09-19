@@ -605,7 +605,9 @@ function Today({
         <Text style={styles.prose}>
           your cup, with the house. it stays on the board for 24 hours — put another up and it takes the place of the last.
         </Text>
-        {board.mine ? (
+        {board.waiting ? (
+          <Text style={styles.hours}>waiting on the house.</Text>
+        ) : board.mine ? (
           <Text style={styles.hours}>you’re in.</Text>
         ) : (
           <Text style={styles.hours}>not in yet.</Text>
