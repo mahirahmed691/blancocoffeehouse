@@ -42,6 +42,10 @@
             {
               "scheme": "blanco",
               "host": "pay"
+            },
+            {
+              "scheme": "blanco",
+              "host": "stamp"
             }
           ]
         }
@@ -69,8 +73,16 @@
         "expo-image-picker",
         {
           "photosPermission": "blanco. uses your photos so you can check in with a cup from the roll.",
-          "cameraPermission": "blanco. uses the camera so you can check in with your cup.",
+          "cameraPermission": "blanco. uses the camera so you can check in with your cup, and scan a stamp at the counter.",
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "blanco. uses the camera so you can check in with your cup, and scan a stamp at the counter.",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
         }
       ]
     ],

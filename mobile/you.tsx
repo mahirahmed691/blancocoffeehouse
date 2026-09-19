@@ -61,9 +61,10 @@ import {
 import { Rise, useToTop } from "./motion";
 import { Back, FoldHead, Kicker, Mark, type MarkName } from "./ui";
 import { DeskScreen } from "./desk";
+import { StampScanScreen } from "./stamp-scan";
 import { StampCup } from "./stamp-cup";
 
-export type YouPage = "home" | "house" | "settings" | "desk" | "orders";
+export type YouPage = "home" | "house" | "settings" | "desk" | "orders" | "scan";
 
 type YouStackProps = {
   page: YouPage;
@@ -108,6 +109,9 @@ type YouStackProps = {
   passwordOn: boolean;
   onPictures: () => void;
   onToday: () => void;
+  onScan: () => void;
+  incomingStamp?: string;
+  onRedeemStamp: (card: { stamps: number; cards_done: number; filled?: boolean }) => void;
   topAt: number;
   getSession: () => Promise<Session>;
   onSavedBoard: () => void;
@@ -124,7 +128,9 @@ export function YouStack(props: YouStackProps) {
           ? "desk"
           : props.page === "orders"
             ? "orders"
-            : "home";
+            : props.page === "scan"
+              ? "scan"
+              : "home";
   return (
     <Rise key={page} shift={false} style={styles.screen}>
       {page === "house" ? (
@@ -165,6 +171,16 @@ export function YouStack(props: YouStackProps) {
           onSavedBoard={props.onSavedBoard}
           onBack={() => props.onPage("home")}
           topAt={props.topAt}
+        />
+      ) : page === "scan" ? (
+        <StampScanScreen
+          getSession={props.getSession}
+          incoming={props.incomingStamp}
+          onRedeemed={(card) => {
+            props.onRedeemStamp(card);
+            props.onPage("home");
+          }}
+          onBack={() => props.onPage("home")}
         />
       ) : page === "orders" ? (
         <OrdersScreen
@@ -262,6 +278,7 @@ function YouHome({
   onPage,
   onPictures,
   onToday,
+  onScan,
   topAt
 }: YouStackProps) {
   const { t, styles } = useStyles(makeStyles);
@@ -308,7 +325,23 @@ function YouHome({
   return (
     <View style={styles.screen}>
       <View style={[styles.sticky, { paddingTop: pad.top }]}>
-        <Kicker label="member" />
+        <View style={styles.stickyHead}>
+          <Kicker label="member" />
+          {desk ? (
+            <Pressable
+              onPress={() => {
+                tap();
+                onPage("desk");
+              }}
+              hitSlop={10}
+              style={({ pressed }) => [styles.deskBtn, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="the desk."
+            >
+              <Mark name="desk" size={22} />
+            </Pressable>
+          ) : null}
+        </View>
         <Text style={styles.title}>
           {firstCall(name) ? "welcome, " + firstCall(name) + "." : "you."}
         </Text>
@@ -425,15 +458,6 @@ function YouHome({
         </View>
       ) : null}
 
-      {desk ? (
-        <Row
-          mark="desk"
-          label="the desk."
-          hint="the counter, today, the card, the board"
-          onPress={() => onPage("desk")}
-        />
-      ) : null}
-
       <View style={[styles.foldBlock, !desk && styles.sectionFirst]}>
         <FoldHead
           label="stamps."
@@ -441,7 +465,23 @@ function YouHome({
           open={foldOn("stamps")}
           onPress={() => toggleFold("stamps")}
         />
-        {foldOn("stamps") ? <StampCard stamps={stamps} note={stampNote} /> : null}
+        {foldOn("stamps") ? (
+          <>
+            <StampCard stamps={stamps} note={stampNote} />
+            <Pressable
+              onPress={() => {
+                tap();
+                onScan();
+              }}
+              style={({ pressed }) => [styles.scanRow, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="scan the house QR for a stamp"
+            >
+              <Text style={styles.scanWord}>scan.</Text>
+              <Text style={styles.scanNote}>the house QR at the counter.</Text>
+            </Pressable>
+          </>
+        ) : null}
       </View>
 
       <View style={styles.foldBlock}>
@@ -1371,6 +1411,19 @@ function makeStyles(t: Palette) {
     borderBottomWidth: 1,
     borderBottomColor: t.LINE
   },
+  stickyHead: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between"
+  },
+  deskBtn: {
+    width: 40,
+    height: 40,
+    marginTop: -9,
+    marginRight: -9,
+    alignItems: "center",
+    justifyContent: "center"
+  },
   title: {
     fontFamily: ROUND,
     fontSize: 40,
@@ -1531,6 +1584,22 @@ function makeStyles(t: Palette) {
     fontFamily: SANS,
     fontSize: 14,
     lineHeight: 20,
+    color: t.MUTED
+  },
+  scanRow: {
+    marginTop: 8,
+    paddingVertical: 12
+  },
+  scanWord: {
+    fontFamily: SERIF_ITALIC,
+    fontSize: 22,
+    letterSpacing: -0.4,
+    color: t.BROWN
+  },
+  scanNote: {
+    marginTop: 4,
+    fontFamily: SANS,
+    fontSize: 14,
     color: t.MUTED
   },
   order: {

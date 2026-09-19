@@ -2,6 +2,7 @@
   "name": "blancocoffeehouse",
   "private": true,
   "dependencies": {
+    "qrcode": "^1.5.4",
     "stripe": "^22.4.0"
   }
 }

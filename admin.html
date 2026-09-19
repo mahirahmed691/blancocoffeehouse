@@ -6,7 +6,7 @@
     <title>House desk — Blanco Coffee House</title>
     <meta
       name="description"
-      content="House desk for Blanco Coffee House — menu prices, sold-out marks, and hours."
+      content="House desk for Blanco Coffee House — menu prices, sold-out marks, house tags, and hours."
     />
     <meta name="robots" content="noindex" />
     <meta name="theme-color" content="#E9E1D8" />
@@ -100,7 +100,7 @@
             <a href="index.html#visit">Fiveways Parade</a>
             <a href="index.html#reviews">Google reviews</a>
             <a href="account.html">Your account</a>
-            <a href="admin.html" aria-current="page">House desk</a>
+            <a href="admin.html" data-house-desk hidden aria-current="page">House desk</a>
           </section>
           <aside class="mega-feature">
             <a class="mega-feature-photo" href="index.html#visit">
@@ -218,7 +218,7 @@
               <h1 class="campaign-title" id="admin-desk-title">the board, live.</h1>
               <p class="prose">
                 Hello, <span data-admin-name>the house</span>. Change a price,
-                mark something sold out, or add a line. Save writes to the
+                mark sold out or a house tag, or add a line. Save writes to the
                 public menu.
               </p>
             </div>
@@ -226,6 +226,50 @@
           </div>
 
           <form id="admin-form" class="admin-form">
+            <article class="account-card admin-stamps">
+              <div class="admin-card-head">
+                <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> stamps</p>
+                <h2>the code.</h2>
+              </div>
+              <p class="admin-hint">
+                Show this at the counter. A member scans it from the app or
+                their phone camera. One scan, one stamp.
+              </p>
+              <div class="stamp-qr" id="stamp-qr" aria-label="Stamp QR for the counter"></div>
+              <p class="admin-hint" id="stamp-qr-status">Opening a code…</p>
+              <button class="btn btn-ghost" type="button" id="stamp-qr-refresh">New code</button>
+              <p class="admin-hint">
+                Or type the member email from their blanco account.
+              </p>
+              <div class="admin-stamp-row">
+                <label>
+                  Member email
+                  <input
+                    id="stamp-email"
+                    type="email"
+                    autocomplete="off"
+                    enterkeyhint="search"
+                    placeholder="hello@…"
+                  />
+                </label>
+                <button class="btn btn-ghost" type="button" id="stamp-find">Find</button>
+              </div>
+              <div class="stamp-card">
+              <ol class="stamp-row" id="stamp-preview" aria-label="Member stamps">
+                <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
+                <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
+                <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
+                <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
+                <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
+                <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
+                <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
+                <li><span class="stamp-cup" aria-hidden="true"><span class="stamp-bowl"><span class="stamp-fill"></span><span class="stamp-b"></span></span><span class="stamp-handle"></span></span></li>
+              </ol>
+              </div>
+              <p class="admin-hint" id="stamp-status">No card open yet.</p>
+              <button class="btn" type="button" id="stamp-give" disabled>Give a stamp</button>
+            </article>
+
             <article class="account-card admin-hours">
               <div class="admin-card-head">
                 <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> visit</p>
@@ -290,38 +334,6 @@
               </p>
             </article>
 
-            <article class="account-card admin-stamps">
-              <div class="admin-card-head">
-                <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> stamps</p>
-                <h2>The card</h2>
-              </div>
-              <p class="admin-hint">
-                Eight stamps. A drink on the house. Type the member email from
-                their blanco account.
-              </p>
-              <div class="admin-stamp-row">
-                <label>
-                  Member email
-                  <input
-                    id="stamp-email"
-                    type="email"
-                    autocomplete="off"
-                    enterkeyhint="search"
-                    placeholder="hello@…"
-                  />
-                </label>
-                <button class="btn btn-ghost" type="button" id="stamp-find">Find</button>
-              </div>
-              <div class="stamp-card">
-              <ol class="stamp-row" id="stamp-preview" aria-label="Member stamps">
-                <li></li><li></li><li></li><li></li>
-                <li></li><li></li><li></li><li></li>
-              </ol>
-              </div>
-              <p class="admin-hint" id="stamp-status">No card open yet.</p>
-              <button class="btn" type="button" id="stamp-give" disabled>Give a stamp</button>
-            </article>
-
             <article class="account-card admin-rank">
               <div class="admin-card-head">
                 <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> the rank</p>
@@ -372,6 +384,21 @@
               </p>
               <p class="admin-hint" id="desk-orders-status">No collections yet.</p>
               <ul class="desk-orders" id="desk-orders"></ul>
+            </article>
+
+            <article class="account-card admin-today">
+              <div class="admin-card-head">
+                <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="" width="64" height="64" decoding="async" /> today</p>
+                <h2>The cups</h2>
+              </div>
+              <p class="admin-hint">
+                A shot that isn’t clearly the house waits here. Put it up if
+                it’s the cup, the case, or the room. Let go if it isn’t.
+              </p>
+              <p class="admin-hint" id="desk-cups-status">No cups waiting.</p>
+              <ul class="desk-shots" id="desk-holds"></ul>
+              <p class="admin-hint" id="desk-live-label" hidden>On the board.</p>
+              <ul class="desk-shots" id="desk-live"></ul>
             </article>
 
             <article class="account-card admin-shots">
@@ -583,7 +610,8 @@
     <script src="clerk-config.js?v=6"></script>
     <script src="script.js"></script>
     <script src="house.js"></script>
-    <script src="clerk-auth.js?v=7"></script>
+    <script src="clerk-auth.js?v=10"></script>
+    <script src="qr-mark.js"></script>
     <script src="admin.js"></script>
   </body>
 </html>

@@ -73,6 +73,7 @@ import {
   placeOrder,
   postPace,
   priceOf,
+  stampTokenFromHref,
   bagHintLine,
   cupsEqual,
   findUsualItem,
@@ -920,6 +921,8 @@ function House() {
   const [rankNote, setRankNote] = useState("");
   const [toast, setToast] = useState("");
   const pendingPayId = useRef("");
+  const pendingStamp = useRef("");
+  const [incomingStamp, setIncomingStamp] = useState("");
   const prefsRef = useRef(prefs);
   prefsRef.current = prefs;
   const t = prefs.night ? DARK : LIGHT;
@@ -1415,10 +1418,24 @@ function House() {
     }
   }
 
+  function takeStampHref(href: string) {
+    const token = stampTokenFromHref(href);
+    if (!token) return false;
+    pendingStamp.current = token;
+    setIncomingStamp(token);
+    setTab("you");
+    setYouPage("scan");
+    return true;
+  }
+
   useEffect(() => {
     const sub = Linking.addEventListener("url", (event) => {
+      if (takeStampHref(event.url)) return;
       const kind = payHrefKind(event.url);
       if (kind === "paid" || kind === "cancel") settleRef.current(kind);
+    });
+    Linking.getInitialURL().then((href) => {
+      if (href) takeStampHref(href);
     });
     return () => sub.remove();
   }, []);
@@ -1706,6 +1723,22 @@ function House() {
               onToday={() => {
                 setLookBoard("today");
                 setTab("look");
+              }}
+              onScan={() => {
+                setIncomingStamp("");
+                setYouPage("scan");
+              }}
+              incomingStamp={incomingStamp}
+              onRedeemStamp={(card) => {
+                pendingStamp.current = "";
+                setIncomingStamp("");
+                setStamps(card.stamps);
+                setCardsDone(card.cards_done);
+                setToast(
+                  card.filled
+                    ? "a drink on the house. the card starts again."
+                    : "a stamp from the house."
+                );
               }}
               topAt={topAt}
               getSession={liveSession}

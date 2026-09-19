@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View
 } from "react-native";
 import { ok, tap, warn } from "./feel";
@@ -27,6 +28,7 @@ import {
   findDeskCard,
   formatPrice,
   giveDeskStamp,
+  mintDeskStamp,
   houseTags,
   orderItemsLine,
   pickupLine,
@@ -57,6 +59,7 @@ import {
   type Palette
 } from "./theme";
 import { Back, FoldHead, Kicker } from "./ui";
+import { HouseQr } from "./qr-mark";
 import { StampCup } from "./stamp-cup";
 
 const LANES = ["counter", "today", "card", "board", "visit"] as const;
@@ -178,7 +181,7 @@ export function DeskScreen({
   const pad = usePad();
   const list = useRef<ScrollView>(null);
   useToTop(topAt, list);
-  const [lane, setLane] = useState<Lane>("counter");
+  const [lane, setLane] = useState<Lane>("card");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState("");
   const [refreshing, setRefreshing] = useState(false);
@@ -204,6 +207,44 @@ export function DeskScreen({
   const [shotKind, setShotKind] = useState<"house" | "cup" | "sweets">("house");
   const [shotCaption, setShotCaption] = useState("");
   const [paceBusy, setPaceBusy] = useState(false);
+  const [showSvg, setShowSvg] = useState("");
+  const [showPng, setShowPng] = useState("");
+  const [showUntil, setShowUntil] = useState(0);
+  const [showLeft, setShowLeft] = useState(0);
+  const showLock = useRef(false);
+  const qrSize = Math.max(240, Math.min(280, Math.round(useWindowDimensions().width - 56)));
+
+  async function mintShow(haptic = false) {
+    if (showLock.current) return;
+    showLock.current = true;
+    try {
+      const session = await getSession();
+      const next = await mintDeskStamp(session);
+      if (!next.svg && !next.png) {
+        setShowSvg("");
+        setShowPng("");
+        setShowUntil(0);
+        setShowLeft(0);
+        setStatus("the code could not open.");
+        return;
+      }
+      setShowSvg(next.svg);
+      setShowPng(next.png);
+      const until = next.expires_at ? new Date(next.expires_at).getTime() : Date.now() + 60000;
+      setShowUntil(until);
+      setShowLeft(Math.max(0, Math.ceil((until - Date.now()) / 1000)));
+      if (haptic) ok();
+    } catch {
+      warn();
+      setShowSvg("");
+      setShowPng("");
+      setShowUntil(0);
+      setShowLeft(0);
+      setStatus("the code could not open.");
+    } finally {
+      showLock.current = false;
+    }
+  }
 
   async function loadLane(next = lane, pull = false) {
     if (pull) setRefreshing(true);
@@ -223,6 +264,8 @@ export function DeskScreen({
               : board.holds.length + " cups waiting."
             : "no cups waiting."
         );
+      } else if (next === "card") {
+        if (pull) await mintShow();
       } else if (next === "board" || next === "visit") {
         const board = await fetchDeskBoard(session);
         setItems(board.items);
@@ -244,6 +287,21 @@ export function DeskScreen({
   useEffect(() => {
     loadLane(lane);
   }, [lane]);
+
+  useEffect(() => {
+    if (lane !== "card") return;
+    mintShow();
+  }, [lane]);
+
+  useEffect(() => {
+    if (lane !== "card") return;
+    const tick = setInterval(() => {
+      const left = Math.max(0, Math.ceil((showUntil - Date.now()) / 1000));
+      setShowLeft(left);
+      if (showUntil && Date.now() >= showUntil) mintShow(true);
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [lane, showUntil]);
 
   useEffect(() => {
     if (lane !== "counter") return;
@@ -452,7 +510,24 @@ export function DeskScreen({
 
           {lane === "card" ? (
             <>
-              <Text style={styles.prose}>Eight stamps. A drink on the house. Type the member email from their blanco account.</Text>
+              <Text style={styles.prose}>Show this at the counter. A member scans it from the app or their phone camera. One scan, one stamp.</Text>
+              <View style={styles.qrWrap} accessibilityLabel="Stamp QR for the counter">
+                <HouseQr svg={showSvg} png={showPng} size={qrSize} />
+              </View>
+              <Text style={styles.qrNote}>
+                {showLeft
+                  ? showLeft === 1
+                    ? "a new code in 1s."
+                    : "a new code in " + showLeft + "s."
+                  : "opening a code…"}
+              </Text>
+              <Pressable
+                onPress={() => mintShow(true)}
+                style={({ pressed }) => [styles.btnGhost, pressed && styles.pressed]}
+              >
+                <Text style={styles.btnGhostText}>New code</Text>
+              </Pressable>
+              <Text style={styles.prose}>Or type the member email from their blanco account.</Text>
               <Text style={styles.label}>member email</Text>
               <TextInput
                 value={email}
@@ -1001,6 +1076,16 @@ function makeStyles(t: Palette) {
       fontSize: 16,
       color: t.INK,
       backgroundColor: t.PAPER
+    },
+    qrWrap: {
+      alignItems: "center",
+      marginBottom: 10
+    },
+    qrNote: {
+      fontFamily: SANS,
+      fontSize: 14,
+      color: t.MUTED,
+      marginBottom: 12
     },
     stampRow: {
       flexDirection: "row",

@@ -40,5 +40,40 @@
     paint(data.stamps, data.cards_done);
   }
 
-  window.blancoLoadStamps = loadStamps;
+  async function redeemFromQuery() {
+    var token = "";
+    try {
+      token = new URL(window.location.href).searchParams.get("t") || "";
+    } catch (err) {}
+    token = token.trim();
+    if (!token || !window.Clerk || !Clerk.session) return;
+    var jwt = await Clerk.session.getToken();
+    if (!jwt) return;
+    var res = await fetch("/api/stamps", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + jwt,
+        "X-Clerk-Session": Clerk.session.id,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ token: token })
+    });
+    var data = await res.json().catch(function () {
+      return {};
+    });
+    if (res.ok) paint(data.stamps, data.cards_done);
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.delete("t");
+      history.replaceState(null, "", url.pathname + url.search + url.hash);
+    } catch (err) {}
+    if (note && !res.ok && data.error) note.textContent = data.error;
+  }
+
+  window.blancoLoadStamps = function () {
+    return loadStamps().then(function () {
+      if (typeof window.blancoLoadStampRedeem === "function") return;
+      return redeemFromQuery();
+    });
+  };
 })();

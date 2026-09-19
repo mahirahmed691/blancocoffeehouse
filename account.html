@@ -19,7 +19,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Nunito:wght@500;600;700;800&family=Work+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=10" />
+    <link rel="stylesheet" href="styles.css?v=11" />
   </head>
   <body class="account-page">
     <div class="grain" aria-hidden="true"></div>
@@ -200,19 +200,33 @@
       >
         <div class="wrap">
           <div class="account-welcome">
-            <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> member</p>
+            <div class="account-welcome-head">
+              <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> member</p>
+              <a
+                class="account-desk"
+                data-house-desk
+                hidden
+                href="admin.html"
+                aria-label="the desk."
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 10.5 12 4l9 6.5" />
+                  <path d="M5 10v9h14v-9" />
+                  <path d="M10 19v-6h4v6" />
+                </svg>
+              </a>
+            </div>
             <h1 class="campaign-title" id="account-home-title">
               Welcome back, <span data-account-first>member</span>.
             </h1>
             <p class="prose">
               Your blanco account. The public menu and gallery stay on the
-              site. The app is the same house in the pocket. Bring this to the
-              counter for stamps.
+              site. The app is the same house in the pocket. Scan the house QR
+              at the counter for stamps.
             </p>
             <div class="account-welcome-tools">
               <div class="clerk-user-button clerk-user-button-lg"></div>
               <a class="btn btn-ghost" href="index.html#menu">View menu</a>
-              <a class="btn house-admin-only" data-house-desk hidden href="admin.html">House desk</a>
               <button type="button" class="btn btn-ghost" data-night-toggle aria-pressed="false">the night.</button>
             </div>
           </div>
@@ -265,7 +279,7 @@
               <p class="eyebrow"><img class="mark" src="assets/logo.png" alt="blanco." width="64" height="64" decoding="async" /> rewards</p>
               <h2 id="account-rewards-title">Stamps &amp; the counter</h2>
               <p class="prose">
-                Bring the account to the counter. Eight stamps, then a drink on
+                Scan the house QR at the counter. Eight stamps, then a drink on
                 the house.
               </p>
               <div class="stamp-card">
@@ -377,6 +391,6 @@
     <script src="collection.js?v=3"></script>
     <script src="account-orders.js"></script>
     <script src="rank.js"></script>
-    <script src="clerk-auth.js?v=9"></script>
+    <script src="clerk-auth.js?v=10"></script>
   </body>
 </html>

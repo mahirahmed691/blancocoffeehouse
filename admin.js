@@ -24,6 +24,14 @@
   var saving = false;
   var undo = null;
   var pickedKey = "";
+  var HOUSE_TAGS = ["dairy", "oat", "nuts", "gluten", "sesame"];
+
+  function asTags(value) {
+    if (!Array.isArray(value)) return [];
+    return HOUSE_TAGS.filter(function (tag) {
+      return value.indexOf(tag) !== -1;
+    });
+  }
 
   function setStatus(text, kind) {
     if (!statusEl) return;
@@ -281,6 +289,7 @@
     if (inSession && admin) {
       updateChrome();
       startDeskOrdersPoll();
+      startDeskCupsPoll();
       if (!rankDeskOnce) {
         rankDeskOnce = true;
         loadDeskRank();
@@ -539,10 +548,19 @@
   function renderBoard(root, board) {
     if (!root) return;
     var sections = group(board);
+    var fold =
+      sections.filter(function (section) {
+        return section.items.some(matchesFilter);
+      }).length > 1;
+    var slot = 0;
     var html = sections
       .map(function (section) {
         var visible = section.items.filter(matchesFilter);
         if (!visible.length) return "";
+        var i = slot++;
+        var hasPick = visible.some(function (item) {
+          return item._key === pickedKey;
+        });
         var rows = visible
           .map(function (item) {
             return (
@@ -573,6 +591,20 @@
               '<button type="button" class="admin-remove" data-remove>Remove</button>' +
               "</div>" +
               "</div>" +
+              '<div class="admin-item-tags" role="group" aria-label="On the line">' +
+              HOUSE_TAGS.map(function (tag) {
+                var on = asTags(item.allergens).indexOf(tag) !== -1;
+                return (
+                  '<button type="button" class="admin-tag" data-allergen="' +
+                  tag +
+                  '" aria-pressed="' +
+                  (on ? "true" : "false") +
+                  '">' +
+                  tag +
+                  "</button>"
+                );
+              }).join("") +
+              "</div>" +
               '<label class="admin-item-note">Note<textarea data-field="description" rows="2" maxlength="280"></textarea></label>' +
               "</div>" +
               "</article>"
@@ -580,12 +612,15 @@
           })
           .join("");
         return (
-          '<section class="account-card admin-section">' +
-          "<h2>" +
+          '<details class="account-card admin-section"' +
+          (!fold || i === 0 || hasPick ? " open" : "") +
+          "><summary><h2>" +
           escapeHtml(section.title) +
-          "</h2>" +
+          '</h2><span class="board-fold-n">' +
+          visible.length +
+          "</span></summary>" +
           rows +
-          "</section>"
+          "</details>"
         );
       })
       .filter(Boolean)
@@ -721,7 +756,8 @@
         driver_price_gbp:
           item.driver_price_gbp === 0 || item.driver_price_gbp
             ? Number(item.driver_price_gbp)
-            : null
+            : null,
+        allergens: asTags(item.allergens)
       };
     });
   }
@@ -797,6 +833,26 @@
         soldBtn.setAttribute("aria-pressed", soldItem.sold_out ? "true" : "false");
         soldBtn.textContent = soldItem.sold_out ? "Sold out" : "On the board";
         refreshPick();
+        markDirty();
+      }
+      return;
+    }
+
+    var tagBtn = event.target.closest("[data-allergen]");
+    if (tagBtn) {
+      var tagCard = tagBtn.closest(".admin-item");
+      var tagItem = tagCard && findItem(tagCard.getAttribute("data-id"));
+      var tag = tagBtn.getAttribute("data-allergen") || "";
+      if (tagItem && HOUSE_TAGS.indexOf(tag) !== -1) {
+        var current = asTags(tagItem.allergens);
+        var at = current.indexOf(tag);
+        if (at === -1) current.push(tag);
+        else current.splice(at, 1);
+        tagItem.allergens = asTags(current);
+        tagBtn.setAttribute(
+          "aria-pressed",
+          tagItem.allergens.indexOf(tag) !== -1 ? "true" : "false"
+        );
         markDirty();
       }
       return;
@@ -939,7 +995,8 @@
       sort: sort,
       sold_out: false,
       photo: "",
-      driver_price_gbp: null
+      driver_price_gbp: null,
+      allergens: []
     });
     document.getElementById("add-name").value = "";
     document.getElementById("add-price").value = "";
@@ -999,7 +1056,8 @@
               driver_price_gbp:
                 item.driver_price_gbp === 0 || item.driver_price_gbp
                   ? item.driver_price_gbp
-                  : null
+                  : null,
+              allergens: asTags(item.allergens)
             };
             if (item.id) row.id = item.id;
             return row;
@@ -1145,6 +1203,92 @@
       loadStampCard();
     });
   }
+
+  var stampQrHost = document.getElementById("stamp-qr");
+  var stampQrStatus = document.getElementById("stamp-qr-status");
+  var stampQrRefresh = document.getElementById("stamp-qr-refresh");
+  var stampQrTimer = 0;
+  var stampQrUntil = 0;
+  var stampQrBusy = false;
+
+  function setQrStatus(text) {
+    if (stampQrStatus) stampQrStatus.textContent = text || "";
+  }
+
+  function qrLeft() {
+    return Math.max(0, Math.ceil((stampQrUntil - Date.now()) / 1000));
+  }
+
+  function tickStampQr() {
+    if (!stampQrUntil) return;
+    var left = qrLeft();
+    if (left <= 0) {
+      mintStampQr();
+      return;
+    }
+    setQrStatus(left === 1 ? "a new code in 1s." : "a new code in " + left + "s.");
+  }
+
+  function mintStampQr() {
+    if (!stampQrHost || stampQrBusy) return;
+    if (!window.Clerk || !Clerk.session) return;
+    stampQrBusy = true;
+    if (stampQrRefresh) stampQrRefresh.disabled = true;
+    setQrStatus("opening a code…");
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/stamps", {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ action: "mint" })
+        });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "the code could not open.");
+          return data;
+        });
+      })
+      .then(function (data) {
+        if (typeof window.blancoPaintStampQr === "function") {
+          window.blancoPaintStampQr(stampQrHost, data.svg);
+        }
+        stampQrUntil = data.expires_at ? new Date(data.expires_at).getTime() : Date.now() + 60000;
+        tickStampQr();
+        if (stampQrTimer) clearInterval(stampQrTimer);
+        stampQrTimer = setInterval(tickStampQr, 1000);
+      })
+      .catch(function () {
+        if (typeof window.blancoPaintStampQr === "function") {
+          window.blancoPaintStampQr(stampQrHost, "");
+        }
+        setQrStatus("the code could not open.");
+      })
+      .then(function () {
+        stampQrBusy = false;
+        if (stampQrRefresh) stampQrRefresh.disabled = false;
+      });
+  }
+
+  if (stampQrRefresh) {
+    stampQrRefresh.addEventListener("click", mintStampQr);
+  }
+
+  var stampQrStarted = false;
+  function startStampQr() {
+    if (stampQrStarted) return;
+    stampQrStarted = true;
+    mintStampQr();
+  }
+
+  document.addEventListener("blanco-admin", function (event) {
+    if (!(event.detail && event.detail.admin)) {
+      stampQrStarted = false;
+      return;
+    }
+    startStampQr();
+  });
+  if (document.body.classList.contains("is-house-admin")) startStampQr();
 
   var rankCodeValue = document.getElementById("rank-code-value");
   var rankRotate = document.getElementById("rank-rotate");
@@ -1309,6 +1453,31 @@
     return "£" + n.toFixed(2);
   }
 
+  function deskForLine(iso) {
+    var at = new Date(iso);
+    if (isNaN(at.getTime())) return "when it's ready.";
+    var parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      hour: "numeric",
+      minute: "numeric",
+      hourCycle: "h23"
+    }).formatToParts(at);
+    var hour = Number(
+      (parts.filter(function (part) {
+        return part.type === "hour";
+      })[0] || {}).value
+    );
+    var minute = Number(
+      (parts.filter(function (part) {
+        return part.type === "minute";
+      })[0] || {}).value
+    );
+    if (!isFinite(hour) || !isFinite(minute)) return "when it's ready.";
+    var h12 = hour % 12;
+    if (h12 === 0) h12 = 12;
+    return "for " + h12 + ":" + String(minute).padStart(2, "0") + ".";
+  }
+
   function ago(iso) {
     var min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
     if (!isFinite(min) || min < 1) return "just in";
@@ -1366,6 +1535,9 @@
       .sort(function (a, b) {
         var lane = deskLane(a.status) - deskLane(b.status);
         if (lane) return lane;
+        var aWhen = new Date(a.for_at || a.created_at).getTime();
+        var bWhen = new Date(b.for_at || b.created_at).getTime();
+        if (aWhen !== bWhen) return aWhen - bWhen;
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       })
       .map(function (order) {
@@ -1375,6 +1547,9 @@
             return escapeHtml(row.qty + " × " + row.name);
           })
           .join(" · ");
+        var when = order.for_at
+          ? '<p class="desk-order-note">' + escapeHtml(deskForLine(order.for_at)) + "</p>"
+          : '<p class="desk-order-note">when it\'s ready.</p>';
         var note = order.note
           ? '<p class="desk-order-note">' + escapeHtml(order.note) + "</p>"
           : "";
@@ -1412,6 +1587,7 @@
           '<p class="desk-order-items">' +
           items +
           "</p>" +
+          when +
           note +
           '<p class="desk-order-total">' +
           money(order.total_gbp) +
@@ -1493,6 +1669,138 @@
       );
     });
   }
+
+  var deskHoldsEl = document.getElementById("desk-holds");
+  var deskLiveEl = document.getElementById("desk-live");
+  var deskCupsStatus = document.getElementById("desk-cups-status");
+  var deskLiveLabel = document.getElementById("desk-live-label");
+  var deskCupsTimer = 0;
+
+  function setDeskCupsStatus(text, kind) {
+    if (!deskCupsStatus) return;
+    deskCupsStatus.textContent = text || "";
+    deskCupsStatus.classList.toggle("is-error", kind === "error");
+  }
+
+  function cupUrl(uri) {
+    return String(uri || "").trim();
+  }
+
+  function paintDeskCupList(el, cups, waiting) {
+    if (!el) return;
+    el.innerHTML = (cups || [])
+      .map(function (cup) {
+        var who = escapeHtml(cup.name || "a member");
+        var putUp = waiting
+          ? '<button class="btn" type="button" data-cup-id="' +
+            escapeHtml(cup.id) +
+            '" data-cup-status="live">Put it up</button>'
+          : "";
+        return (
+          '<li class="desk-shot">' +
+          '<img src="' +
+          escapeHtml(cupUrl(cup.uri)) +
+          '" alt="" />' +
+          "<div>" +
+          '<p class="desk-shot-kind">' +
+          who +
+          (cup.created_at ? " · " + escapeHtml(ago(cup.created_at)) : "") +
+          "</p>" +
+          '<p class="desk-shot-caption">' +
+          (waiting ? "waiting on the house." : "on the board.") +
+          "</p>" +
+          '<div class="desk-order-tools">' +
+          putUp +
+          '<button class="btn btn-ghost" type="button" data-cup-id="' +
+          escapeHtml(cup.id) +
+          '" data-cup-status="drop">Let go</button>' +
+          "</div>" +
+          "</div>" +
+          "</li>"
+        );
+      })
+      .join("");
+  }
+
+  function paintDeskCups(data) {
+    var holds = data.holds || [];
+    var cups = data.cups || [];
+    paintDeskCupList(deskHoldsEl, holds, true);
+    paintDeskCupList(deskLiveEl, cups, false);
+    if (deskLiveLabel) deskLiveLabel.hidden = !cups.length;
+    if (!holds.length && !cups.length) {
+      setDeskCupsStatus("No cups in yet.");
+      return;
+    }
+    if (holds.length) {
+      setDeskCupsStatus(
+        holds.length === 1 ? "one waiting on the house." : holds.length + " waiting on the house."
+      );
+      return;
+    }
+    setDeskCupsStatus(cups.length === 1 ? "one cup on the board." : cups.length + " cups on the board.");
+  }
+
+  function loadDeskCups() {
+    if (!deskHoldsEl && !deskLiveEl) return;
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/checkins?desk=1", { headers: headers });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "The cups could not load.");
+          return data;
+        });
+      })
+      .then(paintDeskCups)
+      .catch(function (err) {
+        setDeskCupsStatus(err.message || "The cups could not load.", "error");
+      });
+  }
+
+  function startDeskCupsPoll() {
+    if (deskCupsTimer) return;
+    loadDeskCups();
+    deskCupsTimer = window.setInterval(loadDeskCups, 8000);
+  }
+
+  function setDeskCupStatus(id, status, btn) {
+    if (btn) btn.disabled = true;
+    clerkHeaders()
+      .then(function (headers) {
+        return fetch("/api/checkins", {
+          method: "PATCH",
+          headers: headers,
+          body: JSON.stringify({ id: id, status: status })
+        });
+      })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data.error || "That cup could not update.");
+          return data;
+        });
+      })
+      .then(function () {
+        loadDeskCups();
+      })
+      .catch(function (err) {
+        if (btn) btn.disabled = false;
+        setDeskCupsStatus(err.message || "That cup could not update.", "error");
+      });
+  }
+
+  function bindDeskCups() {
+    function onClick(event) {
+      var btn = event.target.closest("button[data-cup-id]");
+      if (!btn) return;
+      setDeskCupStatus(btn.getAttribute("data-cup-id"), btn.getAttribute("data-cup-status"), btn);
+    }
+    if (deskHoldsEl) deskHoldsEl.addEventListener("click", onClick);
+    if (deskLiveEl) deskLiveEl.addEventListener("click", onClick);
+  }
+
+  bindDeskCups();
 
   var shotFile = document.getElementById("shot-file");
   var shotKind = document.getElementById("shot-kind");
@@ -1735,6 +2043,7 @@
 
   function bindClerk() {
     showPanels();
+    document.addEventListener("blanco-admin", showPanels);
     if (window.Clerk && typeof Clerk.addListener === "function") {
       Clerk.addListener(showPanels);
     }

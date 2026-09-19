@@ -826,6 +826,85 @@ export async function findDeskCard(session: Session, email: string): Promise<Des
   };
 }
 
+export type StampShow = {
+  url: string;
+  expires_at: string;
+  ttl_sec: number;
+  svg: string;
+  png: string;
+};
+
+export async function mintDeskStamp(session: Session): Promise<StampShow> {
+  const res = await fetch(HOUSE_SITE + "/api/stamps", {
+    method: "POST",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({ action: "mint" })
+  });
+  const data = await res.json().catch(() => ({} as Record<string, unknown>));
+  if (!res.ok) {
+    const fromApi = data && typeof data === "object" ? String((data as { error?: string }).error || "") : "";
+    throw new Error(fromApi || "the code could not open.");
+  }
+  return {
+    url: String((data as { url?: string }).url || ""),
+    expires_at: String((data as { expires_at?: string }).expires_at || ""),
+    ttl_sec: Number((data as { ttl_sec?: number }).ttl_sec) || 60,
+    svg: String((data as { svg?: string }).svg || ""),
+    png: String((data as { png?: string }).png || "")
+  };
+}
+
+export function stampTokenFromHref(href: string) {
+  const raw = String(href || "").trim();
+  if (!raw) return "";
+  if (/^[A-Za-z0-9_-]{20,48}$/.test(raw)) return raw;
+  try {
+    const url = new URL(raw);
+    const token = (url.searchParams.get("t") || "").trim();
+    if (!token) return "";
+    const host = String(url.hostname || url.host || "").toLowerCase();
+    const path = String(url.pathname || "").toLowerCase();
+    const protocol = String(url.protocol || "").toLowerCase();
+    if (protocol === "blanco:" && (host === "stamp" || path.indexOf("stamp") !== -1)) {
+      return token;
+    }
+    if (path.indexOf("stamp") === -1) return "";
+    if (
+      host === "blancocoffeehouse.com" ||
+      host === "www.blancocoffeehouse.com" ||
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "[::1]" ||
+      host.endsWith(".local") ||
+      /^\d{1,3}(\.\d{1,3}){3}$/.test(host)
+    ) {
+      return token;
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+export async function redeemStamp(
+  session: Session,
+  token: string
+): Promise<DeskCard> {
+  const res = await fetch(HOUSE_SITE + "/api/stamps", {
+    method: "POST",
+    headers: clerkHeaders(session),
+    body: JSON.stringify({ token })
+  });
+  const data = await readJson(res);
+  return {
+    stamps: Number(data.stamps) || 0,
+    cards_done: Number(data.cards_done) || 0,
+    email: String(data.email || ""),
+    name: String(data.name || ""),
+    filled: !!data.filled
+  };
+}
+
 export async function giveDeskStamp(session: Session, email: string): Promise<DeskCard> {
   const res = await fetch(HOUSE_SITE + "/api/stamps", {
     method: "POST",

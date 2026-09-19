@@ -11,7 +11,20 @@
   var adminUrl = new URL("admin.html", window.location.href).href;
   var onAdminPage = /admin\.html(?:$|\?|#)/.test(location.pathname + location.search);
   var onOrdersPage = /orders\.html(?:$|\?|#)/.test(location.pathname + location.search);
-  var afterAuthUrl = onAdminPage ? adminUrl : onOrdersPage ? location.href : accountUrl;
+  var onStampPage = /stamp\.html(?:$|\?|#)/.test(location.pathname + location.search);
+  var incomingStamp = "";
+  try {
+    incomingStamp = new URL(location.href).searchParams.get("t") || "";
+  } catch (err) {}
+  var afterAuthUrl = onStampPage
+    ? location.href
+    : incomingStamp && !onAdminPage
+      ? new URL("stamp.html?t=" + encodeURIComponent(incomingStamp), window.location.href).href
+      : onAdminPage
+        ? adminUrl
+        : onOrdersPage
+          ? location.href
+          : accountUrl;
   function houseAppearance() {
     var night = document.documentElement.hasAttribute("data-night");
     var brown = night ? "#e9e1d8" : "#503931";
@@ -319,7 +332,9 @@
     if (typeof window.blancoLoadRank === "function") {
       window.blancoLoadRank();
     }
-    if (inSession && typeof window.blancoLoadStamps === "function") {
+    if (inSession && typeof window.blancoLoadStampRedeem === "function") {
+      window.blancoLoadStampRedeem();
+    } else if (inSession && typeof window.blancoLoadStamps === "function") {
       window.blancoLoadStamps();
     }
     if (inSession && typeof window.blancoLoadOrders === "function") {
